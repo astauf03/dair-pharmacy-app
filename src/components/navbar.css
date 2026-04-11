@@ -1,0 +1,50 @@
+/* the actual navbar */
+.navbar {
+  height: 48px;
+  background: var(--color-nav);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-lg);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+/* leftmost text, the project title styling */
+.navbar__brand {
+  font-size: var(--text-caption);
+  font-weight: 500;
+  color: var(--text-on-nav);
+}
+
+.navbar__links {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xl);
+}
+
+.navbar__link {
+  font-size: var(--text-caption);
+  font-weight: 400;
+  color: var(--surface-tan);
+  text-decoration: none;
+}
+
+.navbar__link:hover {
+  color: var(--text-on-dark);
+}
+
+.navbar__cta {
+  font-size: var(--text-caption);
+  font-weight: 500;
+  color: #5a3e08;
+  background: var(--color-gold);
+  text-decoration: none;
+  padding: var(--space-xs) var(--space-md);
+  border-radius: var(--radius-xl);
+}
+
+.navbar__cta:hover {
+  opacity: 0.9;
+}
