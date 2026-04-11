@@ -11,7 +11,7 @@ function Hero() {
       </p>
       <div>
         <Link to="/map" className="hero__cta-primary">Explore the Map</Link>
-        <a href="#n1" className="hero__cta-secondary">Read the Story</a>
+        <a href="#N1" className="hero__cta-secondary">Read the Story</a>
       </div>
     </section>
   )
