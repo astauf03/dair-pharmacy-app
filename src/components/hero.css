@@ -1,0 +1,57 @@
+.hero {
+  height: 100vh;
+  background: var(--color-ink);        /* dark bg — var() is required */
+  padding: var(--space-xl) var(--space-2xl); /* stops text hitting edges */
+  display: flex;
+  flex-direction: column;              /* stacks children vertically */
+  justify-content: center;            /* centers content vertically */
+}
+
+.hero__eyebrow {
+  font-size: var(--text-micro);        /* 10px */
+  font-weight: 500;
+  color: var(--color-green);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  margin-bottom: var(--space-sm);
+}
+
+.hero__title {
+  font-size: var(--text-hero);         /* clamp(28px, 5vw, 52px) */
+  font-weight: 600;                    /* never 700+ per style guide */
+  color: var(--text-on-dark);
+  margin-bottom: var(--space-md);
+}
+
+.hero__subtitle {
+  font-size: var(--text-body);         /* 16px */
+  font-weight: 400;
+  color: var(--surface-tan);           /* muted, not full white */
+  max-width: 480px;
+  margin-bottom: var(--space-xl);
+  line-height: 1.75;
+}
+
+.hero__cta-primary {
+  display: inline-block;
+  background: var(--color-green);
+  color: var(--text-on-green);
+  font-size: var(--text-label);
+  font-weight: 500;
+  text-decoration: none;
+  padding: var(--space-sm) var(--space-lg);
+  border-radius: var(--radius-md);     /* style guide says radius-md for CTA */
+  margin-right: var(--space-md);
+}
+
+.hero__cta-secondary {
+  display: inline-block;
+  background: transparent;
+  color: var(--surface-tan);
+  font-size: var(--text-label);
+  font-weight: 400;
+  text-decoration: none;
+  padding: var(--space-sm) var(--space-lg);
+  border-radius: var(--radius-md);
+  border: 0.5px solid var(--surface-bark);
+}
