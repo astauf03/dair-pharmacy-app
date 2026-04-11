@@ -1,111 +1,89 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap');
+
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+  /* Structural */
+  --color-nav: #442520;
+  --color-ink: #1A1A1A;
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+  /* SA flag */
+  --color-green: #007A4D;
+  --color-blue: #002395;
+  --color-red: #DE3831;
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  /* Accent */
+  --color-gold: #ebc159;
+  --color-gold-dark: #a07a1a;
+  --dair-orange: #c73c16;
 
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
+  /* DAIR */
+  --dair-offwhite: #FCFFEB;
+  --dair-navy: #2E3E6C;
+  --dair-purple: #7D64AD;
+  --dair-green: #007A4D;
+
+  /* Surfaces */
+  --surface-warm: #F5F0E8;
+  --surface-mid: #EDE7DC;
+  --surface-paper: #EFF1E3;
+  --surface-carton: #F9EECE;
+  --surface-tan: #C8B89A;
+  --surface-bark: #6B5C4E;
+  --surface-deep: #2A2318;
+
+  /* Text */
+  --text-primary: #1A1A1A;
+  --text-secondary: #6B5C4E;
+  --text-on-dark: #F5F0E8;
+  --text-on-nav: #F9EECE;
+  --text-on-green: #d4ede2;
+  --text-on-blue: #b3c5f5;
+
+  /* Choropleth */
+  --data-access-1: #002395;
+  --data-access-2: #1a4fa8;
+  --data-access-3: #4a80c4;
+  --data-access-4: #8ab0d8;
+  --data-access-5: #c8d8e8;
+  --data-access-6: #e8c97a;
+  --data-access-7: #ebc159;
+  --data-access-8: #d4a030;
+  --data-pharmacy: #007A4D;
+  --data-neutral: #C8B89A;
+  --data-disparity: #c73c16;
+  --data-selected: #002395;
+
+  /* Type scale */
+  --text-hero: clamp(28px, 5vw, 52px);
+  --text-chapter: clamp(22px, 3vw, 36px);
+  --text-h2: 20px;
+  --text-body: 16px;
+  --text-caption: 13px;
+  --text-label: 11px;
+  --text-micro: 10px;
+
+  /* Spacing */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 40px;
+  --space-2xl: 64px;
+
+  /* Radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 20px;
+
+  /* Base */
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: var(--text-body);
+  color: var(--text-primary);
+  background-color: var(--surface-warm);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
-}
-
-body {
-  margin: 0;
-}
-
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
+* {
   box-sizing: border-box;
-}
-
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
-}
-
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
-}
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
-}
-p {
   margin: 0;
-}
-
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
-}
-
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+  padding: 0;
 }
