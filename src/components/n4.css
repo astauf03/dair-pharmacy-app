@@ -1,0 +1,50 @@
+.n4 {
+    background: var(--surface-mid)
+}
+
+.n3__intro,
+.n3__purpose {
+    padding: var(--space-2xl) 15%;
+}
+
+.n4__eyebrow {
+    display: block;
+    font-size: var(--text-micro);
+    font-weight: 500;
+    color: var(--color-green);   /* DAIR vermillion eyebrow*/
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    margin-bottom: var(--space-sm);
+}
+
+.n4__title {
+    font-size: var(--text-chapter);
+    font-weight: 600;
+    color: var(--text-primary);
+    max-width: 720px;                  /* same constraint */
+    margin-bottom: var(--space-lg);
+}
+
+.n4__body {
+    font-size: var(--text-body);
+    color: var(--text-secondary);
+    line-height: 1.75;
+    max-width: 720px;                  /* constraint lives on the text, not the wrapper */
+    margin-bottom: var(--space-lg);
+}
+
+.n4__link {
+    color: var(--dair-navy);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.n4__link:hover {
+    color: var(--dair-purple);
+}
+
+/* Full-bleed map */
+.n4__map {
+    width: 100%;
+    height: 60vh;
+}
