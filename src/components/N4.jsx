@@ -20,7 +20,7 @@ function N4() {
       interactive: false,
     })
 
-    map.current.on('load', () => {
+    map.current.on('load', () => {   // This is gonna have chlropleth layers for population, and then the pointdata for pharmacies wil be revealed as we scroll
       // load Gauteng
       map.current.addSource('gauteng', {
         type: 'geojson',
