@@ -1,16 +1,77 @@
-# React + Vite
+# DAIR Pharmacy Access — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + Mapbox web application for the MUSA Practicum 2026 pharmacy access project.
+Built in collaboration with the DAIR Institute.
 
-Currently, two official plugins are available:
+## Stack
+- React (Vite)
+- Mapbox GL JS
+- Scrollama
+- Turf.js
+- GitHub Pages
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Prerequisites
+[Node.js](https://nodejs.org) (LTS version) — required before anything else
+A Mapbox account + access token — get one free at [mapbox.com](https://mapbox.com)
 
-## React Compiler
+## Setup
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+1. Clone the repo
+2. Run `npm install`
+3. Create a `.env` file in the root with your Mapbox token: `VITE_MAPBOX_TOKEN=your_token_here`
+4. Run `npm run dev`
 
-## Expanding the ESLint configuration
+## Repo Structure
+public/
+  data/
+    gauteng.geojson       # Gauteng province boundary
+    KZN.geojson           # KwaZulu-Natal province boundary
+src/
+  components/
+    NavBar.jsx/css        # Sticky nav, conditional Map/Story button
+    Hero.jsx/css          # Full-bleed landing section
+    ContextBand.jsx/css   # NHI Act 2024 context
+    N1.jsx/css            # Positionality + DAIR partnership
+    N2.jsx/css            # Spatial orientation + province map
+    N3.jsx/css            # Apartheid geography
+    N4.jsx/css            # Pharmacy data intro
+    N5.jsx/css            # Access + disparity findings
+    CTABand.jsx/css       # Green CTA card → map page
+    Footer.jsx/css        # Team + DAIR attribution
+    MapSidebar.jsx        # Map page sidebar (in progress)
+  pages/
+    StoryPage.jsx         # Scrollytelling narrative page
+    MapPage.jsx           # Interactive Mapbox dashboard
+  index.css               # All design tokens (colors, type, spacing)
+  App.jsx                 # Router config
+  main.jsx                # Entry point
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+
+
+## To-Do
+
+### In Progress
+- [ ] Scrollama wiring — scroll-triggered map flyTo + layer visibility
+- [ ] Step card components for N2–N5 scroll sections
+- [ ] MapSidebar content — province toggles, stat cards, legend scaffold construction
+- [ ] Data geojson identification and collection
+
+### Up Next
+- [ ] Ward-level choropleth fill layer (blue→gold ramp)
+- [ ] Province outline layers on map page
+- [ ] Pharmacy dot layer — pending pharmacies.geojson
+- [ ] Ward click interaction → sidebar stat update
+- [ ] Drop-pin buffer tool (Turf.js circle + points-within-polygon)
+
+### Pending Data (from Tess/Snowflake pipeline)
+- [ ] pharmacies.geojson — point data
+- [ ] Access scores per ward for choropleth
+- [ ] *MORE THAT I NEED TO WRITE A DOCUMENT FOR*
+
+
+### Before Final Deploy
+- [ ] Real copy for all narrative sections
+- [ ] GitHub Pages deployment config
+- [ ] Mapbox token handling for production
+- [ ] Remove all console.log debug statements
+- [ ] Real data!!!!!
