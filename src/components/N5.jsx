@@ -1,13 +1,14 @@
 import { useEffect, useRef } from 'react'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
-import './n4.css'
+import './n5.css'
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN
 
-function N4() {
+function N5() {
   const mapContainer = useRef(null)
   const map = useRef(null)
+
   useEffect(() => {
     if (map.current) return
     if (!mapContainer.current) return
@@ -20,7 +21,7 @@ function N4() {
       interactive: false,
     })
 
-    map.current.on('load', () => {   // This is gonna have chlropleth layers for population, and then the pointdata for pharmacies wil be revealed as we scroll
+    map.current.on('load', () => {
       // load Gauteng
       map.current.addSource('gauteng', {
         type: 'geojson',
@@ -79,29 +80,30 @@ function N4() {
       }
     }
   }, [])
+    
+  return (
+    <section className="n5">
 
-
-    return (
-    <section className="n4">
-
-      <div className="n4__intro">
-        <span className="n4__eyebrow">Measuring Access </span>
-        <h2 className="n4__title">Population Density + Pharm</h2>
-        <p className="n4__body">
-          This is a population density map at the most specific level available.
-          This are bare bones median household income data. So, where are the pharmacies? 
+      <div className="n5__intro">
+        <span className="n5__eyebrow">Who Is Left Out?</span>
+        <h2 className="n5__title">Gauteng Pharmacy Name, Neighborhood</h2>
+        <p className="n5__body">
+          Expand on the story of apartheid, accessibility, and how a person accessing
+          this selected pharmacy in Gauteng might experience
+          challenges (or, not challenges because of city life). What can the reader takeaway?
         </p>
       </div>
 
       {/* Single map — Scrollama will control flyTo and layer visibility */}
-      <div className="n4__map" ref={mapContainer} />
+      <div className="n5__map" ref={mapContainer} />
 
-      <div className="n4__purpose">
-        <h2 className="n4__title">Pharmacy statistic (use text highlighting here)</h2>
-        <p className="n4__body">
-          Pharmacy stats! Identified 4,000 + pharmacies, X in Gauteng, Y in KZN. 
-            Where are they located? How does that relate to population density?
-        
+      <div className="n5__purpose">
+        <span className="n5__eyebrow">Who Is Left Out?</span>
+        <h2 className="n5__title">KwaZulu-Natal Pharmacy Name, Neighborhood</h2>
+        <p className="n5__body">
+          Expand on story of apartheid, accessibility, and how a person accessing this selected 
+          pharmacy in KZN.. so think of internet access, transportation, etc. What can the reader takeaway?
+          Oh my god. Plz kill me. This is the most important part of the story. This is where we can really drive home the point about access and equity.
         </p>
       </div>
 
@@ -109,4 +111,4 @@ function N4() {
   )
 }
 
-export default N4
+export default N5
