@@ -1,0 +1,54 @@
+/* Outer section — N5 carton background, centers the card */
+.cta-section {
+  background: var(--surface-carton);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: var(--space-2xl) var(--space-lg);
+  min-height: 354px;
+}
+
+/* The green card itself */
+.cta-card {
+  background: var(--color-green);
+  border-radius: var(--radius-lg);
+  padding: var(--space-2xl) var(--space-2xl);
+  max-width: 700px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-lg);
+}
+
+.cta-card__eyebrow {
+  font-size: var(--text-label);
+  font-weight: 500;
+  color: var(--text-on-green);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+.cta-card__title {
+  font-size: var(--text-chapter);
+  font-weight: 600;
+  color: var(--text-on-green);
+  line-height: 1.2;
+}
+
+.cta-card__button {
+  padding: var(--space-md) var(--space-xl);
+  background: var(--color-gold);
+  color: #5a3e08;
+  border-radius: var(--radius-xl);
+  font-size: var(--text-body);
+  font-weight: 600;
+  text-decoration: none;
+  transition: opacity 0.2s ease;
+}
+
+.cta-card__button:hover {
+  opacity: 0.9;
+}
