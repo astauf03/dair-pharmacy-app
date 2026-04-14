@@ -1,0 +1,47 @@
+.step-card {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-lg);
+}
+
+.step-card__inner {
+  background: var(--surface-warm);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  width: min(320px, 90%);
+  border-left: 3px solid transparent;
+  opacity: 0.4;
+  transform: translateY(12px);
+  transition: opacity 200ms ease, transform 200ms ease, border-color 200ms ease;
+}
+
+.step-card--active .step-card__inner {
+  opacity: 1;
+  transform: translateY(0);
+  border-left-color: var(--color-green);
+}
+
+.step-card__eyebrow {
+  font-size: var(--text-micro);
+  font-weight: 500;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--color-green);
+  margin-bottom: var(--space-sm);
+}
+
+.step-card__heading {
+  font-size: var(--text-chapter);
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.2;
+  margin-bottom: var(--space-md);
+}
+
+.step-card__body {
+  font-size: var(--text-body);
+  font-weight: 400;
+  color: var(--text-secondary);
+  line-height: 1.75;
+}

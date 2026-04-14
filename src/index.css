@@ -7,7 +7,7 @@
 
   /* SA flag */
   --color-green: #007A4D;
-  --color-blue: #002395;
+  --color-blue: #6177c0;
   --color-red: #DE3831;
 
   /* Accent */
@@ -81,6 +81,33 @@
   font-size: var(--text-body);
   color: var(--text-primary);
   background-color: var(--surface-warm);
+}
+
+/* Global text emphasis utilities — use anywhere */
+.highlight-blue {
+  color: var(--color-blue);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+.highlight-red {
+  color: var(--color-red);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+.highlight-policy {
+  background: var(--color-blue);
+  color: var(--text-on-blue);
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+.highlight-stat {
+  color: var(--color-gold);
+  font-weight: 600;
 }
 
 * {

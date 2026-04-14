@@ -1,9 +1,9 @@
-import { Link, useLocation } from 'react-router-dom'
-import './navbar.css'
+import { Link, useLocation } from "react-router-dom"
+import "./navbar.css"
 
 function NavBar() {
   const location = useLocation()
-  const isMapPage = location.pathname === '/map'
+  const isMapPage = location.pathname === "/map"
 
   return (
     <nav className="navbar">
@@ -12,8 +12,8 @@ function NavBar() {
         <a href="#n1" className="navbar__link">About</a>
         <a href="YOUR_MARKDOWN_URL" target="_blank" rel="noreferrer" className="navbar__link">Markdown</a>
         {isMapPage 
-          ? <Link to="/" className="navbar__cta">Story ↗</Link>
-          : <Link to="/map" className="navbar__cta">Map ↗</Link>
+          ? <Link to="/" className="navbar__cta">Story</Link>
+          : <Link to="/map" className="navbar__cta">Map</Link>
         }
       </div>
     </nav>

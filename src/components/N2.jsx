@@ -1,115 +1,90 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import mapboxgl from 'mapbox-gl'
-import 'mapbox-gl/dist/mapbox-gl.css'
+import scrollama from 'scrollama'
+import StepCard from './StepCard'
 import './n2.css'
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN
+console.log("token:", mapboxgl.accessToken)
 
-function N2() {
+const STEPS = [
+  {
+    eyebrow: 'Spatial Context · Step 1',
+    heading: 'South Africa in southern Africa',
+    body: 'South Africa sits at the southern tip of the continent, home to over 60 million people across nine provinces.',
+  },
+  {
+    eyebrow: 'Spatial Context · Step 2',
+    heading: 'Province Highlight: Gauteng and KwaZulu-Natal',
+    body: 'Gauteng is the smallest province by area but the most populous. KZN stretches along the coast with vast rural hinterlands. (Other statistics).',
+  },
+  {
+    eyebrow: 'Spatial Context · Step 3',
+    heading: 'Zooming in to where people live, Ward and SAL Area Orientation',
+    body: 'Ward is comparable to X kilometers across and SAL areas are about Y km. These are the units of analysis for our pharmacy access mapping.',
+  },
+]
+
+const FLY_TARGETS = [
+  { center: [25.0, -29.0], zoom: 3.8 },   // Africa view
+  { center: [28.5, -27.5], zoom: 5.2 },   // Gauteng + KZN
+  { center: [28.0, -26.2], zoom: 8.5 },   // Joburg zoom
+]
+
+export default function N2() {
   const mapContainer = useRef(null)
   const map = useRef(null)
+  const [activeStep, setActiveStep] = useState(0)
 
+  // Boot the map once
   useEffect(() => {
     if (map.current) return
-    if (!mapContainer.current) return
-
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/satellite-v9',
-      center: [28.0, -29.0],
-      zoom: 3.8,
+      center: FLY_TARGETS[0].center,
+      zoom: FLY_TARGETS[0].zoom,
       interactive: false,
     })
+    return () => map.current?.remove()
+  }, [])
 
-    map.current.on('load', () => {
-      // load Gauteng
-      map.current.addSource('gauteng', {
-        type: 'geojson',
-        data: '/data/gauteng.geojson'
+  // Boot Scrollama separately
+  useEffect(() => {
+    const scroller = scrollama()
+    scroller
+      .setup({
+        step: '.n2 .step-card',
+        offset: 0.5,
       })
-      map.current.addLayer({
-        id: 'gauteng-fill',
-        type: 'fill',
-        source: 'gauteng',
-        paint: {
-          'fill-color': '#002395',
-          'fill-opacity': 0,           // hidden at first, Scrollama will reveal
-        }
-      })
-      map.current.addLayer({
-        id: 'gauteng-outline',
-        type: 'line',
-        source: 'gauteng',
-        paint: {
-          'line-color': '#002395',
-          'line-width': 1.5,
-          'line-opacity': 0            // hidden at first
+      .onStepEnter(({ index }) => {
+        setActiveStep(index)
+        if (map.current && FLY_TARGETS[index]) {
+          map.current.flyTo({
+            ...FLY_TARGETS[index],
+            duration: 1800,
+            essential: true,
+          })
         }
       })
 
-      // load KZN
-      map.current.addSource('kzn', {
-        type: 'geojson',
-        data: '/data/KZN.geojson'
-      })
-      map.current.addLayer({
-        id: 'kzn-fill',
-        type: 'fill',
-        source: 'kzn',
-        paint: {
-          'fill-color': '#002395',
-          'fill-opacity': 0            // hidden at first
-        }
-      })
-      map.current.addLayer({
-        id: 'kzn-outline',
-        type: 'line',
-        source: 'kzn',
-        paint: {
-          'line-color': '#002395',
-          'line-width': 1.5,
-          'line-opacity': 0            // hidden at first
-        }
-      })
-    })
-
-    return () => {
-      if (map.current) {
-        map.current.remove()
-        map.current = null
-      }
-    }
+    return () => scroller.destroy()
   }, [])
 
   return (
     <section className="n2">
-
-      <div className="n2__intro">
-        <span className="n2__eyebrow">Spatial Orientation</span>
-        <h2 className="n2__title">Situating the Study Area</h2>
-        <p className="n2__body">
-          This project focuses on two provinces — Gauteng and KwaZulu-Natal — 
-          chosen as pilot areas for understanding pharmacy access across 
-          vastly different urban and rural geographies.
-        </p>
+      <div className="n2__graphic">
+        <div ref={mapContainer} className="n2__map" />
       </div>
-
-      {/* Single map — Scrollama will control flyTo and layer visibility */}
-      <div className="n2__map" ref={mapContainer} />
-
-      <div className="n2__purpose">
-        <span className="n2__eyebrow">The Two Provinces</span>
-        <h2 className="n2__title">Gauteng + KwaZulu-Natal</h2>
-        <p className="n2__body">
-          Gauteng is South Africa's smallest but most densely populated province, 
-          home to Johannesburg and Pretoria. KwaZulu-Natal stretches along the 
-          eastern coast — more rural, more dispersed, and facing a different 
-          set of access challenges entirely.
-        </p>
+      <div className="n2__steps">
+        {STEPS.map((step, i) => (
+          <StepCard
+            key={i}
+            {...step}
+            isActive={activeStep === i}
+          />
+        ))}
       </div>
-
     </section>
   )
 }
-
-export default N2
