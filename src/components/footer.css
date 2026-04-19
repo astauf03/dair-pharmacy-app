@@ -1,0 +1,22 @@
+.footer {
+  background: var(--color-ink);
+  padding: var(--space-lg) var(--space-2xl);
+  display: flex;
+  justify-content: space-between;  /* left and right */
+  align-items: center;
+}
+
+.footer__text {
+  font-size: var(--text-medium);
+  color: var(--surface-bark);
+  line-height: 1.6;
+}
+
+.footer__link {
+  color: var(--surface-tan);
+  text-decoration: none;
+}
+
+.footer__link:hover {
+  color: var(--text-on-dark);
+}
