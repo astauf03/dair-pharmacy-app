@@ -1,0 +1,29 @@
+.context-band {
+  background: var(--surface-deep);     /* #2A2318 dark warm brown */
+  padding: var(--space-2xl) 10%;
+}
+
+.context-band__eyebrow {
+  display: inline-block;
+  font-size: var(--text-micro);
+  font-weight: 500;
+  color: var(--surface-bark);          /* muted, per style guide */
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  margin-bottom: var(--space-md);
+}
+
+.context-band__title {
+  font-size: var(--text-chapter);
+  font-weight: 600;
+  color: var(--text-on-dark);          /* #F5F0E8 off-white */
+  margin-bottom: var(--space-lg);
+}
+
+.context-band__body {
+  font-size: var(--text-body);
+  color: var(--surface-tan);
+  line-height: 1.75;
+  max-width: 900px;
+  margin-bottom: var(--space-lg);
+}
