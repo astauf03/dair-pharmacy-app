@@ -1,0 +1,51 @@
+.n1 {
+  background: var(--dair-offwhite);
+}
+
+/* Shared text section styles */
+.n1__intro,
+.n1__purpose {
+  padding: var(--space-2xl) 15%;
+}
+
+.n1__eyebrow {
+  display: block;
+  font-size: var(--text-micro);
+  font-weight: 500;
+  color: var(--dair-purple);           /* DAIR purple eyebrow — only section that uses it */
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  margin-bottom: var(--space-sm);
+}
+
+.n1__title {
+  font-size: var(--text-chapter);
+  font-weight: 600;
+  color: var(--text-primary);
+  max-width: 720px;                  /* same constraint */
+  margin-bottom: var(--space-lg);
+}
+
+.n1__body {
+  font-size: var(--text-body);
+  color: var(--text-secondary);
+  line-height: 1.75;
+  max-width: 720px;                  /* constraint lives on the text, not the wrapper */
+  margin-bottom: var(--space-lg);
+}
+
+.n1__link {
+  color: var(--dair-navy);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.n1__link:hover {
+  color: var(--dair-purple);
+}
+
+/* Full-bleed map */
+.n1__map {
+  width: 100%;
+  height: 60vh;
+}
