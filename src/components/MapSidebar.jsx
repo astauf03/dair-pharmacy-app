@@ -1,4 +1,4 @@
-import './mappage.css'
+import "./mappage.css"
 
 function MapSidebar() {
     return (

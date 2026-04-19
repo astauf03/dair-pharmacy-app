@@ -1,5 +1,5 @@
-import { Link } from 'react-router-dom'
-import './ctaband.css'
+import { Link } from "react-router-dom"
+import "./ctaband.css"
 
 function CTABand() {
   return (
