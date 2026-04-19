@@ -56,11 +56,11 @@
   /* Type scale */
   --text-hero: clamp(28px, 5vw, 52px);
   --text-chapter: clamp(22px, 3vw, 36px);
-  --text-h2: 20px;
-  --text-body: 16px;
-  --text-caption: 13px;
-  --text-label: 11px;
-  --text-micro: 10px;
+  --text-h2: 25px;
+  --text-body: 20px;
+  --text-caption: 15px;
+  --text-label: 13px;
+  --text-micro: 12px;
 
   /* Spacing */
   --space-xs: 4px;

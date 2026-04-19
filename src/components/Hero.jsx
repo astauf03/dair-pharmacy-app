@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import './hero.css'
 
+
 function Hero() {
   return (
     <section className="hero">

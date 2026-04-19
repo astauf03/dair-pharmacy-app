@@ -1,0 +1,18 @@
+.map-container {
+  display: flex;              
+  height: calc(100vh - 96px);
+  background-color: var(--surface-warm);
+}
+
+.map-sidebar {
+  width: 500px;
+  flex-shrink: 0;
+  height: 100%;
+  background: var(--surface-paper);
+  overflow-y: auto;           /* scrollable if content gets long */
+}
+
+.map-area {
+  flex: 1;
+  height: 100%;               
+}
