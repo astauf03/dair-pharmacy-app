@@ -1,0 +1,41 @@
+.n2 {
+  background: var(--surface-warm);
+}
+
+.n2__intro,
+.n2__purpose {
+  padding: var(--space-2xl) 15%; /* this changes how far the text block extends 
+  but the max-width constraint lives on the text itself, not the wrapper */
+}
+
+.n2__eyebrow {
+  display: block;
+  font-size: var(--text-micro);
+  font-weight: 500;
+  color: var(--color-blue);           /* SA flag blue eyebrow */
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  margin-bottom: var(--space-sm);
+}
+
+.n2__title {
+  font-size: var(--text-chapter);
+  font-weight: 600;
+  color: var(--text-primary);
+  max-width: 720px;                  /* same constraint as N1 */
+  margin-bottom: var(--space-lg);
+}
+
+.n2__body {
+  font-size: var(--text-body);
+  color: var(--text-secondary);
+  line-height: 1.75;
+  max-width: 720px;                  /* constraint lives on the text, not the wrapper */
+  margin-bottom: var(--space-lg);
+}
+
+/* Full-bleed map */
+.n2__map {
+  width: 100%;
+  height: 60vh;
+}
