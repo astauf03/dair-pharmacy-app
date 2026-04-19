@@ -35,6 +35,7 @@ export default function N2() {
   const mapContainer = useRef(null)
   const map = useRef(null)
   const [activeStep, setActiveStep] = useState(0)
+  const [mapLoaded, setMapLoaded] = useState(false)
 
   // Boot the map once
   useEffect(() => {
@@ -46,11 +47,18 @@ export default function N2() {
       zoom: FLY_TARGETS[0].zoom,
       interactive: false,
     })
+
+      map.current.on('load', () => {
+        setMapLoaded(true)
+      })
+
     return () => map.current?.remove()
   }, [])
 
   // Boot Scrollama separately
   useEffect(() => {
+    if(!mapLoaded) return 
+
     const scroller = scrollama()
     scroller
       .setup({
@@ -69,22 +77,18 @@ export default function N2() {
       })
 
     return () => scroller.destroy()
-  }, [])
+  }, [mapLoaded])
 
   return (
-    <section className="n2">
-      <div className="n2__graphic">
-        <div ref={mapContainer} className="n2__map" />
-      </div>
-      <div className="n2__steps">
-        {STEPS.map((step, i) => (
-          <StepCard
-            key={i}
-            {...step}
-            isActive={activeStep === i}
-          />
-        ))}
-      </div>
-    </section>
+<section className="n2">
+  <div className="n2__steps">
+    {STEPS.map((step, i) => (
+      <StepCard key={i} {...step} isActive={activeStep === i} />
+    ))}
+  </div>
+  <div className="n2__graphic">
+    <div ref={mapContainer} className="n2__map" />
+  </div>
+</section>
   )
 }
