@@ -9,25 +9,27 @@
   background: var(--surface-warm);
   border-radius: var(--radius-lg);
   padding: var(--space-lg);
-  width: min(320px, 90%);
+  width: min(400px, 90%);
   border-left: 3px solid transparent;
   opacity: 0.4;
   transform: translateY(12px);
   transition: opacity 200ms ease, transform 200ms ease, border-color 200ms ease;
 }
 
+/* --- Default active state (N2 — blue) --- */
 .step-card--active .step-card__inner {
   opacity: 1;
   transform: translateY(0);
-  border-left-color: var(--color-green);
+  border-left-color: var(--color-blue);
 }
 
+/* --- Eyebrow default (N2 — blue) --- */
 .step-card__eyebrow {
   font-size: var(--text-micro);
   font-weight: 500;
   letter-spacing: 0.09em;
   text-transform: uppercase;
-  color: var(--color-green);
+  color: var(--color-blue);
   margin-bottom: var(--space-sm);
 }
 
@@ -44,4 +46,36 @@
   font-weight: 400;
   color: var(--text-secondary);
   line-height: 1.75;
+}
+
+/* --- N3 — Spatial Apartheid (red) --- */
+.step-card--apartheid .step-card__eyebrow {
+  color: var(--color-red);
+}
+
+.step-card--apartheid.step-card--active .step-card__inner {
+  border-left-color: var(--color-red);
+}
+
+/* --- N4 — Pharmacy (green) --- */
+.step-card--pharmacy .step-card__eyebrow {
+  color: var(--color-green);
+}
+
+.step-card--pharmacy.step-card--active .step-card__inner {
+  border-left-color: var(--color-green);
+}
+
+/* --- N5 — Disparity (gold) --- */
+.step-card--disparity .step-card__eyebrow {
+  color: var(--color-gold);
+}
+
+.step-card--disparity.step-card--active .step-card__inner {
+  border-left-color: var(--color-gold);
+}
+
+/* --- N3 apartheid variant background --- */
+.step-card--apartheid .step-card__inner {
+  border-left-color: var(--dair-vermillion);
 }

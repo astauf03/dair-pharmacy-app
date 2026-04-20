@@ -1,4 +1,5 @@
 .hero {
+  position: relative;           /* establishes a containing block for absolute children */
   height: 100vh;
   background: var(--color-ink);        /* dark bg — var() is required */
   padding: var(--space-xl) var(--space-2xl); /* stops text hitting edges */
@@ -7,32 +8,55 @@
   justify-content: center;            /* centers content vertically */
 }
 
+.hero__video {
+  position: absolute;
+  inset: 0;                /* shorthand for top/right/bottom/left: 0 */
+  width: 100%;
+  height: 100%;
+  object-fit: cover;       /* fills the section without distorting */
+  z-index: 0;
+}
+
+.hero__overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.3) 60%, rgba(0, 0, 0, 0.6) 100%);
+}
+
 .hero__eyebrow {
+  position: relative;       /* needed to stack above the video */
   font-size: var(--text-micro);        /* 10px */
   font-weight: 500;
   color: var(--color-green);
   letter-spacing: 0.09em;
   text-transform: uppercase;
   margin-bottom: var(--space-sm);
+  z-index: 2;              /* ensures it sits above the video and overlay */
 }
 
 .hero__title {
+  position: relative;
   font-size: var(--text-hero);         /* clamp(28px, 5vw, 52px) */
   font-weight: 600;                    /* never 700+ per style guide */
   color: var(--text-on-dark);
   margin-bottom: var(--space-md);
+  z-index: 2;
 }
 
 .hero__subtitle {
+  position: relative;
   font-size: var(--text-body);         /* 16px */
   font-weight: 400;
   color: var(--surface-tan);           /* muted, not full white */
   max-width: 480px;
   margin-bottom: var(--space-xl);
   line-height: 1.75;
+  z-index: 2;
 }
 
 .hero__cta-primary {
+  position: relative;
   display: inline-block;
   background: var(--color-green);
   color: var(--text-on-green);
@@ -42,9 +66,11 @@
   padding: var(--space-sm) var(--space-lg);
   border-radius: var(--radius-md);     /* style guide says radius-md for CTA */
   margin-right: var(--space-md);
+  z-index: 2;
 }
 
 .hero__cta-secondary {
+  position: relative;
   display: inline-block;
   background: transparent;
   color: var(--surface-tan);
@@ -54,4 +80,5 @@
   padding: var(--space-sm) var(--space-lg);
   border-radius: var(--radius-md);
   border: 0.5px solid var(--surface-bark);
+  z-index: 2;
 }
