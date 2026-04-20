@@ -22,6 +22,10 @@
   border-left-color: var(--color-green);
 }
 
+.step-card--apartheid.step-card--active .step-card__inner {
+  border-left-color: var(--color-red);
+}
+
 .step-card__eyebrow {
   font-size: var(--text-micro);
   font-weight: 500;
@@ -29,6 +33,10 @@
   text-transform: uppercase;
   color: var(--color-green);
   margin-bottom: var(--space-sm);
+}
+
+.step-card--apartheid .step-card__eyebrow {
+  color: var(--color-red);
 }
 
 .step-card__heading {
