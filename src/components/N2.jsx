@@ -39,30 +39,21 @@ export default function N2() {
 
   // Boot the map once
   useEffect(() => {
-  if (map.current) return
+    if (map.current) return
+    map.current = new mapboxgl.Map({
+      container: mapContainer.current,
+      style: 'mapbox://styles/mapbox/satellite-v9',
+      center: FLY_TARGETS[0].center,
+      zoom: FLY_TARGETS[0].zoom,
+      interactive: false,
+    })
 
-  map.current = new mapboxgl.Map({
-    container: mapContainer.current,
-    style: 'mapbox://styles/mapbox/satellite-streets-v12',
-    center: FLY_TARGETS[0].center,
-    zoom: FLY_TARGETS[0].zoom,
-    interactive: false,
-  })
+      map.current.on('load', () => {
+        setMapLoaded(true)
+      })
 
-  map.current.on('load', () => {
-    console.log('map loaded!')
-    setMapLoaded(true)
-  })
-
-  map.current.on('error', (e) => {
-    console.error('Mapbox error:', e)
-  })
-
-  return () => {
-    map.current?.remove()
-    map.current = null
-  }
-}, [])
+    return () => map.current?.remove()
+  }, [])
 
   // Boot Scrollama separately
   useEffect(() => {
