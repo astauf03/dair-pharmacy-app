@@ -1,50 +1,71 @@
 .n4 {
-    background: var(--surface-mid)
+  background: var(--surface-mid);
+  display: flex;
+  flex-direction: column;
 }
 
-.n4__intro,
-.n4__purpose {
-    padding: var(--space-2xl) 15%;
+.n4__intro {
+  padding: var(--space-2xl) 15%;
+  width: 100%;
 }
 
 .n4__eyebrow {
-    display: block;
-    font-size: var(--text-micro);
-    font-weight: 500;
-    color: var(--color-green);   /* DAIR vermillion eyebrow*/
-    letter-spacing: 0.09em;
-    text-transform: uppercase;
-    margin-bottom: var(--space-sm);
+  display: block;
+  font-size: var(--text-micro);
+  font-weight: 500;
+  color: var(--color-green);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  margin-bottom: var(--space-sm);
 }
 
 .n4__title {
-    font-size: var(--text-chapter);
-    font-weight: 600;
-    color: var(--text-primary);
-    max-width: 720px;                  /* same constraint */
-    margin-bottom: var(--space-lg);
+  font-size: var(--text-chapter);
+  font-weight: 600;
+  color: var(--text-primary);
+  max-width: 720px;
+  margin-bottom: var(--space-lg);
 }
 
 .n4__body {
-    font-size: var(--text-body);
-    color: var(--text-secondary);
-    line-height: 1.75;
-    max-width: 720px;                  /* constraint lives on the text, not the wrapper */
-    margin-bottom: var(--space-lg);
+  font-size: var(--text-body);
+  color: var(--text-secondary);
+  line-height: 1.75;
+  max-width: 720px;
+  margin-bottom: var(--space-lg);
 }
 
 .n4__link {
-    color: var(--dair-navy);
-    text-decoration: underline;
-    text-underline-offset: 3px;
+  color: var(--dair-navy);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .n4__link:hover {
-    color: var(--dair-purple);
+  color: var(--dair-purple);
 }
 
-/* Full-bleed map */
+.n4__scroll {
+  display: flex;
+  width: 100%;
+}
+
+.n4__steps {
+  width: 35vw;
+  flex-shrink: 0;
+  padding-top: 40vh;
+  padding-bottom: 40vh;
+}
+
+.n4__graphic {
+  position: sticky;
+  top: 0;
+  width: 65vw;
+  height: 100vh;
+  flex-shrink: 0;
+}
+
 .n4__map {
-    width: 100%;
-    height: 60vh;
+  width: 100%;
+  height: 100%;
 }
