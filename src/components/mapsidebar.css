@@ -1,0 +1,270 @@
+/* ─── Sidebar shell ─────────────────────────────────────────── */
+
+.map-sidebar {
+  width: 360px;
+  flex-shrink: 0;
+  height: 100%;
+  background: var(--surface-warm);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  border-right: 0.5px solid var(--surface-tan);
+}
+
+.map-sidebar--collapsed {
+  width: 36px;
+  align-items: center;
+  padding-top: var(--space-md);
+}
+
+/* ─── Header ────────────────────────────────────────────────── */
+
+.sidebar__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-md);
+  height: 44px;
+  flex-shrink: 0;
+  background: var(--surface-deep);
+  border-bottom: 0.5px solid var(--surface-tan);
+}
+
+.sidebar__header-label {
+  font-size: var(--text-label);
+  font-weight: 500;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--surface-tan);
+}
+
+.sidebar__collapse-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--surface-bark);
+  font-size: 11px;
+  padding: 4px;
+  line-height: 1;
+  transition: color 0.15s ease;
+}
+
+.sidebar__collapse-btn:hover {
+  color: var(--surface-tan);
+}
+
+/* ─── Body ──────────────────────────────────────────────────── */
+
+.sidebar__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+/* ─── Section wrapper ───────────────────────────────────────── */
+
+.sidebar__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.sidebar__section-label {
+  font-size: var(--text-micro);
+  font-weight: 500;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--surface-bark);
+  margin: 0;
+  padding-bottom: var(--space-xs);
+  border-bottom: 0.5px solid var(--surface-tan);
+}
+
+/* ─── Province toggle ───────────────────────────────────────── */
+
+.province-toggle {
+  display: flex;
+  gap: var(--space-xs);
+}
+
+.province-pill {
+  flex: 1;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--surface-tan);
+  background: transparent;
+  color: var(--surface-bark);
+  font-family: inherit;
+  font-size: var(--text-label);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.province-pill:hover {
+  border-color: var(--surface-bark);
+  color: var(--text-primary);
+}
+
+.province-pill--active {
+  background: var(--color-blue);
+  border-color: var(--color-blue);
+  color: var(--text-on-blue);
+}
+
+/* ─── Stat cards ────────────────────────────────────────────── */
+
+.stat-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.stat-card {
+  background: var(--surface-mid);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.stat-card__label {
+  font-size: var(--text-micro);
+  font-weight: 500;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--surface-bark);
+}
+
+.stat-card__value {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--color-blue);
+  line-height: 1.1;
+}
+
+.stat-card__subtext {
+  font-size: var(--text-micro);
+  color: var(--text-secondary);
+}
+
+/* ─── Layer toggles ─────────────────────────────────────────── */
+
+.layer-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.layer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-sm) 0;
+  border-bottom: 0.5px solid var(--surface-mid);
+}
+
+.layer-row:last-child {
+  border-bottom: none;
+}
+
+.layer-row__label {
+  font-size: var(--text-caption);
+  color: var(--text-primary);
+}
+
+/* Toggle switch */
+
+.toggle-switch {
+  width: 34px;
+  height: 18px;
+  border-radius: 9px;
+  background: var(--surface-tan);
+  border: none;
+  position: relative;
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 0;
+  transition: background 0.15s ease;
+}
+
+.toggle-switch--on {
+  background: var(--color-blue);
+}
+
+.toggle-switch__knob {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--surface-warm);
+  position: absolute;
+  top: 2.5px;
+  left: 2.5px;
+  transition: left 0.15s ease;
+  pointer-events: none;
+}
+
+.toggle-switch--on .toggle-switch__knob {
+  left: 18.5px;
+}
+
+/* ─── Legend ────────────────────────────────────────────────── */
+
+.map-legend {
+  background: var(--surface-warm);
+  border: 0.5px solid var(--surface-tan);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.legend__ramp-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--text-micro);
+  color: var(--surface-bark);
+}
+
+.legend__ramp {
+  display: flex;
+  height: 10px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.legend__ramp-seg {
+  flex: 1;
+}
+
+.legend__entries {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding-top: var(--space-xs);
+  border-top: 0.5px solid var(--surface-mid);
+}
+
+.legend__entry {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.legend__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-green);
+  border: 1.5px solid var(--surface-warm);
+  flex-shrink: 0;
+}
+
+.legend__entry-label {
+  font-size: var(--text-micro);
+  color: var(--surface-bark);
+}
