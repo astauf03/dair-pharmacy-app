@@ -17,9 +17,9 @@ function N1() {
 
   map.current = new mapboxgl.Map({
     container: mapContainer.current,
-    style: "mapbox://styles/mapbox/satellite-v9",
-    center: [28.0, -29.0],
-    zoom: 3.8,
+    style: "mapbox://styles/mapbox/standard",
+    center: [39.95, -75.17],
+    zoom: 8,
     interactive: false,
   })
 

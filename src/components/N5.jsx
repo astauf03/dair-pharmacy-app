@@ -9,13 +9,13 @@ mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN
 const STEPS = [
   {
     eyebrow: 'Neighborhood: Gauteng',
-    heading: 'Khayasand, Johannesburg',
-    body: 'Placeholder — fly to Khayasand. A neighborhood shaped by apartheid-era planning, sitting on the boundary of Randburg.',
+    heading: 'Kya Sands, Johannesburg',
+    body: 'Placeholder — fly to Kya Sands. A neighborhood shaped by apartheid-era planning, sitting on the boundary of Randburg.',
   },
   {
     eyebrow: 'Neighborhood: Gauteng',
     heading: 'What access looks like here?',
-    body: 'Placeholder — Khayasand pharmacy stats, walking distance, population density.',
+    body: 'Placeholder — Kya Sands pharmacy stats, walking distance, population density.',
   },
   {
     eyebrow: 'Neighborhood: KwaZulu-Natal',
@@ -25,13 +25,13 @@ const STEPS = [
   {
     eyebrow: 'Neighborhood: KwaZulu-Natal',
     heading: 'What access looks like here?',
-    body: 'Placeholder — KwaMashu pharmacy stats, walking distance, population density. How does this compare to Khayasand? What does this say about the legacy of spatial apartheid?',
+    body: 'Placeholder — KwaMashu pharmacy stats, walking distance, population density. How does this compare to Kyasand? What does this say about the legacy of spatial apartheid?',
   },
 ]
 
 const FLY_TARGETS = [
-  { center: [27.9717, -26.0667], zoom: 13.5 },  // Khayasand, Johannesburg
-  { center: [27.9717, -26.0667], zoom: 14.5 },  // Khayasand closer
+  { center: [27.9717, -26.0667], zoom: 13.5 },  // Kyasand, Johannesburg
+  { center: [27.9717, -26.0667], zoom: 14.5 },  // Kyasand closer
   { center: [30.9590, -29.7080], zoom: 13.5 },  // KwaMashu, Durban
   { center: [30.9590, -29.7080], zoom: 14.5 },  // KwaMashu closer
 ]
