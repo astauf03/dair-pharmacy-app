@@ -108,7 +108,7 @@ export default function N3() {
   }, [mapLoaded])
 
 return (
-  <section className="n3">
+  <section className="n3" id = "n3">
 
     {/* Intro ribbon — no map, just text, sits above the scrollama section */}
     <div className="n3__intro">

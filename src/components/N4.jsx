@@ -120,7 +120,7 @@ export default function N4() {
   }, [mapLoaded])
 
   return (
-    <section className="n4">
+    <section className="n4" id = "n4">
       <div className="n4__intro">
         <span className="n4__eyebrow">Measuring Access</span>
         <h2 className="n4__title">Where are the pharmacies?</h2>

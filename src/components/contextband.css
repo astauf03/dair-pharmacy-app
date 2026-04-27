@@ -1,30 +1,101 @@
 .context-band {
-  background: var(--surface-deep);     
-  padding: var(--space-2xl) 10%;
+  background: var(--surface-deep);
+  padding: var(--space-2xl) 8%;
+  min-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .context-band__eyebrow {
   display: inline-block;
   font-size: var(--text-micro);
   font-weight: 500;
-  color: var(--surface-bark);          
-  letter-spacing: 0.09em;
+  color: var(--color-green);
+  letter-spacing: 0.15em;
   text-transform: uppercase;
-  margin-bottom: var(--space-md);
+  margin-bottom: var(--space-2xl);
 }
 
-.context-band__title {
-  font-size: var(--text-chapter);
+.context-band__grid {
+  display: grid;
+  grid-template-columns: 1fr 1.1fr;
+  gap: var(--space-2xl);
+  align-items: start;
+}
+
+/* --- Left side: the stat --- */
+.context-band__stat {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 800ms ease-out, transform 800ms ease-out;
+}
+
+.context-band__stat-lead-in {
+  font-size: var(--text-caption);
+  color: var(--surface-tan);
+  line-height: 1.5;
+  margin-bottom: var(--space-sm);
+  max-width: 280px; 
+}
+
+.context-band__grid.is-visible .context-band__stat {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.context-band__number {
+  font-size: clamp(80px, 12vw, 160px);
   font-weight: 600;
-  color: var(--text-on-dark);          
+  color: var(--color-gold);
+  line-height: 0.9;
+  margin-bottom: var(--space-md);
+  letter-spacing: -0.02em;
+}
+
+.context-band__percent {
+  font-size: 0.45em;
+  font-weight: 500;
+  margin-left: 0.05em;
+}
+
+.context-band__stat-label {
+  font-size: var(--text-caption);
+  color: var(--surface-tan);
+  line-height: 1.5;
+  max-width: 280px;
+}
+
+/* --- Right side: the prose --- */
+.context-band__prose {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 800ms ease-out 400ms, transform 800ms ease-out 400ms;
+}
+
+.context-band__grid.is-visible .context-band__prose {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.context-band__lead {
+  font-size: var(--text-h2);
+  font-weight: 400;
+  color: var(--text-on-dark);
+  line-height: 1.5;
   margin-bottom: var(--space-lg);
+}
+
+.context-band__highlight {
+  color: var(--color-gold);
+  font-weight: 500;
 }
 
 .context-band__body {
   font-size: var(--text-body);
-  color: var(--surface-tan);
+  color: var(--text-on-dark);
   line-height: 1.75;
-  max-width: 1500px;
-  margin-bottom: var(--space-lg);
+  margin-bottom: var(--space-md);
+  max-width: 540px;
 }
 
