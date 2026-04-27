@@ -3,21 +3,20 @@ import './mapsidebar.css'
 
 // PLACEHOLDER stat values — replace with real data from Tess when available
 const STATS = [
-  { label: 'Pharmacies', value: '4,200', subtext: 'across both provinces' },
-  { label: 'Wards with access', value: '61%', subtext: 'within 5km walk' },
+  { label: 'Pharmacies', value: '2,200', subtext: 'across both provinces' },
+  { label: 'Townships with decent supply', value: '61%', subtext: 'within 5km walk' },
   { label: 'Population served', value: '8.3M', subtext: 'estimated residents' },
 ]
 
 const PROVINCES = ['Gauteng', 'KwaZulu-Natal']
 
 const LAYERS = [
-  { id: 'ward-boundaries', label: 'Ward boundaries', defaultOn: true },
-  { id: 'pharmacies', label: 'Pharmacies', defaultOn: true },
-  { id: 'population-heatmap', label: 'Population heatmap', defaultOn: false },
+  { id: 'gauteng-fill',        label: 'Gauteng SALs',       defaultOn: true  },
+  { id: 'kzn-fill',            label: 'KZN SALs',           defaultOn: true  },
+  { id: 'pharmacy-dots',       label: 'Pharmacies',          defaultOn: true  },
   { id: 'disparity-highlight', label: 'Disparity highlight', defaultOn: false },
 ]
 
-// Choropleth ramp — 8 stops, blue → gold
 const RAMP = [
   { token: '--data-access-1', hex: '#002395' },
   { token: '--data-access-2', hex: '#1a4fa8' },
@@ -29,7 +28,7 @@ const RAMP = [
   { token: '--data-access-8', hex: '#d4a030' },
 ]
 
-function MapSidebar() {
+function MapSidebar({ onLayerToggle }) {
   const [activeProvince, setActiveProvince] = useState('Gauteng')
   const [layers, setLayers] = useState(
     Object.fromEntries(LAYERS.map(l => [l.id, l.defaultOn]))
@@ -37,8 +36,11 @@ function MapSidebar() {
   const [collapsed, setCollapsed] = useState(false)
 
   function toggleLayer(id) {
-    setLayers(prev => ({ ...prev, [id]: !prev[id] }))
-    // TODO Session 4: wire to map.setLayoutProperty(id, 'visibility', on ? 'visible' : 'none')
+    setLayers(prev => {
+      const next = { ...prev, [id]: !prev[id] }
+      onLayerToggle?.(id, next[id])
+      return next
+    })
   }
 
   function handleProvince(province) {

@@ -62,11 +62,13 @@ function ContextBand() {
         {/* Right: the prose */}
         <div className="context-band__prose">
           <p className="context-band__lead">
-            Yet public and private medicine funding is split{" "}
-            <span className="context-band__highlight">50/50</span>.
+            Yet can only meet {" "}
+            <span className="context-band__highlight">20% of supply</span>. 
           </p>
           <p className="context-band__body">
-            The <span className="highlight-blue">National Health Insurance Act of 2024</span> set out to close that gap, letting public funding reach private pharmacies. Whether that promise reaches people depends on one practical question: can they get there?
+            The <span className="highlight-blue">National Health Insurance Act of 2024</span>  passed in 2024 allows for citizens with public insurance to access private pharmacy resources. Public sector pharmacy locations include physical locations like hospitals, health facilities, community centres, medical stores found in malls, and other local and provincial offices (Health Care and Pharmacy Practice in South Africa - PMC p. 39). 
+            Access to medicines in the private sector is typically well-stocked with generic and brand name medicines for little cost if insured. Public sector medicines are listed by the National Essential medicines list dictated by the Medicine Control Council.
+            But, where are the pharmacies? The South African Pharmacy Council has a database of nationally registered pharmacies, but lacks open
           </p>
           <p className="context-band__body">
             This project maps that question across two provinces — and finds that geography, shaped by decades of <span className="highlight-red">apartheid</span> policy, still determines the answer.
