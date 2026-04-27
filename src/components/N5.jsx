@@ -92,7 +92,7 @@ export default function N5() {
   }, [mapLoaded])
 
   return (
-    <section className="n5">
+    <section className="n5" id = "n5">
       <div className="n5__intro">
         <span className="n5__eyebrow">Neighborhood Incorporation</span>
         <h2 className="n5__title">Two neighborhoods, one pattern</h2>

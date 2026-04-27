@@ -10,13 +10,13 @@ import CTABand from "../components/CTABand";
 import Footer from "../components/Footer";
 
 
+
 function StoryPage() {
     return (
         <div>
             <NavBar />
             <Hero />
             <ContextBand />
-            <N1 />
             <N2 />
             <N3 />
             <N4 />

@@ -80,7 +80,7 @@ export default function N2() {
   }, [mapLoaded])
 
   return (
-<section className="n2">
+<section className="n2" id = "n2">
   <div className="n2__steps">
     {STEPS.map((step, i) => (
       <StepCard key={i} {...step} isActive={activeStep === i} />

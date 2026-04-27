@@ -86,7 +86,7 @@
 /* Global text emphasis utilities — use anywhere */
 .highlight-blue {
   color: var(--color-blue);
-  text-decoration: underline;
+  text-decoration: bold;
   text-decoration-thickness: 2px;
   text-underline-offset: 3px;
 }
