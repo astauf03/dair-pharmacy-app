@@ -1,13 +1,9 @@
 import { useEffect, useRef } from 'react'
-import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
+import mapboxgl from 'mapbox-gl'
 import '../components/mappage.css'
 import NavBar from '../components/NavBar'
 import MapSidebar from '../components/MapSidebar'
-
-
-
-mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN
 
 function MapPage() {
   const mapContainer = useRef(null)
@@ -17,37 +13,36 @@ function MapPage() {
     if (map.current) return
     if (!mapContainer.current) return
 
+    
+
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/standard',  // light basemap for dashboard
+      style: 'mapbox://styles/mapbox/standard',
       center: [28.0, -29.0],
       zoom: 5,
-      interactive: true,                           // users can pan and zoom
+      interactive: true,
     })
 
     map.current.addControl(new mapboxgl.NavigationControl(), 'bottom-right')
 
-    // Wait for the map to load before adding sources/layers
     map.current.on('load', () => {
-      console.log('Map loaded!')
-      // You can add any default sources/layers here if needed
-      map.current.addSource('gauteng-wards', {
+
+      // --- Gauteng wards ---
+      map.current.addSource('gauteng-sal', {
         type: 'geojson',
         data: '/data/gauteng.geojson',
       })
-      
-      // Fill layer for Gauteng wards
+
       map.current.addLayer({
         id: 'gauteng-fill',
         type: 'fill',
         source: 'gauteng-wards',
         paint: {
           'fill-color': '#002395',
-          'fill-opacity': 0.5
-        }
+          'fill-opacity': 0.5,
+        },
       })
-      
-      // Outline layer for Gauteng wards
+
       map.current.addLayer({
         id: 'gauteng-lines',
         type: 'line',
@@ -59,37 +54,74 @@ function MapPage() {
         },
       })
 
-
-      // KZN source and layers
-      map.current.addSource('kzn-wards', {
+      // --- KZN wards ---
+      map.current.addSource('kzn-sal', {
         type: 'geojson',
         data: '/data/KZN.geojson',
       })
 
-      // Fill layer for KZN wards
       map.current.addLayer({
-        id: 'kzn-wards',
+        id: 'kzn-fill',
         type: 'fill',
-        source: 'kzn-wards',
+        source: 'kzn-sal',
         paint: {
           'fill-color': '#ebc159',
-          'fill-opacity': 0.5
-        }
+          'fill-opacity': 0.5,
+        },
       })
 
-      // Outline layer for KZN wards
       map.current.addLayer({
         id: 'kzn-lines',
         type: 'line',
-        source: 'kzn-wards',
+        source: 'kzn-sal',
         paint: {
           'line-color': '#4e401a',
           'line-width': 0.8,
           'line-opacity': 0.6,
         },
       })
-    }) //emd map.on ('load')
-    
+
+      // --- Pharmacies ---
+      map.current.addSource('pharmacies', {
+        type: 'geojson',
+        data: '/data/PHARMACIES_MASTER_FINAL.geojson',
+      })
+
+      map.current.addLayer({
+        id: 'pharmacy-dots',
+        type: 'circle',
+        source: 'pharmacies',
+        paint: {
+          'circle-radius': 6,
+          'circle-color': '#007A4D',
+          'circle-stroke-width': 1.5,
+          'circle-stroke-color': '#ffffff',
+        },
+      })
+
+      map.current.on('click', 'pharmacy-dots', (e) => {
+        const props = e.features[0].properties
+
+        new mapboxgl.Popup()
+          .setLngLat(e.lngLat)
+          .setHTML(`
+            <strong>${props.MATCHED_NAME || props.NAME}</strong><br/>
+            ${props.ADDRESS}<br/>
+            <span style="color: #007A4D; font-size: 12px;">${props.STATUS}</span>
+          `)
+          .addTo(map.current)
+      })
+
+      map.current.on('mouseenter', 'pharmacy-dots', () => {
+        map.current.getCanvas().style.cursor = 'pointer'
+      })
+
+      map.current.on('mouseleave', 'pharmacy-dots', () => {
+        map.current.getCanvas().style.cursor = ''
+      })
+
+    }) // end map.on('load')
+
     map.current.on('error', (e) => {
       console.error('Mapbox error:', e)
     })
@@ -102,15 +134,24 @@ function MapPage() {
     }
   }, [])
 
+  // Add this function inside MapPage(), after the useEffect
+function handleLayerToggle(layerId, isOn) {
+  if (!map.current) return
+  map.current.setLayoutProperty(
+    layerId,
+    'visibility',
+    isOn ? 'visible' : 'none'
+  )
+}
+
   return (
     <div className="map-page">
       <NavBar />
       <div className="map-container">
-        <MapSidebar />
+        <MapSidebar onLayerToggle={handleLayerToggle} />
         <div className="map-area" ref={mapContainer} />
       </div>
     </div>
-
   )
 }
 
