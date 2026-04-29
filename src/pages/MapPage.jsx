@@ -5,6 +5,7 @@ import '../components/mappage.css'
 import NavBar from '../components/NavBar'
 import MapSidebar from '../components/MapSidebar'
 
+
 function MapPage() {
   const mapContainer = useRef(null)
   const map = useRef(null)
@@ -21,106 +22,137 @@ function MapPage() {
       center: [28.0, -29.0],
       zoom: 5,
       interactive: true,
+      projection: 'mercator'
     })
 
     map.current.addControl(new mapboxgl.NavigationControl(), 'bottom-right')
 
-    map.current.on('load', () => {
+map.current.on('load', () => {
+  const style = map.current.getStyle()
+  console.log('all sources:', Object.keys(style.sources))
+  map.current.setFog(null)
 
-      // --- Gauteng wards ---
-      map.current.addSource('gauteng-sal', {
-        type: 'geojson',
-        data: '/data/gauteng.geojson',
-      })
 
-      map.current.addLayer({
-        id: 'gauteng-fill',
-        type: 'fill',
-        source: 'gauteng-wards',
-        paint: {
-          'fill-color': '#002395',
-          'fill-opacity': 0.5,
-        },
-      })
+  // --- Choropleth tileset (add FIRST so it renders below SA outline) ---
+  map.current.addSource('SA-access', {
+    type: 'vector',
+    url: 'mapbox://astauf03.4k4npw04'
+  });
 
-      map.current.addLayer({
-        id: 'gauteng-lines',
-        type: 'line',
-        source: 'gauteng-wards',
-        paint: {
-          'line-color': '#020b25',
-          'line-width': 0.8,
-          'line-opacity': 0.6,
-        },
-      })
+  map.current.addLayer({
+    id: 'walk',
+    type: 'fill',
+    source: 'SA-access',
+    'source-layer': 'all_access_4_27_26-11skzg',
+    layout: { visibility: 'visible' },
+    paint: {
+      'fill-color': [
+        'step', ['get', 'Walking Access Index'],
+        '#002395',
+        0.01, '#1a4fa8',
+        0.5,  '#4a80c4',
+        1.0,  '#c8d8e8',
+        3.0,  '#ebc159',
+        10.0, '#e7c477'
+      ],
+      'fill-opacity': 0.75
+    }
+  });
 
-      // --- KZN wards ---
-      map.current.addSource('kzn-sal', {
-        type: 'geojson',
-        data: '/data/KZN.geojson',
-      })
+map.current.on('click', (e) => {
+  const features = map.current.queryRenderedFeatures(e.point, { layers: ['walk'] });
+  if (features.length > 0) {
+    console.log(features[0].properties);
+  }
+});
 
-      map.current.addLayer({
-        id: 'kzn-fill',
-        type: 'fill',
-        source: 'kzn-sal',
-        paint: {
-          'fill-color': '#ebc159',
-          'fill-opacity': 0.5,
-        },
-      })
+  map.current.addLayer({
+    id: 'drive',
+    type: 'fill',
+    source: 'SA-access',
+    'source-layer': 'all_access_4_27_26-11skzg',
+    layout: { visibility: 'none' },
+    paint: {
+      'fill-color': [
+        'step', ['get', 'Driving Access Index'],
+        '#002395',
+        0.01, '#1a4fa8',
+        0.5,  '#4a80c4',
+        1.0,  '#c8d8e8',
+        3.0,  '#ebc159',
+        10.0, '#d4a030'
+      ],
+      'fill-opacity': 0.75
+    }
+  });
 
-      map.current.addLayer({
-        id: 'kzn-lines',
-        type: 'line',
-        source: 'kzn-sal',
-        paint: {
-          'line-color': '#4e401a',
-          'line-width': 0.8,
-          'line-opacity': 0.6,
-        },
-      })
+  map.current.on('click', 'walk', (e) => {
+    console.log(e.features[0].properties);
+  });
 
-      // --- Pharmacies ---
-      map.current.addSource('pharmacies', {
-        type: 'geojson',
-        data: '/data/PHARMACIES_MASTER_FINAL.geojson',
-      })
+  // --- SA outline (neutral base) - added AFTER choropleth so it renders on top ---
+  map.current.addSource('south_africa', {
+    type: 'geojson',
+    data: '/data/south_africa.geojson'
+  });
 
-      map.current.addLayer({
-        id: 'pharmacy-dots',
-        type: 'circle',
-        source: 'pharmacies',
-        paint: {
-          'circle-radius': 6,
-          'circle-color': '#007A4D',
-          'circle-stroke-width': 1.5,
-          'circle-stroke-color': '#ffffff',
-        },
-      })
+  map.current.addLayer({
+    id: 'sa',
+    type: 'fill',
+    source: 'south_africa',
+    paint: {
+      'fill-color': '#C8B89A',
+      'fill-opacity': 0.25
+    }
+  })
 
-      map.current.on('click', 'pharmacy-dots', (e) => {
-        const props = e.features[0].properties
 
-        new mapboxgl.Popup()
-          .setLngLat(e.lngLat)
-          .setHTML(`
-            <strong>${props.MATCHED_NAME || props.NAME}</strong><br/>
-            ${props.ADDRESS}<br/>
-            <span style="color: #007A4D; font-size: 12px;">${props.STATUS}</span>
-          `)
-          .addTo(map.current)
-      })
 
-      map.current.on('mouseenter', 'pharmacy-dots', () => {
-        map.current.getCanvas().style.cursor = 'pointer'
-      })
 
-      map.current.on('mouseleave', 'pharmacy-dots', () => {
-        map.current.getCanvas().style.cursor = ''
-      })
 
-    }) // end map.on('load')
+  // --- Pharmacies ---
+  map.current.addSource('pharmacies', {
+    type: 'geojson',
+    data: '/data/PHARMACIES_MASTER_FINAL.geojson',
+  })
+  map.current.addLayer({
+    id: 'pharmacy-dots',
+    type: 'circle',
+    source: 'pharmacies',
+    paint: {
+      'circle-radius': 6,
+      'circle-color': '#007A4D',
+      'circle-stroke-width': 1.5,
+      'circle-stroke-color': '#ffffff',
+    },
+  })
+
+  map.current.on('click', 'pharmacy-dots', (e) => {
+    const props = e.features[0].properties
+    new mapboxgl.Popup()
+      .setLngLat(e.lngLat)
+      .setHTML(`
+        <strong>${props.MATCHED_NAME || props.NAME}</strong><br/>
+        ${props.ADDRESS}<br/>
+      `)
+      .addTo(map.current)
+  })
+  map.current.on('mouseenter', 'pharmacy-dots', () => {
+    map.current.getCanvas().style.cursor = 'pointer'
+  })
+  map.current.on('mouseleave', 'pharmacy-dots', () => {
+    map.current.getCanvas().style.cursor = ''
+  })
+
+    map.current.on('click', (e) => {
+    const features = map.current.queryRenderedFeatures(e.point, { layers: ['walk'] });
+    console.log(features);
+  });
+});
+
+// end map.on('load')
+
+map.current.on('error', (e) => console.log(e));
 
     map.current.on('error', (e) => {
       console.error('Mapbox error:', e)
