@@ -11,9 +11,9 @@ const STATS = [
 const PROVINCES = ['Gauteng', 'KwaZulu-Natal']
 
 const LAYERS = [
-  { id: 'gauteng-fill',        label: 'Gauteng SALs',       defaultOn: true  },
-  { id: 'kzn-fill',            label: 'KZN SALs',           defaultOn: true  },
-  { id: 'pharmacy-dots',       label: 'Pharmacies',          defaultOn: true  },
+  { id: 'walk',      label: 'Walking Access',    defaultOn: true  },
+  { id: 'drive',     label: 'Driving Access',    defaultOn: false },
+  { id: 'pharmacy-dots',  label: 'Pharmacies',        defaultOn: true  },
   { id: 'disparity-highlight', label: 'Disparity highlight', defaultOn: false },
 ]
 

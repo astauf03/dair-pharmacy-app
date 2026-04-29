@@ -5,7 +5,7 @@ import StepCard from './StepCard'
 import './n2.css'
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN
-console.log("token:", mapboxgl.accessToken)
+
 
 const STEPS = [
   {
