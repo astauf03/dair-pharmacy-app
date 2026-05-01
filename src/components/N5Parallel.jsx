@@ -46,7 +46,7 @@ const LEFT_WARDS_GEOJSON = '/data/gauteng-wards.geojson'
 const RIGHT_WARDS_GEOJSON = '/data/KZN-wards.geojson'
 const PHARMACY_GEOJSON = '/data/PHARMACIES_MASTER_FINAL.geojson'
 
-export default function N5() {
+export default function N5Parallel() {
   const mapLeftContainer = useRef(null)
   const mapRightContainer = useRef(null)
   const mapLeft = useRef(null)
