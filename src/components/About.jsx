@@ -1,45 +1,8 @@
-import { useEffect, useRef } from "react"
-import mapboxgl from "mapbox-gl"
-import "mapbox-gl/dist/mapbox-gl.css"
-import "./n1.css"
 
-mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN
+import "./about.css"
 
 
-function N1() {
-  const mapContainer = useRef(null)
-  const map = useRef(null)
-
-  useEffect(() => {
- 
-  if (map.current) return
-  if (!mapContainer.current) return
-
-  map.current = new mapboxgl.Map({
-    container: mapContainer.current,
-    style: "mapbox://styles/mapbox/standard",
-    center: [39.95, -75.17],
-    zoom: 8,
-    interactive: false,
-  })
-
-  map.current.on("load", () => {
-    console.log("map loaded successfully")
-  })
-
-  map.current.on("error", (e) => {
-    console.log("map error:", e)
-  })
-
-  return () => {
-    if (map.current) {
-      map.current.remove()
-      map.current = null
-    }
-  }
-}, [])
-
-  return (
+function About() {
     <section className="n1">
 
       {/* N1-text: who we are */}
@@ -68,8 +31,6 @@ function N1() {
         </p>
       </div>
 
-      {/* N1-bleed: Mapbox map */}
-      <div className="n1__map" ref={mapContainer} />
 
       {/* N1-text-2: why South Africa */}
       <div className="n1__purpose">
@@ -85,7 +46,7 @@ function N1() {
       </div>
 
     </section>
-  )
+  
 }
 
-export default N1
+export default About
