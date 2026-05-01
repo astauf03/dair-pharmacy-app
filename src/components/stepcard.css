@@ -1,8 +1,12 @@
 .step-card {
-  height: 100vh;
+  height: 150vh;
   display: flex;
   align-items: center;
   padding: 0 var(--space-lg);
+}
+
+.step-card--chart {
+  height: 200vh;
 }
 
 .step-card__inner {
