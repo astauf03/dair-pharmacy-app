@@ -93,7 +93,7 @@
 
 .highlight-red {
   color: var(--color-red);
-  text-decoration: underline;
+  text-decoration: bold;
   text-decoration-thickness: 2px;
   text-underline-offset: 3px;
 }

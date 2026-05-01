@@ -44,8 +44,3 @@
   color: var(--dair-purple);
 }
 
-/* Full-bleed map */
-.n1__map {
-  width: 100%;
-  height: 60vh;
-}

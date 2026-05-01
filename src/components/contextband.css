@@ -1,7 +1,7 @@
 .context-band {
   background: var(--surface-deep);
   padding: var(--space-2xl) 8%;
-  min-height: 70vh;
+  min-height: 80vh;  /* bumped from 70 — three stats need room */
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -19,58 +19,95 @@
 
 .context-band__grid {
   display: grid;
-  grid-template-columns: 1fr 1.1fr;
+  grid-template-columns: 1fr 1.6fr;
   gap: var(--space-2xl);
   align-items: start;
 }
 
-/* --- Left side: the stat --- */
-.context-band__stat {
-  opacity: 0;
-  transform: translateY(20px);
-  transition: opacity 800ms ease-out, transform 800ms ease-out;
+/* ── Left column: stat stack ── */
+
+/* Wrapper distributes three stats evenly down the left column */
+.context-band__stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0; /* gaps handled by divider margins */
 }
 
-.context-band__stat-lead-in {
-  font-size: var(--text-caption);
-  color: var(--surface-tan);
-  line-height: 1.5;
-  margin-bottom: var(--space-sm);
-  max-width: 280px; 
+/* Each stat block fades + rises in; delay set per modifier below */
+.context-band__stat {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 700ms ease-out, transform 700ms ease-out;
 }
+
+.context-band__stat--1 { transition-delay: 0ms; }
+.context-band__stat--2 { transition-delay: 150ms; }
+.context-band__stat--3 { transition-delay: 300ms; }
 
 .context-band__grid.is-visible .context-band__stat {
   opacity: 1;
   transform: translateY(0);
 }
 
+.context-band__stat-lead-in {
+  font-size: var(--text-body);
+  color: var(--surface-tan);
+  line-height: 1.5;
+  margin-bottom: var(--space-sm);
+}
+
+/* Primary number size — stat 1 and stat 2 */
 .context-band__number {
-  font-size: clamp(80px, 12vw, 160px);
+  font-size: clamp(64px, 9vw, 130px);
   font-weight: 600;
   color: var(--color-gold);
-  line-height: 0.9;
-  margin-bottom: var(--space-md);
+  line-height: 0.88;
+  margin-bottom: var(--space-sm);
   letter-spacing: -0.02em;
 }
 
+/* Stat 2 gets a slightly warmer tint to distinguish from stat 1
+   without breaking the gold palette — optional, remove if too busy */
+.context-band__number--accent {
+  color: var(--color-gold);
+  opacity: 0.85;
+}
+
+/* Stat 3 (2,241) is smaller — it's supporting data, not the headline */
+.context-band__number--secondary {
+  font-size: clamp(48px, 6vw, 96px);
+  color: var(--surface-tan);  /* muted — precise count, not a rate */
+}
+
 .context-band__percent {
-  font-size: 0.45em;
+  font-size: 0.42em;
   font-weight: 500;
-  margin-left: 0.05em;
+  margin-left: 0.04em;
+  vertical-align: baseline;
 }
 
 .context-band__stat-label {
   font-size: var(--text-caption);
   color: var(--surface-tan);
   line-height: 1.5;
-  max-width: 280px;
+  max-width: 300px;
+  margin-bottom: 0;
 }
 
-/* --- Right side: the prose --- */
+/* Thin horizontal rule between stats */
+.context-band__stat-divider {
+  width: 32px;
+  height: 0.5px;
+  background: var(--surface-bark);
+  margin: var(--space-lg) 0;
+}
+
+/* ── Right column: prose ── */
+
 .context-band__prose {
   opacity: 0;
-  transform: translateY(20px);
-  transition: opacity 800ms ease-out 400ms, transform 800ms ease-out 400ms;
+  transform: translateY(16px);
+  transition: opacity 800ms ease-out 350ms, transform 800ms ease-out 350ms;
 }
 
 .context-band__grid.is-visible .context-band__prose {
@@ -81,8 +118,8 @@
 .context-band__lead {
   font-size: var(--text-h2);
   font-weight: 400;
-  color: var(--text-on-dark);
-  line-height: 1.5;
+  color: var(--text-on-nav);
+  line-height: 1.4;
   margin-bottom: var(--space-lg);
 }
 
@@ -93,9 +130,60 @@
 
 .context-band__body {
   font-size: var(--text-body);
-  color: var(--text-on-dark);
+  color: var(--text-on-nav);
   line-height: 1.75;
   margin-bottom: var(--space-md);
-  max-width: 540px;
+  max-width: 700px;
 }
 
+
+/* ── Full-width research questions block below grid ── */
+.context-band__questions {
+  margin-top: var(--space-2xl);
+  padding-top: var(--space-xl);
+  border-top: 0.5px solid var(--surface-bark);
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 800ms ease-out 600ms, transform 800ms ease-out 600ms;
+}
+
+.context-band__grid.is-visible ~ .context-band__questions {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.context-band__questions-lead {
+  font-size: var(--text-caption);
+  font-weight: 500;
+  color: var(--surface-bark);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  margin-bottom: var(--space-lg);
+}
+
+.context-band__questions-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-lg);
+}
+
+.context-band__question-item {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: flex-start;
+}
+
+.context-band__question-num {
+  font-size: var(--text-micro);
+  font-weight: 600;
+  color: var(--color-green);
+  letter-spacing: 0.09em;
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+
+.context-band__question-text {
+  font-size: var(--text-caption);
+  color: var(--text-on-dark);
+  line-height: 1.65;
+}
