@@ -261,19 +261,37 @@ export default function N2() {
   const [showDensity,     setShowDensity]     = useState(false)
   const [activeProvince,  setActiveProvince]  = useState('gauteng')  // ← NEW
 
+
+
   // ── Map init ─────────────────────────────────────────────────────────────────
-  useEffect(() => {
-    if (map.current) return
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/light-v11',
-      center: STEPS[0].fly.center,
-      zoom: STEPS[0].fly.zoom,
-      interactive: false,
+useEffect(() => {
+  if (map.current) return
+  map.current = new mapboxgl.Map({
+    container: mapContainer.current,
+    style: 'mapbox://styles/mapbox/light-v11',
+    center: STEPS[0].fly.center,
+    zoom: STEPS[0].fly.zoom,
+    interactive: false,
+  })
+  map.current.on('load', () => {
+    // SA country outline — visible on step 0 only
+    map.current.addSource('south_africa', {
+      type: 'geojson',
+      data: '/data/south_africa.geojson',
     })
-    map.current.on('load', () => setMapLoaded(true))
-    return () => { map.current?.remove(); map.current = null }
-  }, [])
+    map.current.addLayer({
+      id: 'sa',
+      type: 'fill',
+      source: 'south_africa',
+      paint: {
+        'fill-color': '#C8B89A',
+        'fill-opacity': 0.25,
+      },
+    })
+    setMapLoaded(true)
+  })
+  return () => { map.current?.remove(); map.current = null }
+}, [])
 
   // ── Scrollama ────────────────────────────────────────────────────────────────
   useEffect(() => {

@@ -8,13 +8,13 @@ import './n4.css'
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN
 
 const LEFT_MAP_DEFAULT = {
-  center: [27.9547, -25.9747],
-  zoom: 12,
+  center: [-25.94714303695501, 28.091840714079556],
+  zoom: 9,
   label: 'Olievenhoutbosch, Gauteng',
 }
 
 const RIGHT_MAP_DEFAULT = {
-  center: [30.9614, -29.7969],
+  center: [-29.833280830627167, 30.895854008125134],
   zoom: 12,
   label: 'KwaMashu, Durban',
 }
