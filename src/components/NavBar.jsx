@@ -7,7 +7,7 @@ function NavBar() {
 
   return (
     <nav className="navbar">
-      <span className="navbar__brand">Geography of Healthcare Access</span>
+      <span className="navbar__brand">Geography of Pharmacy Access - Urban Spatial Analytics Practicum </span>
       <div className="navbar__links">
         <a href="#n1" className="navbar__link">About</a>
         <a href="YOUR_MARKDOWN_URL" target="_blank" rel="noreferrer" className="navbar__link">Markdown</a>

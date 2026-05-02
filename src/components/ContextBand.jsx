@@ -99,24 +99,20 @@ function ContextBand() {
         {/* ── RIGHT: prose ── */}
         <div className="context-band__prose">
           <p className="context-band__lead">
-            And still only receive about 20% of medicial supplies. 
+            Yet private facilities receive 50% of the funding allocated by the South African Government for Healthcare.
+
           </p>
           <p className="context-band__body">
             Public pharmacies in South Africa serve about 80% of the population — but receive
             only half of national health funding. Until the{" "}
             <span className="highlight-blue">National Health Insurance Act of 2024</span>,
-            an uninsured South African could be turned away from receiving service. 
-            The NHI  changed the funding equation, enabling an equal split between public and
-            private health spending and allowing insured patients to seek care from private
-            pharmacies. For residents of townships and lower-income areas, the implications
-            are significant — in theory.
+            The National Healthcare Insurance Act of 2024 set out to close that gap, guaranteeing all South Africans coverage at both 
+            private and public pharmacies. Unfortunately, financial access is not the only barrier to pharmacy services for many South 
+            Africans. Physical access is just as much of a challenge. A practical question arises: Can people actually reach pharmacies?
           </p>
           <p className="context-band__body">
-            In the public sector, pharmacies operate within hospitals, community health
-            centres, and district offices, dispensing only from the National Essential
-            Medicines List. Private pharmacies carry broader stock, but cluster in commercial
-            nodes — malls, suburban high streets, business districts. Neither type was
-            distributed with township residents in mind.
+           This project maps that question across two provinces and finds that geography shaped by decades of 
+           oppression under Apartheid forms the answer.
           </p>
           <p className="context-band__body">
             There is no single official database of where South Africa's pharmacies are.

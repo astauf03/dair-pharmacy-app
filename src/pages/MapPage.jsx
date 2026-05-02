@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import mapboxgl from 'mapbox-gl'
 import '../components/mappage.css'
@@ -9,6 +9,7 @@ import MapSidebar from '../components/MapSidebar'
 function MapPage() {
   const mapContainer = useRef(null)
   const map = useRef(null)
+  const [dynamicStats, setDynamicStats] = useState(null)
 
   useEffect(() => {
     if (map.current) return
@@ -40,6 +41,26 @@ map.current.on('load', () => {
   });
 
   map.current.addLayer({
+    id: 'pop-density',
+    type: 'fill',
+    source: 'SA-access',
+    'source-layer': 'all_access_4_27_26-11skzg',
+    layout: { visibility: 'none' },
+    paint: {
+      'fill-color': [
+        'step', ['get', 'SAL2023_EST'],
+        '#F5F0E8',
+        500,   '#C8B89A',
+        2000,  '#8ab0d8',
+        5000,  '#4a80c4',
+        10000, '#002395'
+      ],
+      'fill-opacity': 0.7
+    }
+  });
+
+
+  map.current.addLayer({
     id: 'walk',
     type: 'fill',
     source: 'SA-access',
@@ -48,12 +69,12 @@ map.current.on('load', () => {
     paint: {
       'fill-color': [
         'step', ['get', 'Walking Access Index'],
-        '#002395',
-        0.01, '#1a4fa8',
-        0.5,  '#4a80c4',
-        1.0,  '#c8d8e8',
-        3.0,  '#ebc159',
-        10.0, '#e7c477'
+        '#d4a030',
+        0.01, '#ebc159',
+        0.5,  '#c8d8e8',
+        1.0,  '#4a80c4',
+        3.0,  '#1a4fa8',
+        10.0, '#002395'
       ],
       'fill-opacity': 0.75
     }
@@ -75,12 +96,12 @@ map.current.on('click', (e) => {
     paint: {
       'fill-color': [
         'step', ['get', 'Driving Access Index'],
-        '#002395',
-        0.01, '#1a4fa8',
-        0.5,  '#4a80c4',
-        1.0,  '#c8d8e8',
-        3.0,  '#ebc159',
-        10.0, '#d4a030'
+      '#d4a030',
+        0.01, '#ebc159',
+        0.5,  '#c8d8e8',
+        1.0,  '#4a80c4',
+        3.0,  '#1a4fa8',
+        10.0, '#002395'
       ],
       'fill-opacity': 0.75
     }
@@ -148,6 +169,29 @@ map.current.on('click', (e) => {
     const features = map.current.queryRenderedFeatures(e.point, { layers: ['walk'] });
     console.log(features);
   });
+
+  // --- Dynamic stats: recalculate on every moveend ---
+  map.current.on('moveend', () => {
+    const pharmacyFeatures = map.current.queryRenderedFeatures({ layers: ['pharmacy-dots'] })
+    const walkFeatures = map.current.queryRenderedFeatures({ layers: ['walk'] })
+
+    const pharmacyCount = pharmacyFeatures.length
+
+    const withAccess = walkFeatures.filter(f => (f.properties['Walking Access Index'] ?? 0) > 0)
+    const pct = walkFeatures.length > 0
+      ? Math.round((withAccess.length / walkFeatures.length) * 100)
+      : 0
+
+    const avgAccess = walkFeatures.length > 0
+      ? (walkFeatures.reduce((sum, f) => sum + (f.properties['Walking Access Index'] || 0), 0) / walkFeatures.length).toFixed(1)
+      : '–'
+
+    setDynamicStats([
+      { label: 'Pharmacies', value: pharmacyCount.toLocaleString(), subtext: 'visible in viewport' },
+      { label: 'Wards with any access', value: `${pct}%`, subtext: 'Walking Access Index > 0' },
+      { label: 'Avg walking access', value: avgAccess, subtext: 'mean Walking Access Index' },
+    ])
+  })
 });
 
 // end map.on('load')
@@ -180,7 +224,7 @@ function handleLayerToggle(layerId, isOn) {
     <div className="map-page">
       <NavBar />
       <div className="map-container">
-        <MapSidebar onLayerToggle={handleLayerToggle} />
+        <MapSidebar onLayerToggle={handleLayerToggle} mapRef={map} dynamicStats={dynamicStats} />
         <div className="map-area" ref={mapContainer} />
       </div>
     </div>

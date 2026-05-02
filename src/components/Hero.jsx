@@ -11,7 +11,7 @@ function Hero() {
       </video>
       <div className="hero__overlay" />
       <span className="hero__eyebrow">MUSA + DAIR</span>
-      <h1 className="hero__title">Geography of Healthcare Access in South Africa</h1>
+      <h1 className="hero__title">Geography of Pharmacy Access in South Africa</h1>
       <p className="hero__subtitle">
         Mapping pharmacy access and spatial disparity across Gauteng and KwaZulu-Natal.
       </p>
