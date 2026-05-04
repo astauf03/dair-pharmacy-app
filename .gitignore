@@ -32,3 +32,5 @@ public/video/*.mp4
 public/data/*.geojson
 
 public/data/*mbtiles
+public/data/*.mbtiles
+public/data/*.geojson
