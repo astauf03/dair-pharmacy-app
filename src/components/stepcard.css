@@ -83,3 +83,34 @@
 .step-card--apartheid .step-card__inner {
   border-left-color: var(--dair-vermillion);
 }
+
+.step-card__ea-summary {
+  list-style: none;
+  padding: 0;
+  margin: 16px 0 0;
+  font-size: 12px;
+  line-height: 2;
+  border-top: 1px solid rgba(60,60,80,0.08);
+  padding-top: 12px;
+}
+
+.step-card__ea-summary li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 0;
+}
+
+.step-card__ea-summary strong {
+  color: var(--text-primary);
+  font-weight: 600;
+  min-width: 120px;
+}
+
+.step-card__ea-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}

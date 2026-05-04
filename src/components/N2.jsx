@@ -7,12 +7,6 @@ import './n2.css'
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN
 
-// Province strings that match tileset PR_NAME value
-const PROVINCE_NAMES = {
-  gauteng: 'Gauteng',
-  kzn: 'KwaZulu-Natal', 
-}
-
 // EA_TYPE filter, removed industrial and commerical types, focus on residential and rural types relevant to pharmacy access story
 const CHART_EA_TYPES = new Set([
   'Township',
@@ -22,17 +16,20 @@ const CHART_EA_TYPES = new Set([
   'Smallholdings',
   'Farms',
   'Collective living quarters',
+  'Commerical',
+  'Industrial'
 ])
 
 // Display labels for x-axis — left = raw EA_TYPE string, right = display ───
 const EA_TYPE_LABELS = {
   'Township':                   'Township',
   'Informal residential':       'Informal\nresidential',
-  'Formal residential':         'Suburban',
+  'Formal residential':         'Formal residential',
   'Traditional residential':    'Traditional\nresidential',
   'Smallholdings':              'Small\nholdings',
   'Farms':                      'Farms',
   'Collective living quarters':  'Collective\nliving',
+  'Industrial':                 'Industrial'
 }
 
 // ── Preferred display order for bars left → right 
@@ -44,77 +41,54 @@ const EA_TYPE_ORDER = [
   'Smallholdings',
   'Farms',
   'Collective living quarters',
+  'Commercial',
+  'Industrial'
 ]
 
 // ── Build chart data from live tileset features 
 // querySourceFeatures returns all features currently in memory for a source.
 // We group by EA_TYPE (stripping the _* tile-boundary-split suffix),
 // sum population + area, then compute density and racial makeup percentages.
-function buildChartData(map, province) {
-  const sourceId    = 'dair-sal'       // must match your map.addSource() id
-  const sourceLayer = 'dair_sal'       // exact source-layer name from Studio
-
-  const features = map.querySourceFeatures(sourceId, { sourceLayer })
-  const targetProvince = PROVINCE_NAMES[province]
-
+function buildChartDataFromGeoJSON(geojson) {
   const groups = {}
 
-  for (const f of features) {
+  for (const f of geojson.features) {
     const p = f.properties
-    if (!p || p.PR_NAME !== targetProvince) continue
-    if (!p.EA_TYPE) continue
+    if (!p || !p.EA_TYPE) continue
 
-    // Strip the _* tile-split suffix so fragments merge with their parent type
-    const rawType = p.EA_TYPE
-    const type = rawType.endsWith('_*') ? rawType.slice(0, -2).trim() : rawType
-
-    // Skip types we don't want in the chart (Commercial, Vacant, etc.)
+    const type = p.EA_TYPE
     if (!CHART_EA_TYPES.has(type)) continue
 
     if (!groups[type]) {
       groups[type] = {
-        type,
-        pop_total:   0,
-        area_km2:    0,
-        Black_Afri:  0,
-        Coloured:    0,
-        Indian_Asi:  0,
-        White:       0,
-        Other:       0,
+        type, sal2023_est: 0, area_km2: 0,
+        Black_African: 0, Coloured: 0, Indian_Asian: 0, White: 0, Other: 0,
       }
     }
 
     const g = groups[type]
-    g.pop_total  += p.pop_total  ?? 0
-    g.area_km2   += p.area_km2   ?? 0
-    g.Black_Afri += p.Black_Afri ?? 0
-    g.Coloured   += p.Coloured   ?? 0
-    g.Indian_Asi += p.Indian_Asi ?? 0
-    g.White      += p.White      ?? 0
-    g.Other      += p.Other      ?? 0
+    g.sal2023_est   += p.sal2023_est   ?? 0
+    g.area_km2      += p.area_km2      ?? 0
+    g.Black_African += p.Black_African ?? 0
+    g.Coloured      += p.Coloured      ?? 0
+    g.Indian_Asian  += p.Indian_Asian  ?? 0
+    g.White         += p.White         ?? 0
+    g.Other         += p.Other         ?? 0
   }
 
-  // Sort by preferred display order, then convert to chart rows
-  return EA_TYPE_ORDER
-    .filter(t => groups[t])   // only include types that exist in this province
-    .map(t => {
-      const g     = groups[t]
-      const total = g.pop_total || 1   // avoid divide-by-zero
-
-      return {
-        type: EA_TYPE_LABELS[g.type] ?? g.type,   // display label with \n line breaks
-        density: g.area_km2 > 0
-          ? Math.round(g.pop_total / g.area_km2)
-          : 0,
-        makeup: {
-          'Black African': Math.round((g.Black_Afri / total) * 100),
-          'Coloured':      Math.round((g.Coloured   / total) * 100),
-          'Indian/Asian':  Math.round((g.Indian_Asi / total) * 100),
-          'White':         Math.round((g.White      / total) * 100),
-          'Other':         Math.round((g.Other      / total) * 100),
-        },
-      }
-    })
+  return EA_TYPE_ORDER.filter(t => groups[t]).map(t => {
+    const g = groups[t]
+    const total = g.sal2023_est || 1
+    return {
+      type: EA_TYPE_LABELS[g.type] ?? g.type,
+      density: g.area_km2 > 0 ? Math.round(g.sal2023_est / g.area_km2) : 0,
+      'Black African': Math.round((g.Black_African / total) * 100),
+      'Coloured':      Math.round((g.Coloured / total) * 100),
+      'Indian/Asian':  Math.round((g.Indian_Asian / total) * 100),
+      'White':         Math.round((g.White / total) * 100),
+      'Other':         Math.round((g.Other / total) * 100),
+    }
+  })
 }
 
 // ── Scroll step definitions — each step can optionally specify a map flyTo, whether to show the chart, and which province's data to show
@@ -122,19 +96,19 @@ const STEPS = [
   {
     heading: 'Spatial Context: South Africa',
     body: 'South Africa sits at the southern tip of the continent, home to over 60 million people across nine provinces.',
-    fly: { center: [25.0, -29.0], zoom: 3.8 },
+    fly: { center: [25.0, -29.0], zoom: 5 },
   },
   {
     eyebrow: 'Spatial Context: Provinces',
     heading: 'Gauteng and KwaZulu-Natal',
     body: 'Gauteng is the smallest province by area but the most dense, economic center of the country. KZN stretches along the coast, less dense overall.',
-    fly: { center: [28.5, -27.5], zoom: 5.2 },
+    fly: { center: [28.5, -27.5], zoom: 5.8 },
   },
   {
     eyebrow: 'Spatial Context: Neighborhoods',
     heading: 'What are the most common neighborhoods in Gauteng?',
     body: 'List the neighborhood typologies, with a brief description of each.',
-    fly: { center: [27.9943239, -26.0410534], zoom: 7.5 },
+    fly: { center: [27.9943239, -26.0410534], zoom: 8 },
     province: 'gauteng',
     showChart: false,
     showDensity: false,
@@ -143,7 +117,7 @@ const STEPS = [
     eyebrow: 'Spatial Context: Neighborhoods and Population',
     heading: 'Racial composition by neighborhood type in Gauteng',
     body: 'Explain why density metric is useful. Chart incoming.',
-    fly: { center: [27.9943239, -26.0410534], zoom: 7.5 },
+    fly: { center: [27.9943239, -26.0410534], zoom: 9 },
     province: 'gauteng',
     showChart: true,
     showDensity: true,
@@ -152,7 +126,7 @@ const STEPS = [
     eyebrow: 'Spatial Context: Neighborhoods',
     heading: 'What are the most common neighborhoods in KwaZulu-Natal?',
     body: 'List the neighborhood typologies, with a brief description of each.',
-    fly: { center: [31.0, -29.0], zoom: 6.0 },
+    fly: { center: [31.0, -29.0], zoom: 9 },
     province: 'kzn',
     showChart: false,
     showDensity: false,
@@ -161,7 +135,7 @@ const STEPS = [
     eyebrow: 'Spatial Context: Neighborhoods and Population',
     heading: 'How does population density vary by neighborhood type across KZN?',
     body: 'How does this compare to Gauteng? What might explain the differences?',
-    fly: { center: [31.0, -29.0], zoom: 6.5 },
+    fly: { center: [31.0, -29.0], zoom: 10 },
     province: 'kzn',
     showChart: true,
     showDensity: true,
@@ -179,11 +153,11 @@ const STEPS = [
 // ── Chart constants ───────────────────────────────────────────────────────────
 const RACE_KEYS   = ['Black African', 'Coloured', 'Indian/Asian', 'White', 'Other']
 const RACE_COLORS = {
-  'Black African': '#2C3E6B',
-  'Coloured':      '#7EB8C9',
-  'Indian/Asian':  '#C97B4B',
-  'White':         '#D4C5A9',
-  'Other':         '#A9A9A9',
+  'Black African': '#8DD3C7',
+  'Coloured':      '#FFFFB3',
+  'Indian/Asian':  '#BEBADA',
+  'White':         '#C97B4B',
+  'Other':         '#80B1D3',
 }
 const RACE_LABELS = {
   'Black African': 'Black African',
@@ -193,11 +167,25 @@ const RACE_LABELS = {
   'Other':         'Other',
 }
 
+const EA_FILL_EXPRESSION = [
+  'match', ['get', 'EA_TYPE'],
+  'Township',                '#8B2500',
+  'Informal residential',    '#C4713A',
+  'Formal residential',      '#6B8FA8',
+  'Traditional residential', '#4A7C6F',
+  'Smallholdings',           '#A89860',
+  'Small holdings',          '#A89860',
+  'Farms',                   '#C8B878',
+  'Commercial',              '#002395',
+  'Industrial',              '#555566',
+  '#E8E4DC',
+]
+
 const MARGIN    = { top: 24, right: 28, bottom: 60, left: 8 }
 const BAR_MAX_H = 180
 
 // D3 draw function: renders the stacked bar chart in the SVG element based on the provided data and display options
-function drawChart(svgEl, width, showDensity, keys, colors, chartData) {
+function drawChart(svgEl, width, showDensity, chartData) {
   if (!svgEl || !width || !chartData || chartData.length === 0) return
 
   const height    = BAR_MAX_H + MARGIN.top + MARGIN.bottom
@@ -232,8 +220,8 @@ function drawChart(svgEl, width, showDensity, keys, colors, chartData) {
   const barH = d => showDensity ? yScale(d.density) : innerH
 
   const stack = d3.stack()
-    .keys(keys)
-    .value((d, key) => d.makeup[key] ?? 0)
+  .keys(RACE_KEYS)
+  .value((d, key) => d[key] ?? 0)
   const layers = stack(chartData)
 
   // Gridlines — draw once only
@@ -339,22 +327,21 @@ function drawChart(svgEl, width, showDensity, keys, colors, chartData) {
     .attr('opacity', showDensity ? 1 : 0)
 
   // X-axis labels — only on first draw (svg is wiped on province change)
-  if (isFirstDraw) {
-    bg.append('text')
-      .attr('x', xScale.bandwidth() / 2)
-      .attr('y', innerH + 10)
-      .attr('text-anchor', 'middle')
-      .attr('font-size', '8.5px')
-      .attr('font-family', 'inherit')
-      .attr('fill', 'rgba(40,40,60,0.5)')
-      .selectAll('tspan')
-      .data(d => d.type.split('\n'))
-      .join('tspan')
-        .attr('x', function () { return d3.select(this.parentNode).attr('x') })
-        .attr('dy', (_, i) => i === 0 ? 0 : '1.3em')
-        .text(t => t)
-  }
+  bg.selectAll('.x-lbl-line')
+  .data(d => d.type.split('\n').map((line, i) => ({ line, i, bw: xScale.bandwidth() })))
+  .join('text')
+  .attr('class', 'x-lbl-line')
+  .attr('x', ({ bw }) => bw / 2)
+  .attr('y', ({ i }) => innerH + 14 + i * 11)
+  .attr('text-anchor', 'middle')
+  .attr('font-size', '8.5px')
+  .attr('font-family', 'inherit')
+  .attr('fill', 'rgba(40,40,60,0.5)')
+  .text(({ line }) => line)
 }
+
+
+
 
 // Component 
 export default function N2() {
@@ -368,7 +355,10 @@ export default function N2() {
   const [showChart,      setShowChart]      = useState(false)
   const [showDensity,    setShowDensity]    = useState(false)
   const [activeProvince, setActiveProvince] = useState('gauteng')
-  const [chartData,      setChartData]      = useState(null)   
+  // Store both provinces at load time — GeoJSON is fully in memory
+  const [allChartData, setAllChartData] = useState({ gauteng: null, kzn: null })  
+
+  const chartData = allChartData[activeProvince]
 
   // 1. Map init 
   useEffect(() => {
@@ -377,8 +367,8 @@ export default function N2() {
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/light-v11',
-      center: STEPS[0].fly.center,
-      zoom: STEPS[0].fly.zoom,
+      center: [28.0, -26.2],
+      zoom: 6,
       interactive: false,
     })
 
@@ -403,10 +393,10 @@ export default function N2() {
       })
       map.current.addLayer({
         id: 'gauteng',
-        type: 'fill',
+        type: 'line',
         source: 'gauteng_boundary',
         layout: { visibility: 'none' },
-        paint: { 'fill-color': '#2E3E6C', 'fill-opacity': 0.6 },
+        paint: { 'line-color': '#2E3E6C', 'line-width': 2 },
       })
 
       // KZN boundary
@@ -416,28 +406,110 @@ export default function N2() {
       })
       map.current.addLayer({
         id: 'kzn',
-        type: 'fill',
+        type: 'line',
         source: 'kzn_boundary',
         layout: { visibility: 'none' },
-        paint: { 'fill-color': '#ebc159', 'fill-opacity': 0.6 },
+        paint: { 'line-color': '#ebc159', 'line-width': 2 },
       })
 
-      // SAL tileset — source only, no layer here
-      // Add your choropleth layer in N5; here we just need the source
-      // for querySourceFeatures to work in buildChartData
-      map.current.addSource('dair-sal', {
-        type: 'vector',
-        url: 'mapbox://astauf03.dair-sal',   // ← replace with your actual tileset ID
+      // SAL data - one per province, with EA_TYPE and population attributes for chart
+      map.current.addSource('gauteng-data', {
+        type: 'geojson',
+        data: '/data/gauteng.geojson',
+      })
+      
+      map.current.addSource('kzn-data', {
+        type: 'geojson',
+        data: '/data/kzn.geojson',
       })
 
+      
+
+map.current.addLayer({
+  id: 'gauteng-ea-type',
+  type: 'circle',
+  source: 'gauteng-data',
+  layout: { visibility: 'none' },
+  paint: {
+    'circle-color': [
+      'match', ['get', 'EA_TYPE'],
+      'Township',               '#8B2500',
+      'Informal residential',   '#C4713A',
+      'Formal residential',     '#6B8FA8',
+      'Suburb',                 '#6B8FA8',
+      'Traditional residential','#4A7C6F',
+      'Smallholdings',          '#A89860',
+      'Farms',                  '#C8B878',
+      'Commercial',             '#002395',
+      'Industrial',             '#555566',
+      '#E8E4DC'
+    ],
+  'circle-radius': [
+  'interpolate', ['linear'], ['zoom'],
+  6,  ['interpolate', ['linear'],
+       ['/', ['coalesce', ['get', 'sal2023_est'], 0], ['max', ['coalesce', ['get', 'area_km2'], 1], 1]],
+       0, 0.5, 500, 1.5, 2000, 3, 8000, 5],
+  10, ['interpolate', ['linear'],
+       ['/', ['coalesce', ['get', 'sal2023_est'], 0], ['max', ['coalesce', ['get', 'area_km2'], 1], 1]],
+       0, 1, 500, 3, 2000, 6, 8000, 10],
+],
+  },
+})
+
+map.current.addLayer({
+  id: 'kzn-ea-type',
+  type: 'circle',
+  source: 'kzn-data',
+  layout: { visibility: 'none' },
+  paint: {
+    'circle-color': [
+      'match', ['get', 'EA_TYPE'],
+      'Township',               '#8B2500',
+      'Informal residential',   '#C4713A',
+      'Formal residential',     '#6B8FA8',
+      'Suburb',                 '#6B8FA8',
+      'Traditional residential','#4A7C6F',
+      'Smallholdings',          '#A89860',
+      'Farms',                  '#C8B878',
+      'Commercial',             '#002395',
+      'Industrial',             '#555566',
+      '#E8E4DC'
+    ],
+'circle-radius': [
+  'interpolate', ['linear'], ['zoom'],
+  6,  ['interpolate', ['linear'],
+       ['/', ['coalesce', ['get', 'sal2023_est'], 0], ['max', ['coalesce', ['get', 'area_km2'], 1], 1]],
+       0, 0.5, 500, 1.5, 2000, 3, 8000, 5],
+  10, ['interpolate', ['linear'],
+       ['/', ['coalesce', ['get', 'sal2023_est'], 0], ['max', ['coalesce', ['get', 'area_km2'], 1], 1]],
+       0, 1, 500, 3, 2000, 6, 8000, 10],
+],
+  },
+})
+
+const densityOpacity = [
+    'interpolate', ['linear'],
+    ['/',
+      ['coalesce', ['get', 'sal2023_est'], 0],
+      ['max', ['coalesce', ['get', 'area_km2'], 1], 1]
+    ],
+    0, 0, 500, 0.15, 2000, 0.35, 6000, 0.6, 12000, 0.85,
+  ]
       map.current.addLayer({
-        id: 'dair-sal-dummy',
-        type: 'fill',
-        source: 'dair-sal',
-        'source-layer': 'dair_sal',
+        id: 'gauteng-density',
+        type: 'circle',
+        source: 'gauteng-data',
         layout: { visibility: 'none' },
-        paint: { 'fill-color': '#000', 'fill-opacity': 0.001 }, // invisible layer just to load the source
+        paint: { 'circle-color': '#1a1a2e', 'circle-opacity': densityOpacity },
       })
+      map.current.addLayer({
+        id: 'kzn-density',
+        type: 'circle',
+        source: 'kzn-data',
+        layout: { visibility: 'none' },
+        paint: { 'circle-color': '#1a1a2e', 'circle-opacity': densityOpacity },
+      })
+       
 
       setMapLoaded(true)
     })
@@ -445,40 +517,46 @@ export default function N2() {
     return () => { map.current?.remove(); map.current = null }
   }, [])
 
-  // 2. Scrollama 
+// 2. Scrollama
   useEffect(() => {
     if (!mapLoaded) return
+
+    const toggle = (layerId, visible) => {
+      if (map.current?.getLayer(layerId))
+        map.current.setLayoutProperty(layerId, 'visibility', visible ? 'visible' : 'none')
+    }
 
     const scroller = scrollama()
     scroller
       .setup({ step: '.n2 .step-card', offset: 0.8, progress: true })
-.onStepEnter(({ index }) => {
-  setActiveStep(index)
-  const step = STEPS[index]
+      .onStepEnter(({ index }) => {
+        console.log('Step entered:', index, allChartData)
+        setActiveStep(index)
+        const step = STEPS[index]
 
-  if (map.current && step.fly) {
-    map.current.flyTo({ ...step.fly, duration: 2000, essential: true })
-  }
+        if (map.current && step.fly) {
+          map.current.flyTo({ ...step.fly, duration: 3500, essential: true })
+        }
 
-  if (step.province) {
-    setActiveProvince(step.province)
+        // Province boundaries
+        toggle('gauteng', [1, 2, 3].includes(index))
+        toggle('kzn',     [1, 4, 5].includes(index))
 
-    // Show the matching province boundary, hide the other
-    map.current.setLayoutProperty('gauteng', 'visibility',
-      step.province === 'gauteng' ? 'visible' : 'none')
-    map.current.setLayoutProperty('kzn', 'visibility',
-      step.province === 'kzn' ? 'visible' : 'none')
-  }
+        // EA_TYPE — show only the active province's layers
+        toggle('gauteng-ea-type',      [2, 3].includes(index))
+        toggle('kzn-ea-type',          [4, 5].includes(index))
 
-  setShowChart(false)
-  setShowDensity(false)
-})
+        // Density
+        toggle('gauteng-density', index === 3)
+        toggle('kzn-density',     index === 5)
+
+        if (step.province) setActiveProvince(step.province)
+        setShowChart(false)
+        setShowDensity(false)
+      })
       .onStepProgress(({ index, progress }) => {
         const step = STEPS[index]
-        if (!step.showChart) {
-          setShowChart(false)
-          return
-        }
+        if (!step.showChart) { setShowChart(false); return }
         if (progress > 0.75) {
           setShowChart(true)
           setShowDensity(!!step.showDensity)
@@ -490,57 +568,46 @@ export default function N2() {
     return () => scroller.destroy()
   }, [mapLoaded])
 
-  //3. Wipe SVG when province changes so x-axis labels redraw fresh
+ // Fetch GeoJSON for charts (independent of map)
   useEffect(() => {
-    if (svgRef.current) {
-      d3.select(svgRef.current).selectAll('*').remove()
-    }
+    Promise.all([
+      fetch('/data/gauteng.geojson').then(r => r.json()),
+      fetch('/data/kzn.geojson').then(r => r.json()),
+    ]).then(([gp, kzn]) => {
+      const result = {
+        gauteng: buildChartDataFromGeoJSON(gp),
+        kzn:     buildChartDataFromGeoJSON(kzn),
+      }
+      console.log('Chart data loaded:', result)
+      setAllChartData(result)
+    })
+  }, [])
+
+   // 3. Wipe SVG when province changes so x-axis labels redraw fresh
+  useEffect(() => {
+    if (svgRef.current) d3.select(svgRef.current).selectAll('*').remove()
   }, [activeProvince])
 
-  // 4. Build chart data from tileset 
-  // querySourceFeatures only returns tiles currently in memory.
-  // If the map hasn't flown into the province yet, tiles won't be loaded —
-  // the idle retry catches that case.
-useEffect(() => {
-  if (!mapLoaded || !map.current) return
 
-  const tryBuild = () => {
-    const data = buildChartData(map.current, activeProvince)
-    console.log('tryBuild fired, features:', data.length)  // ← add this temporarily
-    if (data.length > 0) {
-      setChartData(data)
-      map.current.off('moveend', tryBuild)
-      map.current.off('idle', tryBuild)
-    }
-  }
 
-  map.current.on('moveend', tryBuild)
-  map.current.on('idle', tryBuild)
-
-  return () => {
-    map.current?.off('moveend', tryBuild)
-    map.current?.off('idle', tryBuild)
-  }
-}, [mapLoaded, activeProvince])
-
-  // 5. D3 draw — fires when chart visible, density mode, province, or data changes
+    // 4. D3 draw
   useEffect(() => {
     if (!showChart || !chartRef.current || !svgRef.current || !chartData) return
     const w = chartRef.current.getBoundingClientRect().width
-    drawChart(svgRef.current, w, showDensity, RACE_KEYS, RACE_COLORS, chartData)
-  }, [showChart, showDensity, activeProvince, chartData])   
+    drawChart(svgRef.current, w, showDensity, chartData)
+  }, [showChart, showDensity, activeProvince, chartData])
 
-  // 6. ResizeObserver 
+  // 5. ResizeObserver
   useEffect(() => {
     if (!chartRef.current) return
     const ro = new ResizeObserver(() => {
-      if (!showChart || !svgRef.current || !chartData) return   
+      if (!showChart || !svgRef.current || !chartData) return
       const w = chartRef.current.getBoundingClientRect().width
-      drawChart(svgRef.current, w, showDensity, RACE_KEYS, RACE_COLORS, chartData)
+      drawChart(svgRef.current, w, showDensity, chartData)
     })
     ro.observe(chartRef.current)
     return () => ro.disconnect()
-  }, [showChart, showDensity, activeProvince, chartData])  
+  }, [showChart, showDensity, activeProvince, chartData])
 
   // Render
   return (

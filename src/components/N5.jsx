@@ -23,20 +23,29 @@ const STEPS = [
     eyebrow: 'Return to Provinces',
     heading: 'Gauteng and KwaZulu-Natal Neighborhoods',
     body: 'Neighborhood types for KZN and Gauteng side-by-side.',
-    fly: { center: [29.96631, -27.38756], zoom: 0  },
+    leftFly:  { center: [28.08674, -26.08381], zoom: 8 },
+    rightFly: { center: [30.959,   -29.708],   zoom: 9 },
+    showEAType:     true,
+    showPharmacies: false,
+    showAccess:     false,
   },
   {
     eyebrow: 'Return to Provinces',
     heading: 'Pharmacies + Neighborhoods, KZN and Gauteng side-by-side.',
     body: 'Neighborhood typologies plus pharmacy points overlaid on both maps.',
-    fly: { center: [28.5, -27.5], zoom: 0 },
+    leftFly:  { center: [28.08674, -26.08381], zoom: 8 },
+    rightFly: { center: [30.959,   -29.708],   zoom: 9 },
+    showEAType:     true,
     showPharmacies: true,
+    showAccess:     false,
   },
   {
     eyebrow: 'Return to Provinces',
     heading: 'What access looks like here?',
     body: 'Neighborhood types, pharmacy locations, and access choropleth appear together.',
-    fly: { center: [28.5, -27.5], zoom: 7 },
+    leftFly:  { center: [28.08674, -26.08381], zoom: 8 },
+    rightFly: { center: [30.959,   -29.708],   zoom: 9 },
+    showEAType:     true,
     showPharmacies: true,
     showAccess: true,
   },
@@ -83,59 +92,106 @@ export default function N5() {
     }
 
     const setupMap = (map, side) => {
-      if (!map) return
+  if (!map) return
 
-      // May have to change to SALs from the tile data here. 
+  // ── Province boundary outline ──────────────────────────────────────────
+  map.addSource(`${side}-boundary`, {
+    type: 'geojson',
+    data: side === 'left' ? LEFT_GEOJSON : RIGHT_GEOJSON,
+  })
+  map.addLayer({
+    id: `${side}-boundary-line`,
+    type: 'line',
+    source: `${side}-boundary`,
+    paint: { 'line-color': '#1A1A1A', 'line-width': 1.5, 'line-opacity': 0.6 },
+  })
 
-      map.addSource(`${side}-wards`, {
-        type: 'geojson',
-        data: side === 'left' ? LEFT_GEOJSON : RIGHT_GEOJSON,
-      })
+  // ── SAL tileset source + loader (forces tile fetching) ─────────────────
+  map.addSource(`${side}-sal`, {
+    type: 'vector',
+    url: 'mapbox://YOUR_TILESET_ID',   // ← same tileset ID as N2
+  })
+  map.addLayer({
+    id:     `${side}-sal-loader`,
+    type:   'fill',
+    source: `${side}-sal`,
+    'source-layer': 'dair_sal',
+    layout: { visibility: 'none' },
+    paint:  { 'fill-opacity': 0 },
+  })
 
-      map.addLayer({
-        id: `${side}-wards-fill`,
-        type: 'fill',
-        source: `${side}-wards`,
-        paint: {
-          'fill-color': side === 'left' ? '#5B8C5A' : '#5A7A9D',
-          'fill-opacity': 0,
-        },
-      })
+  // ── EA_TYPE choropleth ─────────────────────────────────────────────────
+  map.addLayer({
+    id:     `${side}-ea-type`,
+    type:   'fill',
+    source: `${side}-sal`,
+    'source-layer': 'dair_sal',
+    layout: { visibility: 'none' },
+    paint: {
+      'fill-color': [
+        'match', ['get', 'EA_TYPE'],
+        'Township',              '#442520',
+        'Informal residential',  '#6B5C4E',
+        'Formal residential',    '#C8B89A',
+        'Traditional residential', '#8ab0d8',
+        'Smallholdings',         '#EDE7DC',
+        'Farms',                 '#EDE7DC',
+        'Commercial',            '#002395',
+        '#F5F0E8'   // default
+      ],
+      'fill-opacity': 0.75,
+    },
+  })
+  map.addLayer({
+    id:     `${side}-ea-type-line`,
+    type:   'line',
+    source: `${side}-sal`,
+    'source-layer': 'dair_sal',
+    layout: { visibility: 'none' },
+    paint:  { 'line-color': '#ffffff', 'line-width': 0.3, 'line-opacity': 0.4 },
+  })
 
-      //same thing for outline layer 
+  // ── Access choropleth (AI_WALK — blue→gold ramp) ───────────────────────
+  map.addLayer({
+    id:     `${side}-access`,
+    type:   'fill',
+    source: `${side}-sal`,
+    'source-layer': 'dair_sal',
+    layout: { visibility: 'none' },
+    paint: {
+      'fill-color': [
+        'interpolate', ['linear'], ['get', 'AI_WALK'],
+        0,    '#002395',
+        0.25, '#4a80c4',
+        0.5,  '#c8d8e8',
+        0.75, '#e8c97a',
+        1,    '#d4a030',
+      ],
+      'fill-opacity': 0.85,
+    },
+  })
 
-      map.addLayer({
-        id: `${side}-wards-outline`,
-        type: 'line',
-        source: `${side}-wards`,
-        paint: {
-          'line-color': '#FFFFFF',
-          'line-width': 0.8,
-          'line-opacity': 0,
-        },
-      })
+  // ── Pharmacy dots ──────────────────────────────────────────────────────
+  map.addSource(`${side}-pharmacies`, {
+    type: 'geojson',
+    data: PHARMACY_GEOJSON,
+  })
+  map.addLayer({
+    id:   `${side}-pharmacies-circle`,
+    type: 'circle',
+    source: `${side}-pharmacies`,
+    layout: { visibility: 'none' },
+    paint: {
+      'circle-radius':         4,
+      'circle-color':          '#007A4D',   // design system green
+      'circle-opacity':        0.9,
+      'circle-stroke-color':   '#ffffff',
+      'circle-stroke-width':   1,
+    },
+  })
 
-      map.addSource(`${side}-pharmacies`, {
-        type: 'geojson',
-        data: PHARMACY_GEOJSON,
-      })
-
-      map.addLayer({
-        id: `${side}-pharmacies-circle`,
-        type: 'circle',
-        source: `${side}-pharmacies`,
-        paint: {
-          'circle-radius': 3,
-          'circle-color': '#D9480F',
-          'circle-opacity': 0,
-          'circle-stroke-color': '#FFFFFF',
-          'circle-stroke-width': 0.5,
-          'circle-stroke-opacity': 0,
-        },
-      })
-
-      trackLoad()
-    }
+  trackLoad()
+}
 
     mapLeft.current.on('load', () => setupMap(mapLeft.current, 'left'))
     mapRight.current.on('load', () => setupMap(mapRight.current, 'right'))
@@ -151,30 +207,27 @@ export default function N5() {
     }
   }, [])
 
-  useEffect(() => {
-    if (!mapLoaded) return
+useEffect(() => {
+  if (!mapLoaded) return
 
-    const step = STEPS[activeStep]
-    const showPharmacies = !!step.showPharmacies
-    const showAccess = !!step.showAccess
+  const step     = STEPS[activeStep]
+  const showEA   = !!step.showEAType
+  const showRx   = !!step.showPharmacies
+  const showAcc  = !!step.showAccess
 
-    const updateLayer = (map, layerId, visible) => {
-      if (!map || !map.getLayer(layerId)) return
+  const toggle = (map, layerId, visible) => {
+    if (!map?.getLayer(layerId)) return
+    map.setLayoutProperty(layerId, 'visibility', visible ? 'visible' : 'none')
+  }
 
-      const opacityProp = layerId.includes('circle') ? 'circle-opacity' : layerId.includes('fill') ? 'fill-opacity' : 'line-opacity'
-      map.setPaintProperty(layerId, opacityProp, visible ? 0.65 : 0)
-      if (layerId.includes('circle')) {
-        map.setPaintProperty(layerId, 'circle-stroke-opacity', visible ? 1 : 0)
-      }
-    }
-
-    updateLayer(mapLeft.current, 'left-pharmacies-circle', showPharmacies)
-    updateLayer(mapRight.current, 'right-pharmacies-circle', showPharmacies)
-    updateLayer(mapLeft.current, 'left-wards-fill', showAccess)
-    updateLayer(mapRight.current, 'right-wards-fill', showAccess)
-    updateLayer(mapLeft.current, 'left-wards-outline', showAccess)
-    updateLayer(mapRight.current, 'right-wards-outline', showAccess)
-  }, [activeStep, mapLoaded])
+  ;['left', 'right'].forEach(side => {
+    const map = side === 'left' ? mapLeft.current : mapRight.current
+    toggle(map, `${side}-ea-type`,          showEA)
+    toggle(map, `${side}-ea-type-line`,     showEA)
+    toggle(map, `${side}-access`,           showAcc)
+    toggle(map, `${side}-pharmacies-circle`, showRx)
+  })
+}, [activeStep, mapLoaded])
 
   useEffect(() => {
     if (!mapLoaded) return
