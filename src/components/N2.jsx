@@ -288,6 +288,36 @@ useEffect(() => {
         'fill-opacity': 0.25,
       },
     })
+  map.current.addSource('gauteng_boundary', {
+    type: 'geojson',
+    data: '/data/gauteng_boundary.geojson',
+  })
+  map.current.addLayer({
+    id: 'gauteng',
+    type: 'fill',
+    source: 'gauteng_boundary',
+    layout: { visibility: 'none' },
+    paint: {
+      'fill-color': '#2E3E6C',
+      'fill-opacity': 0.6,
+    },
+  })
+
+  map.current.addSource('kzn_boundary', {
+    type: 'geojson',
+    data: '/data/kzn_boundary.geojson',
+  })
+  map.current.addLayer({
+    id: 'kzn',
+    type: 'fill',
+    source: 'kzn_boundary',
+    layout: { visibility: 'none' },
+    paint: {
+      'fill-color': '#ebc159',
+      'fill-opacity': 0.6,
+    },
+  })
+
     setMapLoaded(true)
   })
   return () => { map.current?.remove(); map.current = null }

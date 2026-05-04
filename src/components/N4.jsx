@@ -21,26 +21,17 @@ const RIGHT_MAP_DEFAULT = {
 
 const STEPS = [
   {
-    eyebrow: 'Pharmacy Access',
+    eyebrow: 'Pharmacy Access: Neighborhoods',
     heading: 'Olievenhoutbosch & KwaMashu',
     body: 'Two township geographies shaped by the same apartheid planning logic, expressing different pharmacy access patterns today.',
     fly: { center: [25.0, -29.0], zoom: 5.5 },
   },
   {
-    eyebrow: 'Pharmacy Access',
-    heading: 'Olievenhoutbosch',
+    eyebrow: 'Pharmacy Access: Townships',
+    heading: 'Neighborhoods in Context',
     body: 'Neighborhood demographic information text form.',
     leftFly: { center: [27.9547, -25.9747], zoom: 13 },
     rightFly: { center: [30.9614, -29.7969], zoom: 13 },
-  },
-  {
-    eyebrow: 'Pharmacy Access · Access Gap',
-    heading: 'Who has no access?',
-    body: 'A Driving Access Index of 0 means no pharmacy reachable by car within a reasonable threshold.',
-    leftFly: { center: [27.9547, -25.9747], zoom: 11 },
-    rightFly: { center: [30.9614, -29.7969], zoom: 11 },
-    showChart: true,
-    showDensity: false,
   },
   {
     eyebrow: 'Pharmacy Access · Access Gap and Density',

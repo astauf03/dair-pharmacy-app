@@ -6,7 +6,7 @@ const PROVINCES = ['Gauteng', 'KwaZulu-Natal']
 
 const PROVINCE_VIEWS = {
   'Gauteng': { center: [28.15259, -26.09051], zoom: 7.13 },
-  'KwaZulu-Natal': { center: [31.50080, -29.01379], zoom: 6.81 }
+  'KwaZulu-Natal': { center: [31.50080, -29.01379], zoom: 6 }
 }
 
 const LAYERS = [

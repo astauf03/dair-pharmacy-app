@@ -1,0 +1,19 @@
+{
+
+  "version": 1,
+
+  "layers": {
+
+    "dair_sal": {
+
+      "source": "mapbox://tileset-source/astauf03/dair-sal",
+
+      "minzoom": 2,
+
+      "maxzoom": 14
+
+    }
+
+  }
+
+}

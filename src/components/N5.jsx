@@ -7,14 +7,14 @@ import './n5.css'
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN
 
 const LEFT_MAP_DEFAULT = {
-  center: [27.975, -26.065],
-  zoom: 10,
-  label: 'Gauteng · Johannesburg',
+  center: [28.08674, -26.08381],
+  zoom: 2,
+  label: 'Gauteng',
 }
 
 const RIGHT_MAP_DEFAULT = {
   center: [30.959, -29.708],
-  zoom: 10,
+  zoom: 2,
   label: 'KwaMashu · Durban',
 }
 
@@ -23,13 +23,13 @@ const STEPS = [
     eyebrow: 'Return to Provinces',
     heading: 'Gauteng and KwaZulu-Natal Neighborhoods',
     body: 'Neighborhood types for KZN and Gauteng side-by-side.',
-    fly: { center: [28.5, -27.5], zoom: 7 },
+    fly: { center: [29.96631, -27.38756], zoom: 0  },
   },
   {
     eyebrow: 'Return to Provinces',
     heading: 'Pharmacies + Neighborhoods, KZN and Gauteng side-by-side.',
     body: 'Neighborhood typologies plus pharmacy points overlaid on both maps.',
-    fly: { center: [28.5, -27.5], zoom: 7 },
+    fly: { center: [28.5, -27.5], zoom: 0 },
     showPharmacies: true,
   },
   {
@@ -42,9 +42,9 @@ const STEPS = [
   },
 ]
 
-const LEFT_WARDS_GEOJSON = '/data/gauteng-wards.geojson'
-const RIGHT_WARDS_GEOJSON = '/data/KZN-wards.geojson'
-const PHARMACY_GEOJSON = '/data/PHARMACIES_MASTER_FINAL.geojson'
+const LEFT_GEOJSON = '/data/gauteng_boundary.geojson'
+const RIGHT_GEOJSON = '/data/KZN_boundary.geojson'
+const PHARMACY_GEOJSON = '/data/pharmacies.geojson'
 
 export default function N5() {
   const mapLeftContainer = useRef(null)
@@ -85,9 +85,11 @@ export default function N5() {
     const setupMap = (map, side) => {
       if (!map) return
 
+      // May have to change to SALs from the tile data here. 
+
       map.addSource(`${side}-wards`, {
         type: 'geojson',
-        data: side === 'left' ? LEFT_WARDS_GEOJSON : RIGHT_WARDS_GEOJSON,
+        data: side === 'left' ? LEFT_GEOJSON : RIGHT_GEOJSON,
       })
 
       map.addLayer({
@@ -99,6 +101,8 @@ export default function N5() {
           'fill-opacity': 0,
         },
       })
+
+      //same thing for outline layer 
 
       map.addLayer({
         id: `${side}-wards-outline`,

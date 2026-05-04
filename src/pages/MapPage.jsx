@@ -37,14 +37,14 @@ map.current.on('load', () => {
   // --- Choropleth tileset (add FIRST so it renders below SA outline) ---
   map.current.addSource('SA-access', {
     type: 'vector',
-    url: 'mapbox://astauf03.4k4npw04'
+    url: 'mapbox://astauf03.dair-sal'
   });
 
   map.current.addLayer({
     id: 'pop-density',
     type: 'fill',
     source: 'SA-access',
-    'source-layer': 'all_access_4_27_26-11skzg',
+    'source-layer': 'dair_sal',
     layout: { visibility: 'none' },
     paint: {
       'fill-color': [
@@ -64,7 +64,7 @@ map.current.on('load', () => {
     id: 'walk',
     type: 'fill',
     source: 'SA-access',
-    'source-layer': 'all_access_4_27_26-11skzg',
+    'source-layer': 'dair_sal',
     layout: { visibility: 'visible' },
     paint: {
       'fill-color': [
@@ -91,11 +91,11 @@ map.current.on('click', (e) => {
     id: 'drive',
     type: 'fill',
     source: 'SA-access',
-    'source-layer': 'all_access_4_27_26-11skzg',
+    'source-layer': 'dair_sal',
     layout: { visibility: 'none' },
     paint: {
       'fill-color': [
-        'step', ['get', 'Driving Access Index'],
+        'step', ['get', 'walk_log'],
       '#d4a030',
         0.01, '#ebc159',
         0.5,  '#c8d8e8',
