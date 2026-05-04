@@ -28,3 +28,7 @@ dist-ssr
 .env.local
 
 public/video/*.mp4
+
+public/data/*.geojson
+
+public/data/*mbtiles
