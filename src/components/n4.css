@@ -137,3 +137,49 @@
   border-top: 1px solid rgba(60, 60, 80, 0.06);
   padding-top: 8px;
 }
+
+.n4__map-legend {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(8px);
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  z-index: 10;
+  max-width: 90%;
+  transition: opacity 0.4s ease;
+}
+
+.n4__map-legend-title {
+  width: 100%;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(40, 40, 60, 0.45);
+  margin-bottom: 2px;
+  text-align: center;
+}
+
+.n4__map-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  color: rgba(40, 40, 60, 0.7);
+  white-space: nowrap;
+}
+
+.n4__map-legend-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}

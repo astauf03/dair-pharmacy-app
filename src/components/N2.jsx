@@ -4,46 +4,17 @@ import scrollama from 'scrollama'
 import * as d3 from 'd3'
 import StepCard from './StepCard'
 import './n2.css'
+import {
+  CHART_EA_TYPES,
+  EA_TYPE_LABELS,
+  EA_TYPE_ORDER,
+  RACE_KEYS,
+  RACE_COLORS,
+  RACE_LABELS,
+} from '../constants/mapStyles'
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN
 
-// EA_TYPE filter, removed industrial and commerical types, focus on residential and rural types relevant to pharmacy access story
-const CHART_EA_TYPES = new Set([
-  'Township',
-  'Informal residential',
-  'Formal residential',
-  'Traditional residential',
-  'Smallholdings',
-  'Farms',
-  'Collective living quarters',
-  'Commerical',
-  'Industrial'
-])
-
-// Display labels for x-axis — left = raw EA_TYPE string, right = display ───
-const EA_TYPE_LABELS = {
-  'Township':                   'Township',
-  'Informal residential':       'Informal\nresidential',
-  'Formal residential':         'Formal residential',
-  'Traditional residential':    'Traditional\nresidential',
-  'Smallholdings':              'Small\nholdings',
-  'Farms':                      'Farms',
-  'Collective living quarters':  'Collective\nliving',
-  'Industrial':                 'Industrial'
-}
-
-// ── Preferred display order for bars left → right 
-const EA_TYPE_ORDER = [
-  'Township',
-  'Informal residential',
-  'Formal residential',
-  'Traditional residential',
-  'Smallholdings',
-  'Farms',
-  'Collective living quarters',
-  'Commercial',
-  'Industrial'
-]
 
 // ── Build chart data from live tileset features 
 // querySourceFeatures returns all features currently in memory for a source.
@@ -95,7 +66,7 @@ function buildChartDataFromGeoJSON(geojson) {
 const STEPS = [
   {
     heading: 'Spatial Context: South Africa',
-    body: 'South Africa sits at the southern tip of the continent, home to over 60 million people across nine provinces.',
+    body: 'SA is a country encompassing 1.2 million square kilometers at the southern tip of Africa. With a population of 62 million people, it is the sixth most populated country on the continent. Consistently ranked as having the highest income inequality in the world, it is marked by a complex post-apartheid landscape of racial disparity.',
     fly: { center: [25.0, -29.0], zoom: 5 },
   },
   {
@@ -126,7 +97,7 @@ const STEPS = [
     eyebrow: 'Spatial Context: Neighborhoods',
     heading: 'What are the most common neighborhoods in KwaZulu-Natal?',
     body: 'List the neighborhood typologies, with a brief description of each.',
-    fly: { center: [31.0, -29.0], zoom: 9 },
+    fly: { center: [31.0, -29.0], zoom: 7 },
     province: 'kzn',
     showChart: false,
     showDensity: false,
@@ -135,7 +106,7 @@ const STEPS = [
     eyebrow: 'Spatial Context: Neighborhoods and Population',
     heading: 'How does population density vary by neighborhood type across KZN?',
     body: 'How does this compare to Gauteng? What might explain the differences?',
-    fly: { center: [31.0, -29.0], zoom: 10 },
+    fly: { center: [31.0, -29.0], zoom: 7},
     province: 'kzn',
     showChart: true,
     showDensity: true,
@@ -150,22 +121,6 @@ const STEPS = [
   },
 ]
 
-// ── Chart constants ───────────────────────────────────────────────────────────
-const RACE_KEYS   = ['Black African', 'Coloured', 'Indian/Asian', 'White', 'Other']
-const RACE_COLORS = {
-  'Black African': '#8DD3C7',
-  'Coloured':      '#FFFFB3',
-  'Indian/Asian':  '#BEBADA',
-  'White':         '#C97B4B',
-  'Other':         '#80B1D3',
-}
-const RACE_LABELS = {
-  'Black African': 'Black African',
-  'Coloured':      'Coloured',
-  'Indian/Asian':  'Indian / Asian',
-  'White':         'White',
-  'Other':         'Other',
-}
 
 const EA_FILL_EXPRESSION = [
   'match', ['get', 'EA_TYPE'],
@@ -497,14 +452,14 @@ const densityOpacity = [
   ]
       map.current.addLayer({
         id: 'gauteng-density',
-        type: 'circle',
+        type: 'fill',
         source: 'gauteng-data',
         layout: { visibility: 'none' },
-        paint: { 'circle-color': '#1a1a2e', 'circle-opacity': densityOpacity },
+        paint: { 'fill-color': '#1a1a2e', 'fill-opacity': densityOpacity },
       })
       map.current.addLayer({
         id: 'kzn-density',
-        type: 'circle',
+        type: 'fill',
         source: 'kzn-data',
         layout: { visibility: 'none' },
         paint: { 'circle-color': '#1a1a2e', 'circle-opacity': densityOpacity },

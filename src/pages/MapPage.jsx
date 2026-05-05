@@ -134,14 +134,14 @@ map.current.on('click', (e) => {
   // --- Pharmacies ---
   map.current.addSource('pharmacies', {
     type: 'geojson',
-    data: '/data/PHARMACIES_MASTER_FINAL.geojson',
+    data: '/data/pharmacies.geojson',
   })
   map.current.addLayer({
     id: 'pharmacy-dots',
     type: 'circle',
     source: 'pharmacies',
     paint: {
-      'circle-radius': 6,
+      'circle-radius': 4,
       'circle-color': '#007A4D',
       'circle-stroke-width': 1.5,
       'circle-stroke-color': '#ffffff',
