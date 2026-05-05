@@ -1,4 +1,4 @@
-/* ─── Sidebar shell ─────────────────────────────────────────── */
+/*  Sidebar shell ─ */
 
 .map-sidebar {
   width: 360px;
@@ -17,7 +17,7 @@
   padding-top: var(--space-md);
 }
 
-/* ─── Header ────────────────────────────────────────────────── */
+/*  Header ── */
 
 .sidebar__header {
   display: flex;
@@ -53,7 +53,7 @@
   color: var(--surface-tan);
 }
 
-/* ─── Body ──────────────────────────────────────────────────── */
+/*  Body ─ */
 
 .sidebar__body {
   flex: 1;
@@ -64,7 +64,7 @@
   gap: var(--space-lg);
 }
 
-/* ─── Section wrapper ───────────────────────────────────────── */
+/*  Section wrapper ── */
 
 .sidebar__section {
   display: flex;
@@ -83,7 +83,7 @@
   border-bottom: 0.5px solid var(--surface-tan);
 }
 
-/* ─── Province toggle ───────────────────────────────────────── */
+/*  Province toggle  */
 
 .province-toggle {
   display: flex;
@@ -115,7 +115,7 @@
   color: var(--text-on-blue);
 }
 
-/* ─── Stat cards ────────────────────────────────────────────── */
+/*  Stat cards  */
 
 .stat-grid {
   display: flex;
@@ -152,7 +152,7 @@
   color: var(--text-secondary);
 }
 
-/* ─── Layer toggles ─────────────────────────────────────────── */
+/* layer toggles */
 
 .layer-list {
   display: flex;
@@ -175,6 +175,59 @@
   font-size: var(--text-caption);
   color: var(--text-primary);
 }
+
+.layer-group { margin-bottom: 12px; }
+
+.layer-group__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 4px;
+}
+
+.layer-group__title {
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--surface-bark);
+}
+
+.layer-group__note {
+  font-size: 10px;
+  color: var(--surface-tan);
+}
+
+.legend__sublabel {
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--surface-bark);
+  margin: 0 0 4px;
+}
+
+.legend__swatches { display: flex; flex-direction: column; gap: 4px; }
+
+.legend__swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.legend__chips { display: flex; gap: 4px; align-items: flex-end; }
+
+.legend__chip { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+
+.legend__chip-swatch {
+  width: 20px;
+  height: 12px;
+  border-radius: 2px;
+  border: 0.5px solid var(--surface-tan);
+}
+
+.legend__chip-label { font-size: 9px; color: var(--surface-bark); }
 
 /* Toggle switch */
 
@@ -211,7 +264,7 @@
   left: 18.5px;
 }
 
-/* ─── Legend ────────────────────────────────────────────────── */
+/*  Legend ── */
 
 .map-legend {
   background: var(--surface-warm);

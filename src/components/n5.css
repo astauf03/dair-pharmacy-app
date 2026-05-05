@@ -1,5 +1,5 @@
 .n5 {
-  background: var(--surface-carton);  /* restored */
+  background: var(--surface-carton); 
   display: flex;
   flex-direction: column;
 }
@@ -48,6 +48,7 @@
 .n5__scroll {
   display: flex;
   width: 100%;
+  padding-bottom: 35vh;
 }
 
 .n5__steps {
@@ -97,12 +98,108 @@
   pointer-events: none;
 }
 
-.n5__map {
-  width: 100%;
-  height: 100%;
+.n5__map-legend {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(8px);
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  z-index: 10;
+  max-width: 90%;
+  pointer-events: none;
+}
+
+.n5__map-legend-title{
+  font-size: var(--text-label);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+  letter-spacing: 0.07em;
 }
 
 .n5__map {
   width: 100%;
   height: 100%;
 }
+
+.n5__chart-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  background: rgba(245, 240, 232, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+
+.n5__chart-overlay--visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.n5__chart-container {
+  width: 90%;
+  max-width: 60px;
+
+}
+
+.n5__chart-title {
+  font-size: var(--text-label);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--space-md);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  text-align: center;
+}
+
+.n5__chart-source {
+  margin: 10px 0 0;
+  font-size: 9px;
+  color: rgba(40, 40, 60, 0.25);
+  letter-spacing: 0.03em;
+  border-top: 1px solid rgba(60, 60, 80, 0.06);
+  padding-top: 8px;
+}
+
+
+.n5__closing {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  background: var(--color-ink);
+  color: var(--text-on-dark);
+  display: flex;
+  align-items: center;
+  padding: var(--space-2xl) 15%;
+  min-height: 100vh;
+}
+
+/* Large pull quote for the closing narrative card */
+.n5__pull-quote {
+  font-size: clamp(22px, 3vw, 36px);
+  font-weight: 600;
+  max-width: 680px;
+  line-height: 1.3;
+  color: var(--text-on-dark);
+}
+
+
+
+
+
+

@@ -86,9 +86,9 @@ const STEPS = [
   },
   {
     eyebrow: 'Spatial Context: Neighborhoods and Population',
-    heading: 'Racial composition by neighborhood type in Gauteng',
+    heading: 'Population Density',
     body: 'Explain why density metric is useful. Chart incoming.',
-    fly: { center: [27.9943239, -26.0410534], zoom: 9 },
+    fly: { center: [27.9943239, -26.0410534], zoom: 8.5 },
     province: 'gauteng',
     showChart: true,
     showDensity: true,
@@ -104,7 +104,7 @@ const STEPS = [
   },
   {
     eyebrow: 'Spatial Context: Neighborhoods and Population',
-    heading: 'How does population density vary by neighborhood type across KZN?',
+    heading: 'Popualtion density in KZN',
     body: 'How does this compare to Gauteng? What might explain the differences?',
     fly: { center: [31.0, -29.0], zoom: 7},
     province: 'kzn',

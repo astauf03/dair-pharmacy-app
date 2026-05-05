@@ -58,6 +58,7 @@ const WALK_TYPOLOGY_COLOR = [
 ]
 
 const STEPS = [
+  //labels about study area names?
   {
     eyebrow: 'Township Deep Dive: Olievenhoutbosch and KwaMashu',
     heading: 'What surrounds each township?',
@@ -78,9 +79,10 @@ const STEPS = [
     showChart: true,
     showDensity: true,
   },
+  //Fix Binary layout.. currently it is gray, should be blue and red True or False fill colors.
   {
-    eyebrow: 'Access Tease',
-    heading: 'Pharmacy access: a first look',
+    eyebrow: 'First Look at Access from a Distance',
+    heading: 'Areas with a walking distance greater than 3 km to nearest pharmacy',
     body: 'Red polygons mark SALs where the nearest pharmacy is more than 3 km away on foot. These aren\'t empty fields — they are dense residential zones.',
     leftFly:  { center: [28.09933, -25.91161], zoom: 12 },
     rightFly: { center: [30.96037, -29.75753], zoom: 12 },
@@ -93,9 +95,9 @@ const STEPS = [
     legendTitle: 'Walk distance',
   },
   {
-    eyebrow: 'Walk Access Typology',
+    eyebrow: 'Walking Access Typology',
     heading: 'The pharmacy desert',
-    body: 'Each SAL classified by walk-mode access typology. The darkest red zones are formal pharmacy deserts — a direct legacy of where infrastructure was never built.',
+    body: 'Each SAL classified by walk-mode access typology. The darkest red zones a formal phrearmacy deserts — a direct legacy of where infrastructure was never built. Also there needs to be more discussion on what living in a pharmacy desert may mean compared to a "Well-served" area. What might contribute to some SALs have pharmacies but have less access than their neighbors? ',
     leftFly:  { center: [28.09933, -25.91161], zoom: 12 },
     rightFly: { center: [30.96037, -29.75753], zoom: 12 },
     layers: ['township-outline', 'walk-typology', 'pharmacies'],
@@ -111,6 +113,8 @@ const STEPS = [
     legendTitle: 'Walk access typology',
   },
 ]
+
+//D3 data chart is broken, redo with Rechart or delete 
 
 const ALL_LAYERS = [
   'township-fill',
