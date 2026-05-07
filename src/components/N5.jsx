@@ -220,42 +220,42 @@ function buildAccessPopData(geojson) {
   }))
 }
 
-function buildAccessByEAData(geojson) {
-  const groups = {}
+//function buildAccessByEAData(geojson) {
+  //const groups = {}
 
-  for (const f of geojson.features) {
-    const p = f.properties
-    if (!p?.EA_TYPE) continue
-    if (!CHART_EA_TYPES.has(p.EA_TYPE)) continue
+  //for (const f of geojson.features) {
+    //const p = f.properties
+    //if (!p?.EA_TYPE) continue
+    //if (!CHART_EA_TYPES.has(p.EA_TYPE)) continue
 
-    const type = p.EA_TYPE
-    if (!groups[type]) {
-      groups[type] = { type, total: 0 }
-      ACCESS_TIERS.forEach(t => {
-        groups[type][`walk_${t.key}`] = 0
-        groups[type][`drive_${t.key}`] = 0
-      })
-    }
-    const g = groups[type]
-    const pop = p.sal2023_est ?? 0
-    const walkTyp = p.walk_typology ?? ''
-    const driveTyp = p.drive_typology ?? ''
-    g.total += pop
-    if (g[`walk_${walkTyp}`] !== undefined) g[`walk_${walkTyp}`] += pop
-    if (g[`drive_${driveTyp}`] !== undefined) g[`drive_${driveTyp}`] += pop
-  }
+    //const type = p.EA_TYPE
+    //if (!groups[type]) {
+      //groups[type] = { type, total: 0 }
+      //ACCESS_TIERS.forEach(t => {
+        //groups[type][`walk_${t.key}`] = 0
+        //groups[type][`drive_${t.key}`] = 0
+      //})
+    //}
+    //const g = groups[type]
+    //const pop = p.sal2023_est ?? 0
+    //const walkTyp = p.walk_typology ?? ''
+    //const driveTyp = p.drive_typology ?? ''
+    //g.total += pop
+    //if (g[`walk_${walkTyp}`] !== undefined) g[`walk_${walkTyp}`] += pop
+    //if (g[`drive_${driveTyp}`] !== undefined) g[`drive_${driveTyp}`] += pop
+  //}
 
-  return EA_TYPE_ORDER.filter(t => groups[t]).map(t => {
-    const g = groups[t]
-    const total = g.total || 1
-    const row = { type: (EA_TYPE_LABELS[t] ?? t).replace('\n', ' '), population: g.total }
-    ACCESS_TIERS.forEach(tier => {
-      row[`walk_${tier.key}`] = Math.round((g[`walk_${tier.key}`] / total) * 100)
-      row[`drive_${tier.key}`] = Math.round((g[`drive_${tier.key}`] / total) * 100)
-    })
-    return row
-  })
-}
+  //return EA_TYPE_ORDER.filter(t => groups[t]).map(t => {
+    //const g = groups[t]
+    //const total = g.total || 1
+    //const row = { type: (EA_TYPE_LABELS[t] ?? t).replace('\n', ' '), population: g.total }
+    //ACCESS_TIERS.forEach(tier => {
+      //row[`walk_${tier.key}`] = Math.round((g[`walk_${tier.key}`] / total) * 100)
+      //row[`drive_${tier.key}`] = Math.round((g[`drive_${tier.key}`] / total) * 100)
+    //})
+    //return row
+  //})
+//}
 
 function AccessPopChart({ data }) {
   if (!data?.length) return null
