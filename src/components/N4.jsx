@@ -62,7 +62,8 @@ const STEPS = [
   {
     eyebrow: 'Township Deep Dive: Olievenhoutbosch and KwaMashu',
     heading: 'What surrounds each township?',
-    body: 'SAL polygons colored by EA_TYPE reveal how apartheid-era zones — township, informal, formal — ring each site.',
+    body: "Olievenhoutbosch is a rapidly growing township in the Tshwane municipality of Gauteng, sitting at the edge of formal and informal settlement patterns. Its residential makeup is predominantly formal township housing, with a smaller informal residential component on its fringes [9].",
+    body2: 'KwaMashu is a township located approximately 19 km north of Durban. It was formed between 1958 and 1965 from the displacement of communities living in the informal settlements of Umkhumbane (Cato Manor). Its founding was a deliberate product of apartheid spatial engineering [10].',
     leftFly:  { center: [28.09933, -25.91161], zoom: 12 },
     rightFly: { center: [30.96037, -29.75753], zoom: 12 },
     layers: ['township-outline', 'township-fill', 'ea-type', 'ea-type-line'],
@@ -72,7 +73,8 @@ const STEPS = [
   {
     eyebrow: 'Demographics',
     heading: 'Racial composition by neighborhood type',
-    body: 'Stacked bars show who lives in each neighborhood category around the two townships. Township zones are overwhelmingly Black African.',
+    body: 'Demographically, Olievenhoutbosch has a racial distribution of roughly 98.0% Black African, 11 sub-places and 82 enumeration areas, of which 66 EAs are "Township" (68,564 people). 88% of its areas are classified as non-wealthy [11].',
+    body2: 'KwaMashu spans 7 sub-places and 131 enumeration areas. Of these, 60 EAs are classified as "Township" (48,867 people), with 22 additional EAs classified as "Informal residential" (13,763 people). It is 99.6% Black African, and 86% of its areas are economically classified as non-wealthy [12].',
     leftFly:  { center: [28.09933, -25.91161], zoom: 11 },
     rightFly: { center: [30.96037, -29.75753], zoom: 11 },
     layers: ['township-outline', 'ea-type', 'ea-type-line'],
@@ -356,14 +358,20 @@ function addDataLayers(map, side, salSource) {
   })
 
   map.addLayer({
-    id: `${side}-access-binary`, type: 'fill',
-    source: `${side}-sal`,
-    layout: { visibility: 'none' },
-    paint: {
-      'fill-color': EXCEEDS_WALK_COLOR,
-      'fill-opacity': 0.75,
-    },
-  })
+  id: `${side}-access-binary`,
+  type: 'fill',
+  source: `${side}-sal`,
+  layout: { visibility: 'none' },
+  paint: {
+    'fill-color': [
+      'match', ['get', 'exceeds_walk_k1_3km'],
+      'TRUE', '#C0392B',
+      'FALSE', '#3498DB',
+      '#cccccc'
+    ],
+    'fill-opacity': 0.7
+  }
+})
 
   map.addLayer({
     id: `${side}-walk-typology`, type: 'fill',

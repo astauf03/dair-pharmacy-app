@@ -66,19 +66,20 @@ function buildChartDataFromGeoJSON(geojson) {
 const STEPS = [
   {
     heading: 'Spatial Context: South Africa',
-    body: 'SA is a country encompassing 1.2 million square kilometers at the southern tip of Africa. With a population of 62 million people, it is the sixth most populated country on the continent. Consistently ranked as having the highest income inequality in the world, it is marked by a complex post-apartheid landscape of racial disparity.',
+    body: 'South Africa encompasses 1.2 million square kilometers at the southern tip of Africa. With a population of ~ 62 million, it is the sixth most populated country on the continent and is consistently ranked as having the highest income inequality in the world [1]. It is marked by a complex post-apartheid landscape of racial disparity.',
     fly: { center: [25.0, -29.0], zoom: 5 },
   },
   {
     eyebrow: 'Spatial Context: Provinces',
     heading: 'Gauteng and KwaZulu-Natal',
-    body: 'Gauteng is the smallest province by area but the most dense, economic center of the country. KZN stretches along the coast, less dense overall.',
+    body: 'The focus provinces for this project are Gauteng and KwaZulu-Natal. Gauteng is the smallest but most populous province, containing major cities like Johannesburg and Pretoria, and serves as the economic and political hub of the country. [2] ',
+    body2: 'KwaZulu-Natal is the second largest province by population, predominantly rural, with urban centers like Durban concentrated along the coast. Gauteng is home to ~1,453 registered pharmacists, while KZN has ~699. This is a ratio that suggests uneven geographic distribution of pharmaceutical capacity. [3]',
     fly: { center: [28.5, -27.5], zoom: 5.8 },
   },
   {
     eyebrow: 'Spatial Context: Neighborhoods',
     heading: 'What are the most common neighborhoods in Gauteng?',
-    body: 'List the neighborhood typologies, with a brief description of each.',
+    body: 'The urban layout of Gauteng is a direct product of apartheid spatial planning, resulting in a patchwork of neighborhood types in close proximity. Gated estates and walled suburbs concentrated in the wealthy core sit alongside former "whites-only" suburbs, while townships, and informal settlements. Historically non-white neighborhoods are pushed to the urban periphery.',
     fly: { center: [27.9943239, -26.0410534], zoom: 8 },
     province: 'gauteng',
     showChart: false,
@@ -87,7 +88,7 @@ const STEPS = [
   {
     eyebrow: 'Spatial Context: Neighborhoods and Population',
     heading: 'Population Density',
-    body: 'Explain why density metric is useful. Chart incoming.',
+    body: 'Population in Gauteng is notably diverse in racial composition, with Black Africans comprising the large majority, followed by smaller but significant shares of White, Coloured, and Indian/Asian residents. This racial geography maps unevenly onto neighborhood type: the province spans affluent gated suburbs and middle-class neighborhoods through to established townships, informal settlements, and backyard dwellings. The latter of these categories house a disproportionate share of Black African residents as a direct legacy of apartheid-era spatial planning.',
     fly: { center: [27.9943239, -26.0410534], zoom: 8.5 },
     province: 'gauteng',
     showChart: true,
@@ -96,7 +97,7 @@ const STEPS = [
   {
     eyebrow: 'Spatial Context: Neighborhoods',
     heading: 'What are the most common neighborhoods in KwaZulu-Natal?',
-    body: 'List the neighborhood typologies, with a brief description of each.',
+    body: "The provincial layout of KwaZulu-Natal reflects a different but equally complex spatial legacy shaped by apartheid-era planning and the province's distinct geography. The population stretches from a densely populated coastal corridor anchored by Durban to vast rural interior regions of rugged, hilly terrain. Rather than a single concentrated urban core, KZN is characterized by a more dispersed settlement pattern where formal urban centers, peri-urban townships, and deeply rural traditional settlements coexist across a larger and more varied landscape.",
     fly: { center: [31.0, -29.0], zoom: 7 },
     province: 'kzn',
     showChart: false,
@@ -105,19 +106,11 @@ const STEPS = [
   {
     eyebrow: 'Spatial Context: Neighborhoods and Population',
     heading: 'Popualtion density in KZN',
-    body: 'How does this compare to Gauteng? What might explain the differences?',
+    body: "KZN's population is more ethnically homogenous than Gauteng's, with Black Africans comprising an overwhelming majority of residents, alongside smaller communities of Indian/Asian descent (a demographic legacy of indentured labor in the colonial era), as well as White and Coloured residents. KZN's inequalities are as much rural-urban as they are neighborhood-to-neighborhood, with large populations in former KwaZulu homeland areas lacking access to services concentrated along the coast and in Durban's metropolitan core.",
     fly: { center: [31.0, -29.0], zoom: 7},
     province: 'kzn',
     showChart: true,
     showDensity: true,
-  },
-  {
-    eyebrow: 'Conclusion',
-    heading: 'Takeaway about neighborhood types and population',
-    body: '...',
-    fly: { center: [25.0, -29.0], zoom: 3.8 },
-    showChart: false,
-    showDensity: false,
   },
 ]
 
@@ -462,8 +455,8 @@ const densityOpacity = [
         type: 'fill',
         source: 'kzn-data',
         layout: { visibility: 'none' },
-        paint: { 'circle-color': '#1a1a2e', 'circle-opacity': densityOpacity },
-      })
+        paint: { 'fill-color': '#1a1a2e', 'fill-opacity': densityOpacity },
+})
        
 
       setMapLoaded(true)
@@ -519,6 +512,17 @@ const densityOpacity = [
           setShowChart(false)
         }
       })
+      .onStepExit(({ index, direction }) => {
+          // Scrolling past the last real step going down — reset chart
+        if (direction === 'down' && index === STEPS.length - 1) {
+          setShowChart(false)
+          setShowDensity(false)
+      toggle('gauteng-ea-type', false)
+      toggle('kzn-ea-type',     false)
+      toggle('gauteng-density', false)
+      toggle('kzn-density',     false)
+  }
+})
 
     return () => scroller.destroy()
   }, [mapLoaded])

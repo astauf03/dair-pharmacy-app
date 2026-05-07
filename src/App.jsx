@@ -1,6 +1,7 @@
 import { BrowserRouter } from "react-router-dom"
 import { Routes, Route } from "react-router-dom"
 import StoryPage from "./pages/StoryPage"
+import About from "./pages/About"
 import MapPage from "./pages/MapPage"
 
 function App() {
@@ -8,6 +9,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<StoryPage />} />
+        <Route path="/about" element={<About />} />
         <Route path="/map" element={<MapPage />} />
       </Routes>
     </BrowserRouter>

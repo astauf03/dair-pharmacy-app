@@ -9,7 +9,7 @@ function NavBar() {
     <nav className="navbar">
       <span className="navbar__brand">Geography of Pharmacy Access - Urban Spatial Analytics Practicum </span>
       <div className="navbar__links">
-        <a href="#n1" className="navbar__link">About</a>
+        <Link to="/about" className="navbar__link">About</Link>
         <a href="YOUR_MARKDOWN_URL" target="_blank" rel="noreferrer" className="navbar__link">Markdown</a>
         {isMapPage 
           ? <Link to="/" className="navbar__cta">Story</Link>

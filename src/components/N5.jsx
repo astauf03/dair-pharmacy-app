@@ -91,7 +91,7 @@ const STEPS = [
   {
     eyebrow: 'Return to Provinces',
     heading: 'The pattern at scale',
-    body: 'This pattern of access is not unique to Olievenhoutbosch and KwaMashu. Across both provinces, neighborhood type directly translates to accessibility.',
+    body: 'This pattern is not unique to the two neighborhoods studied. Across Gauteng and KwaZulu-Natal, pharmacy access is dictated by neighborhood type and racial composition. As the province-wide maps show, the same relationship observed in KwaMashu and Olievenhoutbosch holds at scale. Neighborhood type directly translates to accessibility scores, and neighborhood type was largely determined by apartheid.',
     leftFly:  { center: [28.09, -26.08], zoom: 8 },
     rightFly: { center: [30.96, -29.71], zoom: 9 },
     layers: ['ea-type', 'ea-type-line', 'boundary-line'],

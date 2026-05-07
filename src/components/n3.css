@@ -1,7 +1,8 @@
 .n3 {
     background: var(--surface-paper);
     display: flex;
-    flex-direction: column;                  
+    flex-direction: column; 
+    justify-content: center;                 
 }
 
 .n3__intro {
@@ -34,8 +35,8 @@
 .n3__body {
     font-size: var(--text-body);
     color: var(--text-secondary);
+    justify-content: center;
     line-height: 1.75;
-    max-width: 720px;              /* I want it to live on the wrapper, full page text section like a normal article */
     margin-bottom: var(--space-lg);
 }
 

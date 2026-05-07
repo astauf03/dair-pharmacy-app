@@ -128,16 +128,19 @@ export const PCT_BLACK_COLOR = [
   1,    '#2A2318',
 ]
 
-// ── 9. POPULATION DENSITY — neutral parchment → dark ─────────────────────────
+// ── 9. POPULATION DENSITY — blue (low) → gold (high) ────────────────────────
+// to-number guards handle string-encoded values from GeoJSON/tileset exports.
+// max(..., 0.01) prevents division-by-zero on zero-area polygons.
+// Tileset truncated names: sal2023_est → sal2023_es, area_km2 unchanged
 export const POP_DENSITY_COLOR = [
-  'step',
-  ['/', ['get', 'sal2023_es'], ['get', 'area_km2']],
-  '#F5F0E8',
-  100,  '#EDE7DC',
-  500,  '#C8B89A',
-  1000, '#6B5C4E',
-  3000, '#2A2318',
-  8000, '#1A1A1A',
+  'interpolate', ['linear'],
+  ['/', ['to-number', ['get', 'sal2023_es'], 0],
+        ['max', ['to-number', ['get', 'area_km2'], 0], 0.01]],
+  0,     '#002395',
+  500,   '#4a80c4',
+  2000,  '#c8d8e8',
+  5000,  '#e8c97a',
+  10000, '#d4a030',
 ]
 
 // ── 10. ECONOMIC STATUS ─────────────────────

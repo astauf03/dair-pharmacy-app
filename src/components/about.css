@@ -1,46 +1,151 @@
-.n1 {
-  background: var(--dair-offwhite);
-}
 
-/* Shared text section styles */
-.n1__intro,
-.n1__purpose {
+.about-team {
   padding: var(--space-2xl) 15%;
+  background: var(--surface-paper);
 }
 
-.n1__eyebrow {
+/* Single column, full-width cards */
+.about-team__grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+/* ── Card ── */
+.about-card {
+  display: flex;
+  flex-direction: row;
+  gap: var(--space-xl);
+  background: var(--dair-offwhite);
+  border: 1px solid var(--surface-mid);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: box-shadow 0.2s ease;
+}
+
+.about-card:hover {
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
+}
+
+/* Image — fixed square column on the left */
+.about-card__img-wrap {
+  flex: 0 0 180px;
+  max-width: 180px;
+}
+
+.about-card__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
   display: block;
-  font-size: var(--text-micro);
-  font-weight: 500;
-  color: var(--dair-purple);           /* DAIR purple eyebrow — only section that uses it */
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  margin-bottom: var(--space-sm);
 }
 
-.n1__title {
-  font-size: var(--text-chapter);
+/* Body */
+.about-card__body {
+  flex: 1;
+  padding: var(--space-lg) var(--space-lg) var(--space-lg) 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.about-card__name {
+  font-size: var(--text-h2);
   font-weight: 600;
   color: var(--text-primary);
-  max-width: 720px;                  /* same constraint */
-  margin-bottom: var(--space-lg);
+  margin: 0;
+}
+
+.about-card__title {
+  font-size: var(--text-caption);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--dair-purple);
+  margin: 0;
+}
+
+.about-card__bio {
+  font-size: var(--text-body);
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.about-card__email {
+  font-size: var(--text-caption);
+  color: var(--dair-navy);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  margin: 0;
+}
+
+.about-card__linkedin {
+  font-size: var(--text-caption);
+  color: var(--dair-navy);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  margin: 0;
+}
+
+.about-card__github {
+  font-size: var(--text-caption);
+  color: var(--dair-navy);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  margin: 0;
+}
+
+.about-card__btn {
+  align-self: flex-start;
+  margin-top: var(--space-sm);
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--dair-navy);
+  color: var(--text-on-dark);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: var(--text-caption);
+  font-weight: 500;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.about-card__btn:hover {
+  background: var(--dair-purple);
+}
+
+.n1__intro {
+  padding: var(--space-2xl) 15%;
 }
 
 .n1__body {
   font-size: var(--text-body);
   color: var(--text-secondary);
   line-height: 1.75;
-  max-width: 720px;                  /* constraint lives on the text, not the wrapper */
-  margin-bottom: var(--space-lg);
+  max-width: 720px;
+  margin-bottom: var(--space-lg);  /* ← adds space between paragraphs */
 }
 
-.n1__link {
-  color: var(--dair-navy);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
+/* ── Responsive: stack image on top on narrow viewports ── */
+@media (max-width: 560px) {
+  .about-card {
+    flex-direction: column;
+  }
 
-.n1__link:hover {
-  color: var(--dair-purple);
-}
+  .about-card__img-wrap {
+    flex: none;
+    max-width: 100%;
+    height: 200px;
+  }
 
+  .about-card__body {
+    padding: var(--space-md);
+  }
+
+  .about-team {
+    padding: var(--space-2xl) var(--space-lg);
+  }
+}
