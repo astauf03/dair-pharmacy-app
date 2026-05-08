@@ -5,10 +5,6 @@ import "./hero.css"
 function Hero() {
   return (
     <section className="hero">
-      <video className="hero__video" autoPlay loop muted playsInline>
-        <source src="/video/kya_sand.mp4" type="video/mp4" />
-        Your browser does not support the video tag.
-      </video>
       <div className="hero__overlay" />
       <span className="hero__eyebrow">MUSA + DAIR</span>
       <h1 className="hero__title">Geography of Pharmacy Access in South Africa</h1>
