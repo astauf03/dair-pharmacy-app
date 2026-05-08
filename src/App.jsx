@@ -1,19 +1,18 @@
-import { BrowserRouter } from "react-router-dom"
-import { Routes, Route } from "react-router-dom"
+import { createBrowserRouter, RouterProvider } from "react-router-dom"
 import StoryPage from "./pages/StoryPage"
 import About from "./pages/About"
 import MapPage from "./pages/MapPage"
 
+const router = createBrowserRouter([
+  { path: "/", element: <StoryPage /> },
+  { path: "/about", element: <About /> },
+  { path: "/map", element: <MapPage /> },
+], {
+  basename: "/dair-pharmacy-app/"
+})
+
 function App() {
-  return (
-    <BrowserRouter basename="/dair-pharmacy-app/">
-      <Routes>
-        <Route path="/" element={<StoryPage />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/map" element={<MapPage />} />
-      </Routes>
-    </BrowserRouter>
-  )
+  return <RouterProvider router={router} />
 }
 
 export default App
