@@ -531,8 +531,8 @@ const densityOpacity = [
  // Fetch GeoJSON for charts (independent of map)
   useEffect(() => {
     Promise.all([
-      fetch('/data/gauteng.geojson').then(r => r.json()),
-      fetch('/data/kzn.geojson').then(r => r.json()),
+      fetch(`${BASE}data/gauteng.geojson`).then(r => r.json()),
+      fetch(`${BASE}data/kzn.geojson`).then(r => r.json()),
     ]).then(([gp, kzn]) => {
       const result = {
         gauteng: buildChartDataFromGeoJSON(gp),
