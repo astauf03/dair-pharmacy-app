@@ -14,6 +14,7 @@ import {
 } from '../constants/mapStyles'
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN
+const BASE = import.meta.env.BASE_URL || '/'
 
 
 // ── Build chart data from live tileset features 
@@ -325,7 +326,7 @@ export default function N2() {
       // SA outline
       map.current.addSource('south_africa', {
         type: 'geojson',
-        data: '/data/south_africa.geojson',
+        data: `${BASE}data/south_africa.geojson`,
       })
       map.current.addLayer({
         id: 'sa',
@@ -337,7 +338,7 @@ export default function N2() {
       // Gauteng boundary
       map.current.addSource('gauteng_boundary', {
         type: 'geojson',
-        data: '/data/gauteng_boundary.geojson',
+        data: `${BASE}data/gauteng_boundary.geojson`,
       })
       map.current.addLayer({
         id: 'gauteng',
@@ -350,7 +351,7 @@ export default function N2() {
       // KZN boundary
       map.current.addSource('kzn_boundary', {
         type: 'geojson',
-        data: '/data/kzn_boundary.geojson',
+        data: `${BASE}data/kzn_boundary.geojson`,
       })
       map.current.addLayer({
         id: 'kzn',
@@ -363,12 +364,12 @@ export default function N2() {
       // SAL data - one per province, with EA_TYPE and population attributes for chart
       map.current.addSource('gauteng-data', {
         type: 'geojson',
-        data: '/data/gauteng.geojson',
+        data: `${BASE}data/gauteng.geojson`,
       })
       
       map.current.addSource('kzn-data', {
         type: 'geojson',
-        data: '/data/kzn.geojson',
+        data: `${BASE}data/kzn.geojson`,
       })
 
       

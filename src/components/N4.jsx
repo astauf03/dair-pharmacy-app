@@ -15,12 +15,13 @@ import {
 } from '../constants/mapStyles'
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN
+const BASE = import.meta.env.BASE_URL || '/'
 
-const GAUTENG_GEOJSON  = '/data/gauteng_polygons.geojson'
-const KZN_GEOJSON      = '/data/kzn_polygons.geojson'
-const OHB_GEOJSON      = '/data/olievenhoutbosch.geojson'
-const KWAMASHU_GEOJSON = '/data/kwamashu.geojson'
-const PHARMACIES       = '/data/pharmacies.geojson'
+const GAUTENG_GEOJSON  = `${BASE}data/gauteng_polygons.geojson`
+const KZN_GEOJSON      = `${BASE}data/kzn_polygons.geojson`
+const OHB_GEOJSON      = `${BASE}data/olievenhoutbosch.geojson`
+const KWAMASHU_GEOJSON = `${BASE}data/kwamashu.geojson`
+const PHARMACIES       = `${BASE}data/pharmacies.geojson`
 
 const LEFT_DEFAULT  = { center: [28.09933, -25.91161], zoom: 12, label: 'Olievenhoutbosch · Gauteng' }
 const RIGHT_DEFAULT = { center: [30.96, -29.80], zoom: 12, label: 'KwaMashu · Durban' }

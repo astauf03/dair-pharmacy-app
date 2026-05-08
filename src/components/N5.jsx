@@ -15,12 +15,13 @@ import {
 } from '../constants/mapStyles'
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN
+const BASE = import.meta.env.BASE_URL || '/'
 
-const GAUTENG_GEOJSON  = '/data/gauteng_polygons.geojson'
-const KZN_GEOJSON      = '/data/kzn_polygons.geojson'
-const GAUTENG_BOUNDARY = '/data/gauteng_boundary.geojson'
-const KZN_BOUNDARY     = '/data/kzn_boundary.geojson'
-const PHARMACIES       = '/data/pharmacies.geojson'
+const GAUTENG_GEOJSON  = `${BASE}data/gauteng_polygons.geojson`
+const KZN_GEOJSON      = `${BASE}data/kzn_polygons.geojson`
+const GAUTENG_BOUNDARY = `${BASE}data/gauteng_boundary.geojson`
+const KZN_BOUNDARY     = `${BASE}data/kzn_boundary.geojson`
+const PHARMACIES       = `${BASE}data/pharmacies.geojson`
 
 const LEFT_DEFAULT  = { center: [28.09, -26.08], zoom: 8, label: 'Gauteng' }
 const RIGHT_DEFAULT = { center: [30.96, -29.71], zoom: 9, label: 'KwaZulu-Natal' }

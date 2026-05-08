@@ -22,6 +22,8 @@ import {
   CHOROPLETH_OPACITY,
 } from '../constants/layerExpressions'
 
+const BASE = import.meta.env.BASE_URL || '/'
+
 // ─────────────────────────────────────────────
 // Layer insertion order matters in Mapbox.
 // Bottom → top:
@@ -75,12 +77,12 @@ function MapPage() {
 
       map.current.addSource('south-africa', {
         type: 'geojson',
-        data: '/data/south_africa.geojson',
+        data: `${BASE}data/south_africa.geojson`,
       })
 
       map.current.addSource('pharmacies', {
         type: 'geojson',
-        data: '/data/pharmacies.geojson',
+        data: `${BASE}data/pharmacies.geojson`,
       })
 
       // ── SA neutral base fill ───────────────────────────────────
