@@ -6,7 +6,7 @@ import MapPage from "./pages/MapPage"
 
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/dair-pharmacy-app/">
       <Routes>
         <Route path="/" element={<StoryPage />} />
         <Route path="/about" element={<About />} />
