@@ -29,8 +29,12 @@ dist-ssr
 
 public/video/*.mp4
 
-public/data/*.geojson
+
 
 public/data/*mbtiles
 public/data/*.mbtiles
-public/data/*.geojson
+
+public/data/kzn_polygons.geojson
+public/data/sal_combined_access.geojson
+public/data/sal_combined_access_wgs84.geojson
+public/data/sal_combined_wgs84.geojson

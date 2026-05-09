@@ -63,7 +63,7 @@ export const EA_TYPE_ORDER = [
 export const EA_TYPE_LABELS = {
   'Township':                   'Township',
   'Informal residential':       'Informal\nresidential',
-  'Formal residential':         'Formal residential',
+  'Formal residential':         'Suburb',
   'Traditional residential':    'Traditional\nresidential',
   'Smallholdings':              'Small\nholdings',
   'Farms':                      'Farms',
