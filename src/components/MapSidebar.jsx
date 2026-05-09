@@ -43,12 +43,12 @@ const ACCESS_RAMP = [
 ]
 
 const TYPOLOGY_LEGEND = [
-  { color: '#002395', label: 'Pharmacy desert'     },
-  { color: '#4a80c4', label: 'Access gap'          },
-  { color: '#8ab0d8', label: 'Connectivity gap'    },
-  { color: '#C8B89A', label: 'Artifact zone'       },
-  { color: '#e8c97a', label: 'Demand overcrowding' },
-  { color: '#d4a030', label: 'Well-served'         },
+  { color: '#002395', label: 'Pharmacy desert' },
+  { color: '#4a80c4', label: 'Underserved'     },
+  { color: '#8ab0d8', label: 'Fragile'         },
+  { color: '#e8c97a', label: 'Overcrowded'     },
+  { color: '#d4a030', label: 'Well-served'     },
+  { color: '#aaaaaa', label: 'Data-uncertain'  },
 ]
 
 const EA_TYPE_LEGEND = [

@@ -8,17 +8,18 @@ import {
 import StepCard from './StepCard'
 import './n5.css'
 import {
-  CHART_EA_TYPES,
-  EA_TYPE_ORDER,
-  EA_TYPE_LABELS,
   EA_TYPE_FILL_EXPRESSION,
 } from '../constants/mapStyles'
+import accessPopJson from '../../public/data/chart_n5_access_pop.json'
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN
 const BASE = import.meta.env.BASE_URL || '/'
 
+// kzn_polygons.geojson exceeds 100MB — not in repo.
+// N5 right map uses gauteng_polygons.geojson for left, kzn.geojson (point file) for right.
+// Walk typology and density fill on KZN side will not render until vector tileset is wired (Part 2).
 const GAUTENG_GEOJSON  = `${BASE}data/gauteng_polygons.geojson`
-const KZN_GEOJSON      = `${BASE}data/kzn_polygons.geojson`
+const KZN_GEOJSON      = `${BASE}data/kzn.geojson`
 const GAUTENG_BOUNDARY = `${BASE}data/gauteng_boundary.geojson`
 const KZN_BOUNDARY     = `${BASE}data/kzn_boundary.geojson`
 const PHARMACIES       = `${BASE}data/pharmacies.geojson`
@@ -26,69 +27,74 @@ const PHARMACIES       = `${BASE}data/pharmacies.geojson`
 const LEFT_DEFAULT  = { center: [28.09, -26.08], zoom: 8, label: 'Gauteng' }
 const RIGHT_DEFAULT = { center: [30.96, -29.71], zoom: 9, label: 'KwaZulu-Natal' }
 
+// Walk typology — confirmed strings from data
+// Severity: Pharmacy desert → Underserved → Fragile → Overcrowded → Well-served
+// Data-uncertain = measurement uncertainty (OSM routing gaps), not an access tier
 const WALK_TYPOLOGY_COLOR = [
   'match', ['get', 'walk_typology'],
-  'Pharmacy desert',      '#8B0000',
-  'Connectivity gap',     '#C0392B',
-  'Demand overcrowding',  '#E67E22',
-  'Underserved',          '#F1C40F',
-  'Adequate',             '#82C46C',
-  'Well-served',          '#27AE60',
+  'Pharmacy desert', '#8B0000',
+  'Underserved',     '#E67E22',
+  'Fragile',         '#F1C40F',
+  'Overcrowded',     '#82C46C',
+  'Well-served',     '#27AE60',
+  'Data-uncertain',  '#B0A090',
   '#CCCCCC',
 ]
 
+// Population density — sand (sparse) → dark brown (dense)
+// Replaces previous blue ramp to avoid conflict with access layer blue encoding
 const DENSITY_FILL_COLOR = [
   'interpolate', ['linear'],
   ['/', ['get', 'sal2023_est'], ['max', ['get', 'area_km2'], 0.001]],
-  0,     '#002395',  // --data-access-1 / --color-blue: near-zero density, rural
-  500,   '#4a80c4',  // --data-access-3: low density
-  2000,  '#c8d8e8',  // --data-access-5: medium density
-  5000,  '#e8c97a',  // --data-access-6: high-density transition
-  10000, '#d4a030',  // --data-access-8 / --color-gold-dark: urban core, highest density
+  0,     '#F5F0E8',
+  200,   '#E8D5A0',
+  500,   '#D4A850',
+  2000,  '#B07820',
+  5000,  '#7A4E10',
+  10000, '#3A2008',
 ]
 
 const DENSITY_LEGEND = [
-  { color: '#002395', label: '0 ppl/km²' },   // --data-access-1
-  { color: '#4a80c4', label: '500' },           // --data-access-3
-  { color: '#c8d8e8', label: '2,000' },         // --data-access-5
-  { color: '#e8c97a', label: '5,000' },         // --data-access-6
-  { color: '#d4a030', label: '10,000+' },       // --data-access-8
+  { color: '#F5F0E8', label: '0 ppl/km²' },
+  { color: '#E8D5A0', label: '200'        },
+  { color: '#D4A850', label: '500'        },
+  { color: '#B07820', label: '2,000'      },
+  { color: '#7A4E10', label: '5,000'      },
+  { color: '#3A2008', label: '10,000+'    },
 ]
 
+// ACCESS_TIERS — confirmed typology strings matching precomputed chart_n5_access_pop.json
+// Used only by AccessPopChart to set bar colors. Chart data comes from the JSON import.
 const ACCESS_TIERS = [
-  { key: 'Well-served',          color: '#27AE60' },
-  { key: 'Adequate',             color: '#82C46C' },
-  { key: 'Underserved',          color: '#F1C40F' },
-  { key: 'Demand overcrowding',  color: '#E67E22' },
-  { key: 'Connectivity gap',     color: '#C0392B' },
-  { key: 'Pharmacy desert',      color: '#8B0000' },
+  { key: 'Well-served',     color: '#27AE60' },
+  { key: 'Overcrowded',     color: '#82C46C' },
+  { key: 'Fragile',         color: '#F1C40F' },
+  { key: 'Underserved',     color: '#E67E22' },
+  { key: 'Pharmacy desert', color: '#8B0000' },
+  { key: 'Data-uncertain',  color: '#B0A090' },
 ]
 
 const EA_TYPE_LEGEND = [
-  { color: '#8B2500', label: 'Township' },
-  { color: '#C4713A', label: 'Informal residential' },
+  { color: '#8B2500', label: 'Township'                    },
+  { color: '#C4713A', label: 'Informal residential'        },
   { color: '#6B8FA8', label: 'Formal residential / Suburb' },
-  { color: '#4A7C6F', label: 'Traditional residential' },
-  { color: '#A89860', label: 'Smallholdings' },
-  { color: '#C8B878', label: 'Farms' },
-  { color: '#002395', label: 'Commercial' },
-  { color: '#555566', label: 'Industrial' },
+  { color: '#4A7C6F', label: 'Traditional residential'     },
+  { color: '#A89860', label: 'Smallholdings'               },
+  { color: '#C8B878', label: 'Farms'                       },
+  { color: '#002395', label: 'Commercial'                  },
+  { color: '#555566', label: 'Industrial'                  },
 ]
 
 const WALK_TYPOLOGY_LEGEND = [
   { color: '#8B0000', label: 'Pharmacy desert' },
-  { color: '#C0392B', label: 'Connectivity gap' },
-  { color: '#E67E22', label: 'Demand overcrowding' },
-  { color: '#F1C40F', label: 'Underserved' },
-  { color: '#82C46C', label: 'Adequate' },
-  { color: '#27AE60', label: 'Well-served' },
+  { color: '#E67E22', label: 'Underserved'     },
+  { color: '#F1C40F', label: 'Fragile'         },
+  { color: '#82C46C', label: 'Overcrowded'     },
+  { color: '#27AE60', label: 'Well-served'     },
+  { color: '#B0A090', label: 'Data-uncertain'  },
 ]
 
 const STEPS = [
-
-  // Step 0: Neighborhood type overview — the apartheid spatial pattern before any
-  // pharmacy data appears. Reader needs this social geography baseline to understand
-  // why the access map in step 2 looks the way it does.
   {
     eyebrow: 'Return to Provinces',
     heading: 'The pattern at scale',
@@ -99,7 +105,6 @@ const STEPS = [
     legend: EA_TYPE_LEGEND,
     legendTitle: 'Neighborhood type',
   },
-  // Step 1: reveal pharmacy locations over the EA_TYPE for province context.
   {
     eyebrow: 'Pharmacy Distribution',
     heading: 'Where are the pharmacies?',
@@ -110,21 +115,18 @@ const STEPS = [
     legend: [...EA_TYPE_LEGEND, { color: '#007A4D', label: 'Pharmacy' }],
     legendTitle: 'Neighborhoods + Pharmacies',
   },
-
-  // Step 2: Switch from social geography to access geography.
-  // 17.6M people with no walkable pharmacy is the project's core headline statistic.
   {
+    // TODO: update headline stats once chart_n5_access_pop.json is recomputed
+    // with correct typology strings ('Access gap' and 'Artifact zone' resolved)
     eyebrow: 'Walk Access',
-    heading: '17.6 million with no walkable pharmacy',
-    body: '72.1% of the combined population has zero walkable pharmacy access. Only 2.5% — about 609,000 people — are well-served on foot.',
+    heading: 'Pharmacy access across both provinces',
+    body: 'Combined Gauteng + KZN population classified by walk-mode pharmacy access. Townships and traditional settlements account for the overwhelming majority of residents without walkable access.',
     leftFly:  { center: [28.09, -26.08], zoom: 8 },
     rightFly: { center: [30.96, -29.71], zoom: 9 },
     layers: ['walk-typology', 'boundary-line'],
     legend: WALK_TYPOLOGY_LEGEND,
     legendTitle: 'Walk access typology',
   },
-  // Step 3: Add pharmacies back over walk typology — the spatial mismatch is now
-  // visible. Pharmacies exist, but they cluster precisely where access is already adequate.
   {
     eyebrow: 'Pharmacies + Access',
     heading: 'The spatial mismatch',
@@ -135,9 +137,6 @@ const STEPS = [
     legend: [...WALK_TYPOLOGY_LEGEND, { color: '#007A4D', label: 'Pharmacy' }],
     legendTitle: 'Access + Pharmacies',
   },
-  // // Step 4: Split view — left=EA_TYPE (who lives where), right=walk-typology (access).
-  // Side-by-side makes the apartheid correlation directly legible without a chart.
-  // The splitLayers flag tells applyStep() to configure each map independently.
   {
     eyebrow: 'The Apartheid Correlation',
     heading: 'Neighborhood type meets pharmacy gap',
@@ -148,29 +147,21 @@ const STEPS = [
     layersLeft:  ['ea-type', 'ea-type-line', 'boundary-line'],
     layersRight: ['walk-typology', 'boundary-line'],
   },
-  // Step 5: Population density choropleth — gold zones are the densest areas.
-  // High density + poor access = where the pharmacy desert hits hardest.
-  // This layer uses a Mapbox interpolate expression (sal2023_est / area_km2);
-  // no pre-computed density field is required in the GeoJSON.
   {
     eyebrow: 'Where People Actually Live',
     heading: 'Population density reveals the stakes',
-    body: 'The gold zones are the densest — and often the most underserved. High population density without pharmacy access concentrates the burden of the gap.',
+    body: 'The darkest zones are the densest — and often the most underserved. High population density without pharmacy access concentrates the burden of the gap.',
     leftFly:  { center: [28.09, -26.08], zoom: 8 },
-    rightFly: { center: [30.96, -29.71], zoom: 16 },
+    rightFly: { center: [30.96, -29.71], zoom: 9 },
     layers: ['density-fill', 'boundary-line'],
     showDensityLegend: true,
   },
-
-  // Step 6: Recharts bar chart — population broken down by walk access tier.
-  // showChart triggers the chart overlay; chartType selects which Recharts component.
-  // The horizontal bar layout makes the 72% figure viscerally legible.
   {
     eyebrow: 'By the Numbers',
     heading: 'Population by walk access tier',
     body: 'The combined Gauteng + KZN population classified by walk-mode pharmacy access score.',
     leftFly:  { center: [28.09, -26.08], zoom: 8 },
-    rightFly: { center: [30.96, -29.71], zoom: 16 },
+    rightFly: { center: [30.96, -29.71], zoom: 9 },
     layers: ['walk-typology', 'boundary-line'],
     showChart: true,
     chartType: 'access-pop',
@@ -182,15 +173,12 @@ const STEPS = [
     heading: 'Confronting the geography apartheid built',
     body: 'The NHI Act of 2024 expands financial access — but closing the gap requires investing in pharmacy infrastructure where it\'s needed most.',
     leftFly:  { center: [28.09, -26.08], zoom: 7 },
-    rightFly: { center: [30.96, -29.71], zoom: 16 },
+    rightFly: { center: [30.96, -29.71], zoom: 9 },
     layers: [],
-    isClosing: true
+    isClosing: true,
   },
 ]
 
-
- //All layer suffixes managed by applyStep(). Each map uses these prefixed with
-// 'left-' or 'right-'. boundary-line is included so the closing step can hide it.
 const ALL_LAYERS = [
   'ea-type',
   'ea-type-line',
@@ -199,64 +187,6 @@ const ALL_LAYERS = [
   'pharmacies',
   'boundary-line',
 ]
-
-function buildAccessPopData(geojson) {
-  const tiers = {}
-  ACCESS_TIERS.forEach(t => { tiers[t.key] = 0 })
-
-  for (const f of geojson.features) {
-    const p = f.properties
-    if (!p) continue
-    const typ = p.walk_typology ?? ''
-    const pop = p.sal2023_est ?? 0
-    if (tiers[typ] !== undefined) tiers[typ] += pop
-  }
-
-  const total = Object.values(tiers).reduce((a, b) => a + b, 0) || 1
-  return ACCESS_TIERS.map(t => ({
-    name: t.key,
-    population: tiers[t.key],
-    percent: Math.round((tiers[t.key] / total) * 1000) / 10,
-    color: t.color,
-  }))
-}
-
-//function buildAccessByEAData(geojson) {
-  //const groups = {}
-
-  //for (const f of geojson.features) {
-    //const p = f.properties
-    //if (!p?.EA_TYPE) continue
-    //if (!CHART_EA_TYPES.has(p.EA_TYPE)) continue
-
-    //const type = p.EA_TYPE
-    //if (!groups[type]) {
-      //groups[type] = { type, total: 0 }
-      //ACCESS_TIERS.forEach(t => {
-        //groups[type][`walk_${t.key}`] = 0
-        //groups[type][`drive_${t.key}`] = 0
-      //})
-    //}
-    //const g = groups[type]
-    //const pop = p.sal2023_est ?? 0
-    //const walkTyp = p.walk_typology ?? ''
-    //const driveTyp = p.drive_typology ?? ''
-    //g.total += pop
-    //if (g[`walk_${walkTyp}`] !== undefined) g[`walk_${walkTyp}`] += pop
-    //if (g[`drive_${driveTyp}`] !== undefined) g[`drive_${driveTyp}`] += pop
-  //}
-
-  //return EA_TYPE_ORDER.filter(t => groups[t]).map(t => {
-    //const g = groups[t]
-    //const total = g.total || 1
-    //const row = { type: (EA_TYPE_LABELS[t] ?? t).replace('\n', ' '), population: g.total }
-    //ACCESS_TIERS.forEach(tier => {
-      //row[`walk_${tier.key}`] = Math.round((g[`walk_${tier.key}`] / total) * 100)
-      //row[`drive_${tier.key}`] = Math.round((g[`drive_${tier.key}`] / total) * 100)
-    //})
-    //return row
-  //})
-//}
 
 function AccessPopChart({ data }) {
   if (!data?.length) return null
@@ -289,42 +219,6 @@ function AccessPopChart({ data }) {
   )
 }
 
-function AccessByEAChart({ data }) {
-  if (!data?.length) return null
-  return (
-    <div className="n5__chart-container">
-      <p className="n5__chart-title">Access tier distribution by neighborhood type</p>
-      <ResponsiveContainer width="100%" height={280}>
-        <BarChart data={data} margin={{ top: 5, right: 30, bottom: 50, left: 10 }}>
-          <XAxis
-            dataKey="type"
-            tick={{ fontSize: 9, fill: '#555' }}
-            angle={-25}
-            textAnchor="end"
-            height={60}
-          />
-          <YAxis
-            domain={[0, 100]}
-            tick={{ fontSize: 9, fill: '#999' }}
-            tickFormatter={(v) => `${v}%`}
-          />
-          <Tooltip
-            formatter={(val, name) => [`${val}%`, name]}
-            labelStyle={{ fontWeight: 600 }}
-          />
-          <Legend
-            wrapperStyle={{ fontSize: 10, paddingTop: 8 }}
-          />
-          {ACCESS_TIERS.slice().reverse().map(t => (
-            <Bar key={t.key} dataKey={t.key} stackId="a" fill={t.color} />
-          ))}
-        </BarChart>
-      </ResponsiveContainer>
-      <p className="n5__chart-source">Combined Gauteng + KZN · % of population per EA_TYPE</p>
-    </div>
-  )
-}
-
 function addDataLayers(map, side, salSource) {
   map.addSource(`${side}-boundary`, {
     type: 'geojson',
@@ -337,14 +231,10 @@ function addDataLayers(map, side, salSource) {
     paint: { 'line-color': '#1A1A1A', 'line-width': 1.5, 'line-opacity': 0.6 },
   })
 
-  //SAL polygon source, used by ea-type, density fill, walk typology 
-
   map.addSource(`${side}-sal`, {
     type: 'geojson',
     data: salSource,
   })
-
-  //EA_TYPE layer with categorical fill and white outline for legibility
 
   map.addLayer({
     id: `${side}-ea-type`, type: 'fill',
@@ -363,10 +253,7 @@ function addDataLayers(map, side, salSource) {
     id: `${side}-density-fill`, type: 'fill',
     source: `${side}-sal`,
     layout: { visibility: 'none' },
-    paint: {
-      'fill-color': DENSITY_FILL_COLOR,
-      'fill-opacity': 0.82,
-    },
+    paint: { 'fill-color': DENSITY_FILL_COLOR, 'fill-opacity': 0.82 },
   })
 
   map.addLayer({
@@ -375,8 +262,6 @@ function addDataLayers(map, side, salSource) {
     layout: { visibility: 'none' },
     paint: { 'fill-color': WALK_TYPOLOGY_COLOR, 'fill-opacity': 0.8 },
   })
-
-  // Pharmacies layer — point data from the GeoJSON source, styled as green circles with white outlines.
 
   map.addSource(`${side}-pharmacies`, {
     type: 'geojson',
@@ -427,22 +312,18 @@ function DensityLegend() {
 export default function N5() {
   const mapLeftContainer  = useRef(null)
   const mapRightContainer = useRef(null)
-  const mapLeft   = useRef(null)
-  const mapRight  = useRef(null)
-  // tracks how many maps finisehd loading their data layers
+  const mapLeft     = useRef(null)
+  const mapRight    = useRef(null)
   const loadedCount = useRef(0)
-
-  // The chartFlyFired ref prevents the flyTo animation from triggering multiple times
-
-  const chartFlyFired = useRef(false)
 
   const [activeStep,    setActiveStep]    = useState(0)
   const [mapLoaded,     setMapLoaded]     = useState(false)
   const [showChart,     setShowChart]     = useState(false)
-  const [accessPopData, setAccessPopData] = useState(null)
 
-  //Initializies both maps 
+  // Chart data imported statically — no fetch needed
+  const [accessPopData] = useState(accessPopJson)
 
+  // Map init
   useEffect(() => {
     if (mapLeft.current || mapRight.current) return
 
@@ -466,20 +347,18 @@ export default function N5() {
       addDataLayers(map, side, salSource)
       loadedCount.current += 1
       if (loadedCount.current === 2) {
-        // Resize both maps BEFORE setting mapLoaded.
-        // Mapbox calculates canvas dimensions at initialization — if the component
-        // mounts inside a sticky flex layout that has zero height at that moment
-        // (common with SSR or deferred rendering), the canvas will be blank.
-        // Calling resize() after both maps finish loading forces a recalculation
-        // using the actual DOM dimensions that exist after layout settles.
+        // Resize forces canvas recalculation after sticky layout settles
         mapLeft.current.resize()
         mapRight.current.resize()
         setMapLoaded(true)
       }
     }
 
-    mapLeft.current.on('load', () => onLoad(mapLeft.current, 'left', GAUTENG_GEOJSON))
+    mapLeft.current.on('load',  () => onLoad(mapLeft.current,  'left',  GAUTENG_GEOJSON))
     mapRight.current.on('load', () => onLoad(mapRight.current, 'right', KZN_GEOJSON))
+
+    mapLeft.current.on('error',  e => console.warn('N5 left map error:',  e))
+    mapRight.current.on('error', e => console.warn('N5 right map error:', e))
 
     return () => {
       mapLeft.current?.remove();  mapLeft.current  = null
@@ -487,20 +366,7 @@ export default function N5() {
     }
   }, [])
 
-  //Chart data fetch 
-
-  useEffect(() => {
-    Promise.all([
-      fetch(GAUTENG_GEOJSON).then(r => r.json()),
-      fetch(KZN_GEOJSON).then(r => r.json()),
-    ]).then(([gp, kzn]) => {
-      const combined = { type: 'FeatureCollection', features: [...gp.features, ...kzn.features] }
-      setAccessPopData(buildAccessPopData(combined))
-    }).catch(() => {})
-  }, [])
-
-  // Scrollama set up 
-
+  // Scrollama
   useEffect(() => {
     if (!mapLoaded) return
 
@@ -514,7 +380,6 @@ export default function N5() {
       const setLayers = (map, side, layerNames) => {
         ALL_LAYERS.forEach(l => toggle(map, `${side}-${l}`, layerNames.includes(l)))
       }
-
       if (step.splitLayers) {
         setLayers(mapLeft.current,  'left',  step.layersLeft  ?? [])
         setLayers(mapRight.current, 'right', step.layersRight ?? [])
@@ -533,7 +398,6 @@ export default function N5() {
         const step = STEPS[index]
         setShowChart(false)
         applyStep(index)
-
         if (!step.showChart) {
           mapLeft.current?.flyTo({ ...(step.leftFly ?? {}), duration: 2500, essential: true })
           mapRight.current?.flyTo({ ...(step.rightFly ?? {}), duration: 2500, essential: true })
@@ -542,19 +406,14 @@ export default function N5() {
       .onStepProgress(({ index, progress }) => {
         const step = STEPS[index]
         if (!step.showChart) return
-
         if (progress > 0.2) {
           mapLeft.current?.flyTo({ ...(step.leftFly ?? {}), duration: 2500, essential: true })
           mapRight.current?.flyTo({ ...(step.rightFly ?? {}), duration: 2500, essential: true })
         }
-
-      setShowChart(progress > 0.75)
+        setShowChart(progress > 0.75)
       })
       .onStepExit(({ index }) => {
-        if (STEPS[index].showChart) {
-          setShowChart(false)
-          chartFlyFired.current = false
-        }
+        if (STEPS[index].showChart) setShowChart(false)
       })
 
     return () => scroller.destroy()
@@ -563,7 +422,7 @@ export default function N5() {
   const step = STEPS[activeStep]
 
   return (
-  <section className="n5" id="n5">
+    <section className="n5" id="n5">
       <div className="n5__scroll">
         <div className="n5__steps">
           {STEPS.map((s, i) => (
@@ -571,8 +430,6 @@ export default function N5() {
           ))}
         </div>
 
-        {/* n5__graphic: position:sticky keeps it fixed while .n5__steps scrolls.
-            position:relative is required for absolutely-positioned overlays inside. */}
         <div className="n5__graphic">
           <div className="n5__map-panel">
             <span className="n5__map-label">{LEFT_DEFAULT.label}</span>
@@ -583,9 +440,9 @@ export default function N5() {
             />
           </div>
 
-        <div className="n5__map-divider" />
+          <div className="n5__map-divider" />
 
-        <div className="n5__map-panel">
+          <div className="n5__map-panel">
             <span className="n5__map-label">{RIGHT_DEFAULT.label}</span>
             <div
               ref={mapRightContainer}
@@ -594,27 +451,20 @@ export default function N5() {
             />
           </div>
 
-         {/* Standard legend — shown when step has a legend, no chart, no special overlays */}
           {step?.legend && !showChart && !step?.showDensityLegend && !step?.isClosing && (
             <MapLegend items={step.legend} title={step.legendTitle} />
           )}
 
-          {/* Density ramp legend — shown only for step 5 (density-fill layer) */}
           {step?.showDensityLegend && !showChart && !step?.isClosing && (
             <DensityLegend />
           )}
 
-          {/* Chart overlay — covers the full graphic panel when showChart is true.
-              position:absolute + inset:0 fills .n5__graphic (position:relative parent).
-              background rgba provides legibility without fully hiding the map. */}
           {showChart && step?.chartType === 'access-pop' && (
             <div className="n5__chart-overlay n5__chart-overlay--visible">
               <AccessPopChart data={accessPopData} />
             </div>
           )}
 
-          {/* Closing overlay — dark full-panel card for the final narrative step.
-              Appears when step.isClosing is true; replaces map with a pull quote. */}
           {step?.isClosing && (
             <div className="n5__closing">
               <p className="n5__pull-quote">

@@ -17,17 +17,24 @@ import {
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN
 const BASE = import.meta.env.BASE_URL || '/'
 
+// kzn_polygons.geojson exceeds 100MB and is not in the repo.
+// KZN chart data is computed from kzn.geojson (point file, same schema).
+// Gauteng chart data is computed from gauteng_polygons.geojson (polygon file, in repo).
+const GAUTENG_POLYGONS = `${BASE}data/gauteng_polygons.geojson`
+const KZN_POINTS       = `${BASE}data/kzn.geojson`
+
+// Map layer sources — left map uses polygon file, right map uses point file
 const GAUTENG_GEOJSON  = `${BASE}data/gauteng_polygons.geojson`
-const KZN_GEOJSON      = `${BASE}data/kzn_polygons.geojson`
+const KZN_GEOJSON      = `${BASE}data/kzn.geojson`
 const OHB_GEOJSON      = `${BASE}data/olievenhoutbosch.geojson`
 const KWAMASHU_GEOJSON = `${BASE}data/kwamashu.geojson`
 const PHARMACIES       = `${BASE}data/pharmacies.geojson`
 
 const LEFT_DEFAULT  = { center: [28.09933, -25.91161], zoom: 12, label: 'Olievenhoutbosch · Gauteng' }
-const RIGHT_DEFAULT = { center: [30.96, -29.80], zoom: 12, label: 'KwaMashu · Durban' }
+const RIGHT_DEFAULT = { center: [30.96, -29.80],       zoom: 12, label: 'KwaMashu · Durban' }
 
 const OHB_BBOX      = [27.94, -26.12, 28.24, -25.82]
-const KWAMASHU_BBOX  = [30.81, -29.93, 31.11, -29.63]
+const KWAMASHU_BBOX = [30.81, -29.93, 31.11, -29.63]
 
 const EA_TYPE_LEGEND = [
   { color: '#8B2500', label: 'Township' },
@@ -40,30 +47,32 @@ const EA_TYPE_LEGEND = [
   { color: '#555566', label: 'Industrial' },
 ]
 
+// Walk typology colors — must match N5.jsx and mapStyles.js exactly
+const WALK_TYPOLOGY_COLOR = [
+  'match', ['get', 'walk_typology'],
+  'Pharmacy desert', '#8B0000',
+  'Underserved',     '#E67E22',
+  'Fragile',         '#F1C40F',
+  'Overcrowded',     '#82C46C',
+  'Well-served',     '#27AE60',
+  'Data-uncertain',  '#B0A090',
+  '#CCCCCC',
+]
+
+// exceeds_walk_k1_3km — check actual casing in data.
+// 'True'/'False' used here; update if data uses 'TRUE'/'FALSE' or 1/0.
 const EXCEEDS_WALK_COLOR = [
   'match', ['get', 'exceeds_walk_k1_3km'],
-  'True', '#C0392B',
+  'True',  '#C0392B',
   'False', '#3498DB',
   '#999999',
 ]
 
-const WALK_TYPOLOGY_COLOR = [
-  'match', ['get', 'walk_typology'],
-  'Pharmacy desert',      '#8B0000',
-  'Connectivity gap',     '#C0392B',
-  'Demand overcrowding',  '#E67E22',
-  'Underserved',          '#F1C40F',
-  'Adequate',             '#82C46C',
-  'Well-served',          '#27AE60',
-  '#CCCCCC',
-]
-
 const STEPS = [
-  //labels about study area names?
   {
     eyebrow: 'Township Deep Dive: Olievenhoutbosch and KwaMashu',
     heading: 'What surrounds each township?',
-    body: "Olievenhoutbosch is a rapidly growing township in the Tshwane municipality of Gauteng, sitting at the edge of formal and informal settlement patterns. Its residential makeup is predominantly formal township housing, with a smaller informal residential component on its fringes [9].",
+    body: 'Olievenhoutbosch is a rapidly growing township in the Tshwane municipality of Gauteng, sitting at the edge of formal and informal settlement patterns. Its residential makeup is predominantly formal township housing, with a smaller informal residential component on its fringes [9].',
     body2: 'KwaMashu is a township located approximately 19 km north of Durban. It was formed between 1958 and 1965 from the displacement of communities living in the informal settlements of Umkhumbane (Cato Manor). Its founding was a deliberate product of apartheid spatial engineering [10].',
     leftFly:  { center: [28.09933, -25.91161], zoom: 12 },
     rightFly: { center: [30.96037, -29.75753], zoom: 12 },
@@ -82,7 +91,6 @@ const STEPS = [
     showChart: true,
     showDensity: true,
   },
-  //Fix Binary layout.. currently it is gray, should be blue and red True or False fill colors.
   {
     eyebrow: 'First Look at Access from a Distance',
     heading: 'Areas with a walking distance greater than 3 km to nearest pharmacy',
@@ -100,24 +108,22 @@ const STEPS = [
   {
     eyebrow: 'Walking Access Typology',
     heading: 'The pharmacy desert',
-    body: 'Each SAL classified by walk-mode access typology. The darkest red zones a formal phrearmacy deserts — a direct legacy of where infrastructure was never built. Also there needs to be more discussion on what living in a pharmacy desert may mean compared to a "Well-served" area. What might contribute to some SALs have pharmacies but have less access than their neighbors? ',
+    body: 'Each SAL classified by walk-mode access typology. The darkest red zones are formal pharmacy deserts — a direct legacy of where infrastructure was never built.',
     leftFly:  { center: [28.09933, -25.91161], zoom: 12 },
     rightFly: { center: [30.96037, -29.75753], zoom: 12 },
     layers: ['township-outline', 'walk-typology', 'pharmacies'],
     legend: [
       { color: '#8B0000', label: 'Pharmacy desert' },
-      { color: '#C0392B', label: 'Connectivity gap' },
-      { color: '#E67E22', label: 'Demand overcrowding' },
-      { color: '#F1C40F', label: 'Underserved' },
-      { color: '#82C46C', label: 'Adequate' },
+      { color: '#E67E22', label: 'Underserved' },
+      { color: '#F1C40F', label: 'Fragile' },
+      { color: '#82C46C', label: 'Overcrowded' },
       { color: '#27AE60', label: 'Well-served' },
+      { color: '#B0A090', label: 'Data-uncertain' },
       { color: '#007A4D', label: 'Pharmacy' },
     ],
     legendTitle: 'Walk access typology',
   },
 ]
-
-//D3 data chart is broken, redo with Rechart or delete 
 
 const ALL_LAYERS = [
   'township-fill',
@@ -129,6 +135,31 @@ const ALL_LAYERS = [
   'pharmacies',
 ]
 
+// Returns the centroid of a GeoJSON geometry.
+// For Point features (kzn.geojson) this just returns the coordinates directly.
+// For Polygon/MultiPolygon (gauteng_polygons.geojson) it averages the outer ring.
+function getCentroid(geometry) {
+  if (!geometry) return null
+  if (geometry.type === 'Point') return geometry.coordinates
+  if (geometry.type === 'Polygon') {
+    const ring = geometry.coordinates[0]
+    let lng = 0, lat = 0
+    for (const [x, y] of ring) { lng += x; lat += y }
+    return [lng / ring.length, lat / ring.length]
+  }
+  if (geometry.type === 'MultiPolygon') {
+    const ring = geometry.coordinates[0][0]
+    let lng = 0, lat = 0
+    for (const [x, y] of ring) { lng += x; lat += y }
+    return [lng / ring.length, lat / ring.length]
+  }
+  return null
+}
+
+// Aggregates features by EA_TYPE within a bounding box using centroid filtering.
+// Handles both truncated field names (sal2023_es, Black_Afri, Indian_Asi)
+// and full field names (sal2023_est, Black_African, Indian_Asian).
+// Density = sal2023_est / area_km2 (population per square kilometre).
 function buildChartDataFromGeoJSON(geojson, bbox) {
   const [minLng, minLat, maxLng, maxLat] = bbox
   const groups = {}
@@ -146,14 +177,17 @@ function buildChartDataFromGeoJSON(geojson, bbox) {
 
     const type = p.EA_TYPE
     if (!groups[type]) {
-      groups[type] = { type, sal2023_est: 0, area_km2: 0, Black_African: 0, Coloured: 0, Indian_Asian: 0, White: 0, Other: 0 }
+      groups[type] = {
+        type, sal2023_est: 0, area_km2: 0,
+        Black_African: 0, Coloured: 0, Indian_Asian: 0, White: 0, Other: 0,
+      }
     }
     const g = groups[type]
-    g.sal2023_est   += p.sal2023_est   ?? 0
+    g.sal2023_est   += p.sal2023_est   ?? p.sal2023_es  ?? 0
     g.area_km2      += p.area_km2      ?? 0
-    g.Black_African += p.Black_African ?? 0
+    g.Black_African += p.Black_African ?? p.Black_Afri  ?? 0
     g.Coloured      += p.Coloured      ?? 0
-    g.Indian_Asian  += p.Indian_Asian  ?? 0
+    g.Indian_Asian  += p.Indian_Asian  ?? p.Indian_Asi  ?? 0
     g.White         += p.White         ?? 0
     g.Other         += p.Other         ?? 0
   }
@@ -162,8 +196,8 @@ function buildChartDataFromGeoJSON(geojson, bbox) {
     const g = groups[t]
     const total = g.sal2023_est || 1
     return {
-      type: EA_TYPE_LABELS[g.type] ?? g.type,
-      density: g.area_km2 > 0 ? Math.round(g.sal2023_est / g.area_km2) : 0,
+      type:            EA_TYPE_LABELS[g.type] ?? g.type,
+      density:         g.area_km2 > 0 ? Math.round(g.sal2023_est / g.area_km2) : 0,
       'Black African': Math.round((g.Black_African / total) * 100),
       'Coloured':      Math.round((g.Coloured      / total) * 100),
       'Indian/Asian':  Math.round((g.Indian_Asian  / total) * 100),
@@ -171,24 +205,6 @@ function buildChartDataFromGeoJSON(geojson, bbox) {
       'Other':         Math.round((g.Other         / total) * 100),
     }
   })
-}
-
-function getCentroid(geometry) {
-  if (!geometry) return null
-  if (geometry.type === 'Point') return geometry.coordinates
-  if (geometry.type === 'Polygon') {
-    const ring = geometry.coordinates[0]
-    let lng = 0, lat = 0
-    for (const [x, y] of ring) { lng += x; lat += y }
-    return [lng / ring.length, lat / ring.length]
-  }
-  if (geometry.type === 'MultiPolygon') {
-    const ring = geometry.coordinates[0][0]
-    let lng = 0, lat = 0
-    for (const [x, y] of ring) { lng += x; lat += y }
-    return [lng / ring.length, lat / ring.length]
-  }
-  return null
 }
 
 const MARGIN    = { top: 24, right: 36, bottom: 60, left: 8 }
@@ -305,8 +321,7 @@ function drawDualChart(svgEl, width, showDensity, leftData, rightData) {
   }
 
   const root = svg.append('g')
-
-  drawHalf(root, leftData,  offsetX + MARGIN.left, LEFT_DEFAULT.label)
+  drawHalf(root, leftData,  offsetX + MARGIN.left,              LEFT_DEFAULT.label)
   drawHalf(root, rightData, offsetX + MARGIN.left + halfW + gapW, RIGHT_DEFAULT.label)
 
   root.append('line')
@@ -320,6 +335,7 @@ function drawDualChart(svgEl, width, showDensity, leftData, rightData) {
 }
 
 function addDataLayers(map, side, salSource) {
+  // Township boundary outline (OHB or KwaMashu)
   map.addSource(`${side}-township`, {
     type: 'geojson',
     data: side === 'left' ? OHB_GEOJSON : KWAMASHU_GEOJSON,
@@ -337,6 +353,7 @@ function addDataLayers(map, side, salSource) {
     paint: { 'line-color': '#616161', 'line-width': 2.5, 'line-dasharray': [2, 1], 'line-opacity': 0.9 },
   })
 
+  // SAL polygon source — left uses gauteng_polygons.geojson, right uses kzn.geojson (points)
   map.addSource(`${side}-sal`, {
     type: 'geojson',
     data: salSource,
@@ -346,10 +363,7 @@ function addDataLayers(map, side, salSource) {
     id: `${side}-ea-type`, type: 'fill',
     source: `${side}-sal`,
     layout: { visibility: 'none' },
-    paint: {
-      'fill-color': EA_TYPE_FILL_EXPRESSION,
-      'fill-opacity': 0.7,
-    },
+    paint: { 'fill-color': EA_TYPE_FILL_EXPRESSION, 'fill-opacity': 0.7 },
   })
   map.addLayer({
     id: `${side}-ea-type-line`, type: 'line',
@@ -358,32 +372,30 @@ function addDataLayers(map, side, salSource) {
     paint: { 'line-color': '#ffffff', 'line-width': 0.3, 'line-opacity': 0.4 },
   })
 
+  // Binary access layer — confirm 'True'/'False' vs 'TRUE'/'FALSE' in actual data
   map.addLayer({
-  id: `${side}-access-binary`,
-  type: 'fill',
-  source: `${side}-sal`,
-  layout: { visibility: 'none' },
-  paint: {
-    'fill-color': [
-      'match', ['get', 'exceeds_walk_k1_3km'],
-      'TRUE', '#C0392B',
-      'FALSE', '#3498DB',
-      '#cccccc'
-    ],
-    'fill-opacity': 0.7
-  }
-})
+    id: `${side}-access-binary`, type: 'fill',
+    source: `${side}-sal`,
+    layout: { visibility: 'none' },
+    paint: {
+      'fill-color': [
+        'match', ['get', 'exceeds_walk_k1_3km'],
+        'True',  '#C0392B',
+        'False', '#3498DB',
+        '#cccccc'
+      ],
+      'fill-opacity': 0.7,
+    },
+  })
 
   map.addLayer({
     id: `${side}-walk-typology`, type: 'fill',
     source: `${side}-sal`,
     layout: { visibility: 'none' },
-    paint: {
-      'fill-color': WALK_TYPOLOGY_COLOR,
-      'fill-opacity': 0.8,
-    },
+    paint: { 'fill-color': WALK_TYPOLOGY_COLOR, 'fill-opacity': 0.8 },
   })
 
+  // Pharmacies — shared point source
   map.addSource(`${side}-pharmacies`, {
     type: 'geojson',
     data: PHARMACIES,
@@ -419,12 +431,12 @@ function MapLegend({ items, title }) {
 export default function N4() {
   const mapLeftContainer  = useRef(null)
   const mapRightContainer = useRef(null)
-  const mapLeft   = useRef(null)
-  const mapRight  = useRef(null)
+  const mapLeft     = useRef(null)
+  const mapRight    = useRef(null)
   const loadedCount = useRef(0)
   const mapHasFired = useRef(false)
-  const svgRef    = useRef(null)
-  const chartRef  = useRef(null)
+  const svgRef      = useRef(null)
+  const chartRef    = useRef(null)
 
   const [activeStep,  setActiveStep]  = useState(0)
   const [mapLoaded,   setMapLoaded]   = useState(false)
@@ -432,6 +444,7 @@ export default function N4() {
   const [showDensity, setShowDensity] = useState(false)
   const [chartData,   setChartData]   = useState({ left: null, right: null })
 
+  // Map init
   useEffect(() => {
     if (mapLeft.current || mapRight.current) return
 
@@ -457,8 +470,11 @@ export default function N4() {
       if (loadedCount.current === 2) setMapLoaded(true)
     }
 
-    mapLeft.current.on('load', () => onLoad(mapLeft.current, 'left', GAUTENG_GEOJSON))
+    mapLeft.current.on('load',  () => onLoad(mapLeft.current,  'left',  GAUTENG_GEOJSON))
     mapRight.current.on('load', () => onLoad(mapRight.current, 'right', KZN_GEOJSON))
+
+    mapLeft.current.on('error',  e => console.warn('N4 left map error:',  e))
+    mapRight.current.on('error', e => console.warn('N4 right map error:', e))
 
     return () => {
       mapLeft.current?.remove();  mapLeft.current  = null
@@ -466,18 +482,20 @@ export default function N4() {
     }
   }, [])
 
+  // Chart data fetch — Gauteng from polygon file, KZN from point file (kzn_polygons not in repo)
   useEffect(() => {
     Promise.all([
-      fetch(GAUTENG_GEOJSON).then(r => r.json()),
-      fetch(KZN_GEOJSON).then(r => r.json()),
+      fetch(GAUTENG_POLYGONS).then(r => r.json()),
+      fetch(KZN_POINTS).then(r => r.json()),
     ]).then(([gp, kzn]) => {
       setChartData({
-        left:  buildChartDataFromGeoJSON(gp, OHB_BBOX),
+        left:  buildChartDataFromGeoJSON(gp,  OHB_BBOX),
         right: buildChartDataFromGeoJSON(kzn, KWAMASHU_BBOX),
       })
-    }).catch(() => {})
+    }).catch(console.error)
   }, [])
 
+  // Scrollama
   useEffect(() => {
     if (!mapLoaded) return
 
@@ -491,7 +509,6 @@ export default function N4() {
       const setLayers = (map, side, layerNames) => {
         ALL_LAYERS.forEach(l => toggle(map, `${side}-${l}`, layerNames.includes(l)))
       }
-
       if (step.splitLayers) {
         setLayers(mapLeft.current,  'left',  step.layersLeft  ?? [])
         setLayers(mapRight.current, 'right', step.layersRight ?? [])
@@ -512,22 +529,19 @@ export default function N4() {
         setShowChart(false)
         setShowDensity(false)
         applyStep(index)
-
         if (!step.showChart) {
-          mapLeft.current?.flyTo({ ...(step.leftFly ?? step.fly ?? {}), duration: 2200, essential: true })
+          mapLeft.current?.flyTo({ ...(step.leftFly  ?? step.fly ?? {}), duration: 2200, essential: true })
           mapRight.current?.flyTo({ ...(step.rightFly ?? step.fly ?? {}), duration: 2200, essential: true })
         }
       })
       .onStepProgress(({ index, progress }) => {
         const step = STEPS[index]
         if (!step.showChart) return
-
         if (progress > 0.2 && !mapHasFired.current) {
-          mapLeft.current?.flyTo({ ...(step.leftFly ?? step.fly ?? {}), duration: 2200, essential: true })
+          mapLeft.current?.flyTo({ ...(step.leftFly  ?? step.fly ?? {}), duration: 2200, essential: true })
           mapRight.current?.flyTo({ ...(step.rightFly ?? step.fly ?? {}), duration: 2200, essential: true })
           mapHasFired.current = true
         }
-
         if (progress > 0.85) {
           setShowChart(true)
           setShowDensity(!!step.showDensity)
@@ -546,10 +560,12 @@ export default function N4() {
     return () => scroller.destroy()
   }, [mapLoaded])
 
+  // Wipe SVG when chartData changes so D3 redraws cleanly
   useEffect(() => {
     if (svgRef.current) d3.select(svgRef.current).selectAll('*').remove()
   }, [chartData])
 
+  // D3 draw
   useEffect(() => {
     if (!showChart || !chartRef.current || !svgRef.current) return
     if (!chartData.left || !chartData.right) return
@@ -557,6 +573,7 @@ export default function N4() {
     drawDualChart(svgRef.current, w, showDensity, chartData.left, chartData.right)
   }, [showChart, showDensity, chartData])
 
+  // ResizeObserver
   useEffect(() => {
     if (!chartRef.current) return
     const ro = new ResizeObserver(() => {
@@ -603,10 +620,7 @@ export default function N4() {
         </div>
 
         {step?.legend && !showChart && (
-          <MapLegend
-            items={step.legend}
-            title={step.legendTitle}
-          />
+          <MapLegend items={step.legend} title={step.legendTitle} />
         )}
 
         <div
