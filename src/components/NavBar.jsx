@@ -10,7 +10,7 @@ function NavBar() {
       <span className="navbar__brand">Geography of Pharmacy Access - Urban Spatial Analytics Practicum </span>
       <div className="navbar__links">
         <Link to="/about" className="navbar__link">About</Link>
-        <a href="YOUR_MARKDOWN_URL" target="_blank" rel="noreferrer" className="navbar__link">Markdown</a>
+        <a href="https://github.com/tess-vu/south-africa-pharmacies" target="_blank" rel="noreferrer" className="navbar__link">GitHub</a>
         {isMapPage 
           ? <Link to="/" className="navbar__cta">Story</Link>
           : <Link to="/map" className="navbar__cta">Map</Link>
