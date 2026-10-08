@@ -21,11 +21,11 @@
 export const WALK_TYPOLOGY_COLOR = [
   'match', ['get', 'walk_typol'],
   'Well-served',     '#27AE60',
-  'Overcrowded',     '#82C46C',
-  'Fragile',         '#F1C40F',
-  'Underserved',     '#E67E22',
-  'Pharmacy desert', '#8B0000',
-  'Data-uncertain',  '#B0A090',
+  'Access gap',      '#82C46C',
+  'Demand overcrowding',         '#F1C40F',
+  'Connectivity gap',     '#8AB0D8',
+  'Pharmacy desert', '#002395',
+  'Artifact zone',   '#B0A090',
   /* fallback */     '#CCCCCC',
 ]
 
@@ -35,11 +35,11 @@ export const WALK_TYPOLOGY_COLOR = [
 export const DRIVE_TYPOLOGY_COLOR = [
   'match', ['get', 'drive_typo'],
   'Well-served',     '#d4a030',
-  'Overcrowded',     '#e8c97a',
-  'Fragile',         '#c8d8e8',
-  'Underserved',     '#4a80c4',
-  'Pharmacy desert', '#002395',
-  'Data-uncertain',  '#aaaaaa',
+  'Access gap',           '#4A80C4',
+  'Demand overcrowding',  '#E8C97A',
+  'Connectivity gap',     '#8AB0D8',
+  'Pharmacy desert',      '#002395',
+  'Artifact zone',        '#ADADAC',
   /* fallback */     '#C8B89A',
 ]
 

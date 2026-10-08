@@ -18,6 +18,20 @@ const BASE = import.meta.env.BASE_URL || '/'
 // Chart data is precomputed — no runtime fetch or aggregation needed.
 // buildChartDataFromGeoJSON has been removed; JSONs are imported directly.
 
+const POP_DENSITY_COLOR = [
+  'interpolate', ['linear'],
+  ['/',
+    ['coalesce', ['get', 'sal2023_est'], 0],
+    ['max', ['coalesce', ['get', 'area_km2'], 1], 1]
+  ],
+  0,     '#440154',
+  500,   '#414487',
+  1000,  '#2A788E',
+  4000,  '#22A884',
+  6000,  '#7AD151',
+  8000,  '#FDE725',
+]
+
 const STEPS = [
   {
     heading: 'Spatial Context: South Africa',
@@ -44,7 +58,7 @@ const STEPS = [
     eyebrow: 'Spatial Context: Neighborhoods and Population',
     heading: 'Population Density',
     body: 'Population in Gauteng is notably diverse in racial composition, with Black Africans comprising the large majority, followed by smaller but significant shares of White, Coloured, and Indian/Asian residents. This racial geography maps unevenly onto neighborhood type: the province spans affluent gated suburbs and middle-class neighborhoods through to established townships, informal settlements, and backyard dwellings. The latter of these categories house a disproportionate share of Black African residents as a direct legacy of apartheid-era spatial planning.',
-    fly: { center: [27.9943239, -26.0410534], zoom: 8.5 },
+    fly: { center: [27.9943239, -26.0410534], zoom: 8 },
     province: 'gauteng',
     showChart: true,
     showDensity: true,
@@ -201,7 +215,7 @@ function drawChart(svgEl, width, showDensity, chartData) {
     .attr('font-family', 'inherit')
     .attr('fill', '#2C3E6B')
     .attr('font-weight', '600')
-    .text(d => d.density >= 1000 ? `${(d.density / 1000).toFixed(1)}k` : `${d.density}`)
+    .text(d => d.density >= 1000 ? `${(d.density / 1000).toFixed(1)}k ppl/km²` : `${d.density} ppl/km²`)
     .transition()
     .duration(400)
     .delay(showDensity ? 500 : 0)
@@ -325,11 +339,15 @@ export default function N2() {
             6,  ['interpolate', ['linear'],
                   ['/', ['coalesce', ['get', 'sal2023_est'], 0],
                         ['max', ['coalesce', ['get', 'area_km2'], 1], 1]],
-                  0, 0.5, 500, 1.5, 2000, 3, 8000, 5],
+                  0, 2, 500, 4, 2000, 7, 8000, 11, 15000, 15],
+            8, ['interpolate', ['linear'],
+                  ['/', ['coalesce', ['get', 'sal2023_est'], 0],
+                        ['max', ['coalesce', ['get', 'area_km2'], 1], 1]],
+                  0, 3, 500, 6, 2000, 10, 8000, 16, 15000, 22],
             10, ['interpolate', ['linear'],
                   ['/', ['coalesce', ['get', 'sal2023_est'], 0],
                         ['max', ['coalesce', ['get', 'area_km2'], 1], 1]],
-                  0, 1, 500, 3, 2000, 6, 8000, 10],
+                  0, 4, 500, 8, 2000, 14, 8000, 22, 15000, 30],
           ],
         },
       })
@@ -358,45 +376,75 @@ export default function N2() {
             6,  ['interpolate', ['linear'],
                   ['/', ['coalesce', ['get', 'sal2023_est'], 0],
                         ['max', ['coalesce', ['get', 'area_km2'], 1], 1]],
-                  0, 0.5, 500, 1.5, 2000, 3, 8000, 5],
+                  0, 2, 500, 4, 2000, 7, 8000, 11, 15000, 15],
+            8, ['interpolate', ['linear'],
+                  ['/', ['coalesce', ['get', 'sal2023_est'], 0],
+                        ['max', ['coalesce', ['get', 'area_km2'], 1], 1]],
+                  0, 3, 500, 6, 2000, 10, 8000, 16, 15000, 22],
             10, ['interpolate', ['linear'],
                   ['/', ['coalesce', ['get', 'sal2023_est'], 0],
                         ['max', ['coalesce', ['get', 'area_km2'], 1], 1]],
-                  0, 1, 500, 3, 2000, 6, 8000, 10],
+                  0, 4, 500, 8, 2000, 14, 8000, 22, 15000, 30],
           ],
         },
       })
 
-      // Density fill layers — must come AFTER circle layers to render on top.
-      // Uses gauteng_polygons.geojson for Gauteng (polygon geometry required for fill).
-      // KZN density uses kzn-data (points) — fill will not render; known limitation
-      // until vector tileset is used in Part 2.
-      map.current.addSource('gauteng-polygons', {
-        type: 'geojson',
-        data: `${BASE}data/gauteng_polygons.geojson`,
-      })
-
-      const densityOpacity = [
-        'interpolate', ['linear'],
-        ['/', ['coalesce', ['get', 'sal2023_est'], 0],
-              ['max', ['coalesce', ['get', 'area_km2'], 1], 1]],
-        0, 0, 500, 0.15, 2000, 0.35, 6000, 0.6, 12000, 0.85,
-      ]
-
-      // Gauteng density — uses polygon source so fill renders correctly
       map.current.addLayer({
-        id: 'gauteng-density', type: 'fill',
-        source: 'gauteng-polygons',
+        id: 'gauteng-density',
+        type: 'circle',
+        source: 'gauteng-data',
         layout: { visibility: 'none' },
-        paint: { 'fill-color': '#1a1a2e', 'fill-opacity': densityOpacity },
-      })
+        paint: {
+          'circle-color': POP_DENSITY_COLOR,
+          'circle-radius': [
+            'interpolate', ['linear'], ['zoom'],
+            6,  ['interpolate', ['linear'],
+                  ['/', ['coalesce', ['get', 'sal2023_est'], 0],
+                        ['max', ['coalesce', ['get', 'area_km2'], 1], 1]],
+                  0, 2, 500, 4, 2000, 7, 8000, 11, 15000, 15],
+            8, ['interpolate', ['linear'],
+                  ['/', ['coalesce', ['get', 'sal2023_est'], 0],
+                        ['max', ['coalesce', ['get', 'area_km2'], 1], 1]],
+                  0, 3, 500, 6, 2000, 10, 8000, 16, 15000, 22],
+            10, ['interpolate', ['linear'],
+                  ['/', ['coalesce', ['get', 'sal2023_est'], 0],
+                        ['max', ['coalesce', ['get', 'area_km2'], 1], 1]],
+                  0, 4, 500, 8, 2000, 14, 8000, 22, 15000, 30],
+          ],
+          'circle-opacity': 0.6,
+          'circle-stroke-color': '#ffffff',
+          'circle-stroke-width': 0.5,
+          'circle-stroke-opacity': 0.5,
+        },
+    })
 
-      // KZN density — uses point source, will not render as fill (known issue)
       map.current.addLayer({
-        id: 'kzn-density', type: 'fill',
+        id: 'kzn-density',
+        type: 'circle',
         source: 'kzn-data',
         layout: { visibility: 'none' },
-        paint: { 'fill-color': '#1a1a2e', 'fill-opacity': densityOpacity },
+        paint: {
+          'circle-color': POP_DENSITY_COLOR,
+          'circle-radius': [
+            'interpolate', ['linear'], ['zoom'],
+            6,  ['interpolate', ['linear'],
+                  ['/', ['coalesce', ['get', 'sal2023_est'], 0],
+                        ['max', ['coalesce', ['get', 'area_km2'], 1], 1]],
+                  0, 2, 500, 4, 2000, 7, 8000, 11, 15000, 15],
+            8, ['interpolate', ['linear'],
+                  ['/', ['coalesce', ['get', 'sal2023_est'], 0],
+                        ['max', ['coalesce', ['get', 'area_km2'], 1], 1]],
+                  0, 3, 500, 6, 2000, 10, 8000, 16, 15000, 22],
+            10, ['interpolate', ['linear'],
+                  ['/', ['coalesce', ['get', 'sal2023_est'], 0],
+                        ['max', ['coalesce', ['get', 'area_km2'], 1], 1]],
+                  0, 4, 500, 8, 2000, 14, 8000, 22, 15000, 30],
+          ],
+          'circle-opacity': 0.6,
+          'circle-stroke-color': '#ffffff',
+          'circle-stroke-width': 0.5,
+          'circle-stroke-opacity': 0.5,
+        },
       })
 
       setMapLoaded(true)
@@ -430,8 +478,8 @@ export default function N2() {
         toggle('kzn',     [1, 4, 5].includes(index))
 
         // EA_TYPE circles — one province at a time
-        toggle('gauteng-ea-type', [2, 3].includes(index))
-        toggle('kzn-ea-type',     [4, 5].includes(index))
+        toggle('gauteng-ea-type', [2].includes(index))
+        toggle('kzn-ea-type',     [4].includes(index))
 
         // Density fill — shown on density steps, renders over circles
         toggle('gauteng-density', index === 3)

@@ -3,8 +3,8 @@
 // Do NOT redefine these inline in components; update here and import.
 //
 // Walk typology confirmed strings (from data, 2025-05):
-//   'Well-served' | 'Overcrowded' | 'Fragile' | 'Underserved' |
-//   'Pharmacy desert' | 'Data-uncertain'
+//   'Well-served' | 'Access gap' | 'Demand overcrowding' | 'Connectivity gap' |
+//   'Pharmacy desert' | 'Artifact zone'
 //
 // EA_TYPE confirmed strings (from gauteng/kzn polygon data):
 //   'Township' | 'Informal residential' | 'Suburb' |
@@ -139,42 +139,43 @@ export const DENSITY_OPACITY = [
 
 // ── Walk typology ─────────────────────────────────────────────────────────────
 // Confirmed typology strings from data. Severity order:
-//   Well-served → Overcrowded → Fragile → Underserved → Pharmacy desert
-//   Data-uncertain = measurement uncertainty, not an access tier.
+//   Well-served → Access gap → Demand overcrowding → Connectivity gap → Pharmacy desert
+//   Artifact zone = measurement uncertainty, not an access tier.
 //
 // Note: WALK_TYPOLOGY_EXPRESSION uses 'walk_typology' (full field name).
 // MapPage uses layerExpressions.js which uses 'walk_typol' (truncated tileset name).
 // N4/N5 use their own inline WALK_TYPOLOGY_COLOR with the full field name.
 
 export const WALK_TYPOLOGY_COLORS = {
-  'Well-served':     '#27AE60',
-  'Overcrowded':     '#82C46C',
-  'Fragile':         '#F1C40F',
-  'Underserved':     '#E67E22',
-  'Pharmacy desert': '#8B0000',
-  'Data-uncertain':  '#B0A090',
+  'Well-served':     '#D4A030',
+  'Access gap':      '#4A80C4',
+  'Demand overcrowding': '#E8C97A',
+  'Connectivity gap': '#8AB0D8',
+  'Pharmacy desert': '#002395',
+  'Artifact zone':   '#ADADAC',
 }
 
+// delete?
 export const WALK_TYPOLOGY_EXPRESSION = [
-  'match', ['get', 'walk_typology'],
-  'Well-served',     '#27AE60',
-  'Overcrowded',     '#82C46C',
-  'Fragile',         '#F1C40F',
-  'Underserved',     '#E67E22',
-  'Pharmacy desert', '#8B0000',
-  'Data-uncertain',  '#B0A090',
+  'match', ['get', 'walk_typol'],
+  'Well-served',     '#D4A030',
+  'Access gap',      '#4A80C4',
+  'Demand overcrowding', '#E8C97A',
+  'Connectivity gap', '#8AB0D8',
+  'Pharmacy desert', '#002395',
+  'Artifact zone',   '#ADADAC',
   '#CCCCCC',
 ]
 
 // Drive typology — same strings, blue→gold ramp (distinct from walk)
 export const DRIVE_TYPOLOGY_EXPRESSION = [
   'match', ['get', 'drive_typology'],
-  'Well-served',     '#d4a030',
-  'Overcrowded',     '#e8c97a',
-  'Fragile',         '#c8d8e8',
-  'Underserved',     '#4a80c4',
-  'Pharmacy desert', '#002395',
-  'Data-uncertain',  '#aaaaaa',
+  'Well-served',          '#d4a030',
+  'Access gap',           '#4A80C4',
+  'Demand overcrowding',  '#E8C97A',
+  'Connectivity gap',     '#8AB0D8',
+  'Pharmacy desert',      '#002395',
+  'Artifact zone',        '#ADADAC',
   '#C8B89A',
 ]
 
