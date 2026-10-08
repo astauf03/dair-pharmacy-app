@@ -9,23 +9,38 @@
 // EA_TYPE confirmed strings (from gauteng/kzn polygon data):
 //   'Township' | 'Informal residential' | 'Suburb' |
 //   'Traditional residential' | 'Smallholdings' | 'Farms' |
-//   'Commercial' | 'Industrial'
-//   Note: 'Formal residential' and 'Collective living quarters'
-//   do not appear in the actual data and have been removed.
+//   'Commercial' | 'Industrial' | 'Vacant' | 'Collective living quarters'
+// Township extracts also contain suffixed *_ values for clipped polygons.
 
 // ── EA_TYPE colors ────────────────────────────────────────────────────────────
 
 export const EA_TYPE_COLORS = {
-  'Township':                '#8B2500',
+  'Township':                '#702424',
+  'Township_*':              '#702424',
   'Informal residential':    '#C4713A',
+  'Informal residential_*':  '#C4713A',
   'Formal residential':      '#6B8FA8',  // kept for fallback compatibility
+  'Formal residential_*':    '#6B8FA8',
   'Suburb':                  '#6B8FA8',
+  'Suburb_*':                '#6B8FA8',
   'Traditional residential': '#4A7C6F',
+  'Traditional residential_*': '#4A7C6F',
   'Smallholdings':           '#A89860',
+  'Smallholdings_*':         '#A89860',
   'Small holdings':          '#A89860',
+  'Small holdings_*':        '#A89860',
   'Farms':                   '#C8B878',
+  'Farms_*':                 '#C8B878',
   'Commercial':              '#002395',
+  'Commercial_*':            '#002395',
   'Industrial':              '#555566',
+  'Industrial_*':            '#555566',
+  'Vacant':                  '#E8E4DC',
+  'Vacant_*':                '#E8E4DC',
+  'Parks and recreation':    '#007A4D',
+  'Parks and recreation_*':  '#007A4D',
+  'Collective living quarters':   '#EBC159',
+  'Collective living quarters_*': '#EBC159',
 }
 
 export const EA_TYPE_DEFAULT_COLOR = '#E8E4DC'
@@ -34,16 +49,32 @@ export const EA_TYPE_DEFAULT_COLOR = '#E8E4DC'
 // Used by N2, N4, N5 map layers and MapPage.
 export const EA_TYPE_FILL_EXPRESSION = [
   'match', ['get', 'EA_TYPE'],
-  'Township',                '#8B2500',
+  'Township',                '#702424',
+  'Township_*',              '#702424',
   'Informal residential',    '#C4713A',
+  'Informal residential_*',  '#C4713A',
   'Formal residential',      '#6B8FA8',
+  'Formal residential_*',    '#6B8FA8',
   'Suburb',                  '#6B8FA8',
+  'Suburb_*',                '#6B8FA8',
   'Traditional residential', '#4A7C6F',
+  'Traditional residential_*', '#4A7C6F',
   'Smallholdings',           '#A89860',
+  'Smallholdings_*',         '#A89860',
   'Small holdings',          '#A89860',
+  'Small holdings_*',        '#A89860',
   'Farms',                   '#C8B878',
+  'Farms_*',                 '#C8B878',
   'Commercial',              '#002395',
+  'Commercial_*',            '#002395',
   'Industrial',              '#555566',
+  'Industrial_*',            '#555566',
+  'Vacant',                  '#E8E4DC',
+  'Vacant_*',                '#E8E4DC',
+  'Parks and recreation',    '#007A4D',
+  'Parks and recreation_*',  '#007A4D',
+  'Collective living quarters',   '#EBC159',
+  'Collective living quarters_*', '#EBC159',
   '#E8E4DC',
 ]
 
@@ -94,12 +125,15 @@ export const EA_TYPE_ORDER = [
 export const EA_TYPE_LABELS = {
   'Township':                'Township',
   'Informal residential':    'Informal\nresidential',
+  'Formal residential':      'Formal\nresidential',
   'Suburb':                  'Suburb',
   'Traditional residential': 'Traditional\nresidential',
   'Smallholdings':           'Small\nholdings',
   'Farms':                   'Farms',
   'Commercial':              'Commercial',
   'Industrial':              'Industrial',
+  'Vacant':                  'Vacant',
+  'Collective living quarters': 'Collective living\nquarters',
 }
 
 // Allowlist for chart aggregation — features with EA_TYPE not in this set are skipped.
