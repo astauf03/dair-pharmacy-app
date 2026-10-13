@@ -4,7 +4,7 @@
 //
 // Walk typology confirmed strings (from data, 2025-05):
 //   'Well-served' | 'Access gap' | 'Demand overcrowding' | 'Connectivity gap' |
-//   'Pharmacy desert' | 'Artifact zone'
+//   'Pharmacy desert' | 'Artifact zone' (high access score driven by low local demand)
 //
 // EA_TYPE confirmed strings (from gauteng/kzn polygon data):
 //   'Township' | 'Informal residential' | 'Suburb' |
@@ -171,14 +171,33 @@ export const DENSITY_OPACITY = [
   0, 0, 500, 0.15, 2000, 0.35, 6000, 0.6, 12000, 0.85,
 ]
 
+export const DENSITY_COLOR_STOPS = [
+  { value: 0, color: '#440154', label: '0' },
+  { value: 500, color: '#3B528B', label: '500' },
+  { value: 2000, color: '#21918C', label: '2,000' },
+  { value: 5000, color: '#5EC962', label: '5,000' },
+  { value: 10000, color: '#FDE725', label: '10,000+' },
+]
+
+export const DENSITY_COLOR_EXPRESSION = [
+  'interpolate',
+  ['linear'],
+  [
+    '/',
+    ['coalesce', ['get', 'sal2023_est'], 0],
+    ['max', ['coalesce', ['get', 'area_km2'], 1], 1],
+  ],
+  ...DENSITY_COLOR_STOPS.flatMap(({ value, color }) => [value, color]),
+]
+
 // ── Walk typology ─────────────────────────────────────────────────────────────
 // Confirmed typology strings from data. Severity order:
 //   Well-served → Access gap → Demand overcrowding → Connectivity gap → Pharmacy desert
-//   Artifact zone = measurement uncertainty, not an access tier.
+//   Artifact zone = far from pharmacies, with a high access score driven by low local demand.
+//   Routing uncertainty is recorded separately by walk_snap_flag.
 //
-// Note: WALK_TYPOLOGY_EXPRESSION uses 'walk_typology' (full field name).
-// MapPage uses layerExpressions.js which uses 'walk_typol' (truncated tileset name).
-// N4/N5 use their own inline WALK_TYPOLOGY_COLOR with the full field name.
+// The shared expression below uses the truncated tileset field; point GeoJSON uses
+// walk_typology and should use WALK_TYPOLOGY_COLORS with that full property name.
 
 export const WALK_TYPOLOGY_COLORS = {
   'Well-served':     '#D4A030',

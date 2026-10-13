@@ -29,8 +29,8 @@ const TOWNSHIPS = {
   kwamashu: {
     label: 'KwaMashu / KwaZulu-Natal',
     data: `${BASE}data/kwamashu.geojson`,
-    center: [30.96037, -29.75753],
-    zoom: 12,
+    center: [30.999595108490706, -29.742955059262513],
+    zoom: 12.5,
   },
 }
 
@@ -132,7 +132,7 @@ const STEPS = [
     heading: 'KwaMashu study area',
     body: 'The study extent follows the local enumeration areas in the eThekwini extract.',
     layers: ['extent-fill', 'extent-line'],
-    zoom: 11.8,
+    zoom: 12,
   },
   {
     township: 'kwamashu',
@@ -143,7 +143,7 @@ const STEPS = [
     layers: ['extent-fill', 'extent-line', 'ea-type', 'ea-type-line'],
     legend: EA_TYPE_LEGEND,
     legendTitle: 'Neighborhood type',
-    zoom: 12,
+    zoom: 12.2,
   },
   {
     township: 'kwamashu',
@@ -155,7 +155,7 @@ const STEPS = [
     legend: EA_TYPE_LEGEND,
     legendTitle: 'Neighborhood type',
     showChart: true,
-    zoom: 12,
+    zoom: 12.25,
   },
   {
     township: 'kwamashu',
@@ -166,7 +166,7 @@ const STEPS = [
     layers: ['extent-line', 'distance', 'pharmacies'],
     legend: DISTANCE_LEGEND,
     legendTitle: 'Nearest-pharmacy walking distance',
-    zoom: 12.2,
+    zoom: 12.4,
   },
   {
     township: 'kwamashu',
@@ -177,7 +177,7 @@ const STEPS = [
     layers: ['extent-line', 'walk-typology', 'pharmacies'],
     legend: WALK_TYPOLOGY_LEGEND,
     legendTitle: 'Walk-access typology',
-    zoom: 12.2,
+    zoom: 12.5,
   },
 ]
 
@@ -518,7 +518,10 @@ function MapSummary({ step, analysis }) {
         </ul>
       )}
       {step.topic === 'typology' && (
-        <span className="n4__map-summary-note">Artifact zone indicates routing uncertainty.</span>
+        <span className="n4__map-summary-note">
+          Artifact zone reflects a high access score in a low-demand area; routing uncertainty is
+          recorded separately by walk_snap_flag.
+        </span>
       )}
     </div>
   )
