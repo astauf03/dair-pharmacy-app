@@ -5,6 +5,10 @@ import * as d3 from 'd3'
 import StepCard from './StepCard'
 import './n2.css'
 import {
+  EA_TYPE_COLORS,
+  EA_TYPE_FILL_EXPRESSION,
+  DENSITY_COLOR_STOPS,
+  DENSITY_COLOR_EXPRESSION,
   RACE_KEYS,
   RACE_COLORS,
   RACE_LABELS,
@@ -18,18 +22,15 @@ const BASE = import.meta.env.BASE_URL || '/'
 // Chart data is precomputed — no runtime fetch or aggregation needed.
 // buildChartDataFromGeoJSON has been removed; JSONs are imported directly.
 
-const POP_DENSITY_COLOR = [
-  'interpolate', ['linear'],
-  ['/',
-    ['coalesce', ['get', 'sal2023_est'], 0],
-    ['max', ['coalesce', ['get', 'area_km2'], 1], 1]
-  ],
-  0,     '#440154',
-  500,   '#414487',
-  1000,  '#2A788E',
-  4000,  '#22A884',
-  6000,  '#7AD151',
-  8000,  '#FDE725',
+const EA_TYPE_LEGEND = [
+  { color: EA_TYPE_COLORS.Township, label: 'Township' },
+  { color: EA_TYPE_COLORS['Informal residential'], label: 'Informal residential' },
+  { color: EA_TYPE_COLORS.Suburb, label: 'Formal residential / suburb' },
+  { color: EA_TYPE_COLORS['Traditional residential'], label: 'Traditional residential' },
+  { color: EA_TYPE_COLORS['Small holdings'], label: 'Small holdings' },
+  { color: EA_TYPE_COLORS.Farms, label: 'Farms' },
+  { color: EA_TYPE_COLORS.Commercial, label: 'Commercial' },
+  { color: EA_TYPE_COLORS.Industrial, label: 'Industrial' },
 ]
 
 const STEPS = [
@@ -49,28 +50,34 @@ const STEPS = [
     eyebrow: 'Spatial Context: Neighborhoods',
     heading: 'What are the most common neighborhoods in Gauteng?',
     body: 'The urban layout of Gauteng is a direct product of apartheid spatial planning, resulting in a patchwork of neighborhood types in close proximity. Gated estates and walled suburbs concentrated in the wealthy core sit alongside former "whites-only" suburbs, while townships, and informal settlements. Historically non-white neighborhoods are pushed to the urban periphery.',
-    fly: { center: [27.9943239, -26.0410534], zoom: 8 },
+    fly: { center: [27.9943239, -26.0410534], zoom: 7.7 },
     province: 'gauteng',
     showChart: false,
     showDensity: false,
+    legend: EA_TYPE_LEGEND,
+    legendTitle: 'Neighborhood type',
   },
   {
     eyebrow: 'Spatial Context: Neighborhoods and Population',
     heading: 'Population Density',
     body: 'Population in Gauteng is notably diverse in racial composition, with Black Africans comprising the large majority, followed by smaller but significant shares of White, Coloured, and Indian/Asian residents. This racial geography maps unevenly onto neighborhood type: the province spans affluent gated suburbs and middle-class neighborhoods through to established townships, informal settlements, and backyard dwellings. The latter of these categories house a disproportionate share of Black African residents as a direct legacy of apartheid-era spatial planning.',
-    fly: { center: [27.9943239, -26.0410534], zoom: 8 },
+    fly: { center: [27.9943239, -26.0410534], zoom: 7.9 },
     province: 'gauteng',
     showChart: true,
     showDensity: true,
+    legend: DENSITY_COLOR_STOPS,
+    legendTitle: 'Population density (people/km²)',
   },
   {
     eyebrow: 'Spatial Context: Neighborhoods',
     heading: 'What are the most common neighborhoods in KwaZulu-Natal?',
     body: "The provincial layout of KwaZulu-Natal reflects a different but equally complex spatial legacy shaped by apartheid-era planning and the province's distinct geography. The population stretches from a densely populated coastal corridor anchored by Durban to vast rural interior regions of rugged, hilly terrain. Rather than a single concentrated urban core, KZN is characterized by a more dispersed settlement pattern where formal urban centers, peri-urban townships, and deeply rural traditional settlements coexist across a larger and more varied landscape.",
-    fly: { center: [31.0, -29.0], zoom: 7 },
+    fly: { center: [31.0, -29.0], zoom: 6.7 },
     province: 'kzn',
     showChart: false,
     showDensity: false,
+    legend: EA_TYPE_LEGEND,
+    legendTitle: 'Neighborhood type',
   },
   {
     eyebrow: 'Spatial Context: Neighborhoods and Population',
@@ -80,6 +87,8 @@ const STEPS = [
     province: 'kzn',
     showChart: true,
     showDensity: true,
+    legend: DENSITY_COLOR_STOPS,
+    legendTitle: 'Population density (people/km²)',
   },
 ]
 
@@ -236,6 +245,20 @@ function drawChart(svgEl, width, showDensity, chartData) {
     .text(({ line }) => line)
 }
 
+function MapLegend({ items, title }) {
+  return (
+    <div className="n2__map-legend">
+      {title && <span className="n2__map-legend-title">{title}</span>}
+      {items.map(({ color, label }) => (
+        <span key={label} className="n2__map-legend-item">
+          <span className="n2__map-legend-swatch" style={{ background: color }} />
+          {label}
+        </span>
+      ))}
+    </div>
+  )
+}
+
 export default function N2() {
   const mapContainer = useRef(null)
   const map          = useRef(null)
@@ -321,19 +344,7 @@ export default function N2() {
         source: 'gauteng-data',
         layout: { visibility: 'none' },
         paint: {
-          'circle-color': [
-            'match', ['get', 'EA_TYPE'],
-            'Township',                '#8B2500',
-            'Informal residential',    '#C4713A',
-            'Formal residential',      '#6B8FA8',
-            'Suburb',                  '#6B8FA8',
-            'Traditional residential', '#4A7C6F',
-            'Smallholdings',           '#A89860',
-            'Farms',                   '#C8B878',
-            'Commercial',              '#002395',
-            'Industrial',              '#555566',
-            '#E8E4DC',
-          ],
+          'circle-color': EA_TYPE_FILL_EXPRESSION,
           'circle-radius': [
             'interpolate', ['linear'], ['zoom'],
             6,  ['interpolate', ['linear'],
@@ -358,19 +369,7 @@ export default function N2() {
         source: 'kzn-data',
         layout: { visibility: 'none' },
         paint: {
-          'circle-color': [
-            'match', ['get', 'EA_TYPE'],
-            'Township',                '#8B2500',
-            'Informal residential',    '#C4713A',
-            'Formal residential',      '#6B8FA8',
-            'Suburb',                  '#6B8FA8',
-            'Traditional residential', '#4A7C6F',
-            'Smallholdings',           '#A89860',
-            'Farms',                   '#C8B878',
-            'Commercial',              '#002395',
-            'Industrial',              '#555566',
-            '#E8E4DC',
-          ],
+          'circle-color': EA_TYPE_FILL_EXPRESSION,
           'circle-radius': [
             'interpolate', ['linear'], ['zoom'],
             6,  ['interpolate', ['linear'],
@@ -395,7 +394,7 @@ export default function N2() {
         source: 'gauteng-data',
         layout: { visibility: 'none' },
         paint: {
-          'circle-color': POP_DENSITY_COLOR,
+          'circle-color': DENSITY_COLOR_EXPRESSION,
           'circle-radius': [
             'interpolate', ['linear'], ['zoom'],
             6,  ['interpolate', ['linear'],
@@ -424,7 +423,7 @@ export default function N2() {
         source: 'kzn-data',
         layout: { visibility: 'none' },
         paint: {
-          'circle-color': POP_DENSITY_COLOR,
+          'circle-color': DENSITY_COLOR_EXPRESSION,
           'circle-radius': [
             'interpolate', ['linear'], ['zoom'],
             6,  ['interpolate', ['linear'],
@@ -555,6 +554,10 @@ export default function N2() {
             transition: 'opacity 0.7s ease',
           }}
         />
+
+        {STEPS[activeStep].legend && !showChart && (
+          <MapLegend items={STEPS[activeStep].legend} title={STEPS[activeStep].legendTitle} />
+        )}
 
         <div
           ref={chartRef}
