@@ -1,11 +1,12 @@
 import jill from "../assets/jill.jpeg";
 import tessa from "../assets/tessvu.JPEG";
 import joey from "../assets/joeycahill.jpeg";
+import alex from "../assets/alex_img.jpg";
 
 
 const teamMembers = [
   {
-    img: "/assets/musa-logo.svg",
+    img: alex,
     alt: "Alexandra",
     name: "Alexandra Stauffer",
     title: "Design Lead",
@@ -55,7 +56,7 @@ const teamMembers = [
       "For Tessa, it is important to measure, consciously observe, and challenge her existing knowledge of socio-environmental complexities. And her work is dedicated to revealing overlapping urban inequities in a way to foster actionable policy and community-centered urban resilience."
     ],
     email: "tessavu@protonmail.com",
-    portfolio: "",
+    portfolio: "https://tessavu.com/",
     LinkedIn: "https://www.linkedin.com/in/tessa-vu/",
     GitHub: "https://github.com/tess-vu"
   },
