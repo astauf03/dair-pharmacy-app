@@ -92,8 +92,6 @@
 .about-card__email {
   font-size: var(--text-caption);
   color: var(--dair-navy);
-  text-decoration: underline;
-  text-underline-offset: 3px;
   margin: 0;
 }
 

@@ -538,7 +538,7 @@ function MapSummary({ step, analysis }) {
         {TOWNSHIPS[step.township].label}
       </span>
       <span>
-        {analysis.sourceFeatureCount} enumeration areas 
+        {analysis.FeatureCount} enumeration areas 
       </span>
       {step.topic === 'distance' ? (
         <>

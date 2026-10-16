@@ -43,6 +43,8 @@ function About() {
                   <p className="about-card__bio3">{member.bio3}</p>
                   <p className="about-card__email">{member.email}</p>
                   <button className="about-card__btn">Contact</button>
+                  <button className="about-card__btn">LinkedIn</button>
+                  <button className="about-card__btn">GitHub</button>
                 </div>
               </div>
             ))}
