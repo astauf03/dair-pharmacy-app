@@ -422,16 +422,16 @@ function MapSummary({ step, provinceAnalysis, pharmacyAnalysis }) {
         <>
           <ul className="n5__summary-metrics">
             <li>
-              <span>Unique mapped areas</span>
+              <span>Unique mapped enumeration areas (EAs)</span>
               <strong>{formatNumber(provinceAnalysis.pointFeatureCount)}</strong>
             </li>
             <li>
-              <span>Population (sal2023_est)</span>
+              <span>Population (2023 estimates)</span>
               <strong>{formatNumber(provinceAnalysis.population)}</strong>
             </li>
           </ul>
           <div className="n5__map-summary-columns">
-            <span>EA_TYPE</span><span>Areas</span><span>Population</span>
+            <span>Neighborhood Type</span><span>EAs</span><span>Population</span>
           </div>
           <ul>
             {eaRows.map(([type, stats]) => (
@@ -466,8 +466,7 @@ function MapSummary({ step, provinceAnalysis, pharmacyAnalysis }) {
             ))}
           </ul>
           <p className="n5__map-summary-note">
-            Artifact zone reflects high access scores in low-demand areas; routing uncertainty is
-            recorded separately by walk_snap_flag.
+            Artifact zone reflects high access scores in low-demand areas. Routing uncertainty can be explored in the map page's walk-snap-flag layer.
           </p>
           <details className="n5__map-summary-definitions">
             <summary>What these mean</summary>
@@ -514,9 +513,6 @@ function MapSummary({ step, provinceAnalysis, pharmacyAnalysis }) {
         {formatNumber(provinceAnalysis.excludedNonPointFeatureCount)} non-point feature(s) excluded.
         {' '}{formatNumber(provinceAnalysis.nullWalkTypologyFeatureCount)} source feature(s) have no
         walk typology and are excluded from tier counts.
-      </p>
-      <p className="n5__map-summary-note">
-        Unassigned pharmacies: {formatNumber(pharmacyAnalysis.unassignedCount)}.
       </p>
     </aside>
   )
