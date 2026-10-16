@@ -21,13 +21,13 @@ const BASE = import.meta.env.BASE_URL || '/'
 
 const TOWNSHIPS = {
   ohb: {
-    label: 'Olievenhoutbosch / Gauteng',
+    label: 'Olievenhoutbosch, Gauteng',
     data: `${BASE}data/olievenhoutbosch.geojson`,
     center: [28.09933, -25.91161],
     zoom: 12,
   },
   kwamashu: {
-    label: 'KwaMashu / KwaZulu-Natal',
+    label: 'KwaMashu, KwaZulu-Natal',
     data: `${BASE}data/kwamashu.geojson`,
     center: [30.999595108490706, -29.742955059262513],
     zoom: 12.5,
@@ -47,7 +47,6 @@ const EA_TYPE_LEGEND = [
 const DISTANCE_LEGEND = [
   { color: '#C0392B', label: '>3 km to nearest pharmacy' },
   { color: '#2980B9', label: '≤3 km to nearest pharmacy' },
-  { color: '#B0A090', label: 'No routed distance' },
   { color: '#007A4D', label: 'Pharmacy' },
 ]
 
@@ -62,6 +61,15 @@ const WALK_TYPOLOGY_COLOR = [
   ...Object.entries(WALK_TYPOLOGY_COLORS).flat(),
   '#CCCCCC',
 ]
+
+const WALK_TYPOLOGY_DEFINITIONS = {
+  'Well-served': 'Walking access to pharmacies is good.',
+  'Demand overcrowding': 'Pharmacy access is strained by high local demand.',
+  'Connectivity gap': 'Road or network connectivity limits access.',
+  'Access gap': 'Walking access to a pharmacy is limited.',
+  'Pharmacy desert': 'The area is far from pharmacies by walking.',
+  'Artifact zone': 'A high access score is driven by low local demand.',
+}
 
 const DISTANCE_3KM_COLOR = [
   'case',
@@ -231,11 +239,16 @@ function buildTownshipAnalysis(geojson) {
   const groups = new Map()
   const eaTypeCounts = {}
   const typologyCounts = {}
+  const typologyPopulation = {}
+  const walkDistances = []
   const distance = { over3km: 0, within3km: 0, unknown: 0 }
+  let population = 0
 
   for (const feature of features) {
     const properties = feature.properties ?? {}
     const type = normalizeEAType(properties.EA_TYPE)
+    const featurePopulation = numericValue(properties.sal2023_est)
+    population += featurePopulation
 
     if (type) eaTypeCounts[type] = (eaTypeCounts[type] ?? 0) + 1
 
@@ -247,12 +260,17 @@ function buildTownshipAnalysis(geojson) {
         : Number.NaN
 
     if (!Number.isFinite(walkDistance)) distance.unknown += 1
-    else if (walkDistance > 3) distance.over3km += 1
-    else distance.within3km += 1
+    else {
+      walkDistances.push(walkDistance)
+      if (walkDistance > 3) distance.over3km += 1
+      else distance.within3km += 1
+    }
 
     const typology = properties.walk_typology
     if (typeof typology === 'string') {
       typologyCounts[typology] = (typologyCounts[typology] ?? 0) + 1
+      typologyPopulation[typology] =
+        (typologyPopulation[typology] ?? 0) + featurePopulation
     }
 
     if (!type) continue
@@ -266,7 +284,7 @@ function buildTownshipAnalysis(geojson) {
     }
 
     const group = groups.get(type)
-    group.population += numericValue(properties.sal2023_est)
+    group.population += featurePopulation
     group.area += numericValue(properties.area_km2)
     for (const race of RACE_KEYS) {
       group.races[race] += numericValue(properties[RACE_PROPERTY_BY_LABEL[race]])
@@ -274,8 +292,10 @@ function buildTownshipAnalysis(geojson) {
   }
 
   const chartTypes = [
-    ...EA_TYPE_ORDER.filter(type => groups.has(type)),
-    ...[...groups.keys()].filter(type => !EA_TYPE_ORDER.includes(type)).sort(),
+    ...EA_TYPE_ORDER.filter(type => groups.get(type)?.population > 0),
+    ...[...groups.keys()]
+      .filter(type => !EA_TYPE_ORDER.includes(type) && groups.get(type).population > 0)
+      .sort(),
   ]
   const chartData = chartTypes.map(type => {
     const group = groups.get(type)
@@ -301,7 +321,9 @@ function buildTownshipAnalysis(geojson) {
     geojson: { ...geojson, features },
     eaTypeCounts,
     typologyCounts,
-    distance,
+    typologyPopulation,
+    population,
+    distance: { ...distance, median: d3.median(walkDistances) },
     chartData,
   }
 }
@@ -374,7 +396,9 @@ function drawTownshipChart(svgElement, width, chartData) {
     .attr('font-size', '9px')
     .attr('font-weight', '600')
     .attr('fill', '#2C3E6B')
-    .text(row => row.density >= 1000 ? `${(row.density / 1000).toFixed(1)}k` : row.density)
+    .text(row => row.density >= 1000
+      ? `${(row.density / 1000).toFixed(1)}k people/km²`
+      : `${row.density.toLocaleString('en-ZA')} people/km²`)
 
   bars.selectAll('.n4-chart-x-label')
     .data(row => row.type.split('\n').map((line, index) => ({ line, index })))
@@ -461,14 +485,23 @@ function setStepLayers(map, step) {
   }
 }
 
-function MapLegend({ items, title }) {
+function MapLegend({ items, title, compact = false }) {
+  const compactLabels = {
+    'Well-served': 'Well-Served',
+    'Demand overcrowding': 'Demand Overcrowding',
+    'Connectivity gap': 'Connectivity Gap',
+    'Access gap': 'Access Gap',
+    'Pharmacy desert': 'Pharmacy Desert',
+    'Artifact zone': 'Artifact Zone',
+  }
+
   return (
-    <div className="n4__map-legend">
+    <div className={`n4__map-legend ${compact ? 'n4__map-legend--typology' : ''}`}>
       {title && <span className="n4__map-legend-title">{title}</span>}
       {items.map(({ color, label }) => (
         <span key={label} className="n4__map-legend-item">
           <span className="n4__map-legend-swatch" style={{ background: color }} />
-          {label}
+          {compact ? compactLabels[label] ?? label : label}
         </span>
       ))}
     </div>
@@ -477,6 +510,10 @@ function MapLegend({ items, title }) {
 
 function MapSummary({ step, analysis }) {
   if (!analysis) return null
+  const typologyRows = step.topic === 'typology'
+    ? Object.entries(WALK_TYPOLOGY_DEFINITIONS)
+      .filter(([type]) => analysis.typologyCounts[type])
+    : []
 
   let rows = []
   if (step.topic === 'ea-type' || step.topic === 'race') {
@@ -498,17 +535,17 @@ function MapSummary({ step, analysis }) {
   return (
     <div className="n4__map-summary" aria-live="polite">
       <span className="n4__map-summary-title">
-        {TOWNSHIPS[step.township].label} / {analysis.featureCount} unique EAs
+        {TOWNSHIPS[step.township].label}
       </span>
       <span>
-        {analysis.sourceFeatureCount} source features
-        {analysis.duplicateFeatureCount > 0 &&
-          ` / ${analysis.duplicateFeatureCount} exact duplicate records excluded`}
+        {analysis.sourceFeatureCount} enumeration areas 
       </span>
       {step.topic === 'distance' ? (
         <>
-          <strong>{analysis.distance.over3km} areas over 3 km</strong>
-          <span>{analysis.distance.within3km} within 3 km / {analysis.distance.unknown} unrouted</span>
+          <strong>
+            {analysis.distance.within3km} of {analysis.distance.within3km + analysis.distance.over3km} areas within 3 km
+          </strong>
+          <span>{analysis.distance.over3km} area beyond 3 km</span>
         </>
       ) : (
         <ul>
@@ -518,10 +555,26 @@ function MapSummary({ step, analysis }) {
         </ul>
       )}
       {step.topic === 'typology' && (
-        <span className="n4__map-summary-note">
-          Artifact zone reflects a high access score in a low-demand area; routing uncertainty is
-          recorded separately by walk_snap_flag.
-        </span>
+        <details className="n4__map-summary-definitions">
+          <summary>What these mean</summary>
+          <ul>
+            {typologyRows.map(([type, definition]) => (
+              <li key={type}>
+                <span><strong>{type}</strong> — {definition}</span>
+                <strong>
+                  {analysis.population > 0
+                    ? `${((analysis.typologyPopulation[type] / analysis.population) * 100).toLocaleString('en-ZA', {
+                        minimumFractionDigits: 1,
+                        maximumFractionDigits: 1,
+                      })}%`
+                    : '0.0%'}
+                </strong>
+              </li>
+            ))}
+          </ul>
+          <span className="n4__map-summary-note">
+          </span>
+        </details>
       )}
     </div>
   )
@@ -703,7 +756,11 @@ export default function N4() {
         />
 
         {step.legend && !showChart && (
-          <MapLegend items={step.legend} title={step.legendTitle} />
+          <MapLegend
+            items={step.legend}
+            title={step.legendTitle}
+            compact={step.topic === 'typology'}
+          />
         )}
         <MapSummary step={step} analysis={analysis} />
 
@@ -713,7 +770,7 @@ export default function N4() {
         >
           <div className="n4__chart-header">
             <p className="n4__chart-eyebrow">
-              {TOWNSHIPS[step.township].label} / EA_TYPE / racial composition
+              {TOWNSHIPS[step.township].label} / Population density and racial composition by neighborhood type
             </p>
             {showChart && (
               <div className="n4__chart-legend">
@@ -726,6 +783,7 @@ export default function N4() {
               </div>
             )}
           </div>
+
 
           {showChart && chartError && (
             <p className="n4__chart-error" role="alert">

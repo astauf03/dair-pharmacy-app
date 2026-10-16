@@ -47,6 +47,15 @@ const WALK_TYPOLOGY_COLOR_EXPRESSION = [
   'rgba(0, 0, 0, 0)',
 ]
 
+const WALK_TYPOLOGY_DEFINITIONS = {
+  'Well-served': 'Walking access to pharmacies is good.',
+  'Demand overcrowding': 'Pharmacy access is strained by high local demand.',
+  'Connectivity gap': 'Road or network connectivity limits access.',
+  'Access gap': 'Walking access to a pharmacy is limited.',
+  'Pharmacy desert': 'The area is far from pharmacies by walking.',
+  'Artifact zone': 'A high access score is driven by low local demand.',
+}
+
 const STEPS = [
   {
     province: 'gauteng',
@@ -460,6 +469,16 @@ function MapSummary({ step, provinceAnalysis, pharmacyAnalysis }) {
             Artifact zone reflects high access scores in low-demand areas; routing uncertainty is
             recorded separately by walk_snap_flag.
           </p>
+          <details className="n5__map-summary-definitions">
+            <summary>What these mean</summary>
+            <ul>
+              {typologyRows.map(([type]) => (
+                <li key={type}>
+                  <span><strong>{type}</strong> — {WALK_TYPOLOGY_DEFINITIONS[type]}</span>
+                </li>
+              ))}
+            </ul>
+          </details>
         </>
       )}
 
