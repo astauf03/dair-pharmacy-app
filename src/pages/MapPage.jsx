@@ -321,7 +321,7 @@ function MapPage() {
           {
             label:   'Pharmacies',
             value:   pharmacyCount.toLocaleString(),
-            subtext: 'visible in viewport',
+            subtext: 'in view',
           },
           {
             label:   'Pharmacy deserts',
