@@ -4,6 +4,8 @@ import mapboxgl from 'mapbox-gl'
 import '../components/mappage.css'
 import NavBar from '../components/NavBar'
 import MapSidebar from '../components/MapSidebar'
+import Footer from '../components/Footer'
+import { PHARMACY_DOT_PAINT } from '../constants/mapStyles'
 import {
   WALK_TYPOLOGY_COLOR,
   DRIVE_TYPOLOGY_COLOR,
@@ -262,12 +264,7 @@ function MapPage() {
         type:   'circle',
         source: 'pharmacies',
         layout: { visibility: 'visible' },
-        paint:  {
-          'circle-radius':       4,
-          'circle-color':        '#007A4D',
-          'circle-stroke-width': 1.5,
-          'circle-stroke-color': '#ffffff',
-        },
+        paint: PHARMACY_DOT_PAINT,
       })
 
       // ── Pharmacy popup ─────────────────────────────────────────
@@ -294,45 +291,83 @@ function MapPage() {
       })
 
       // ── Dynamic stats on moveend ───────────────────────────────
-      // Uses walk_rank (0–1) and walk_typol — both confirmed in tile
       map.current.on('moveend', () => {
         const pharmacyFeatures = map.current.queryRenderedFeatures({ layers: ['pharmacy-dots'] })
-        const salFeatures      = map.current.queryRenderedFeatures({ layers: ['walk-typology'] })
+        const salFeatures = map.current.queryRenderedFeatures({ layers: ['sal-outline'] })
+        const salById = new Map()
 
-        const pharmacyCount = pharmacyFeatures.length
+        salFeatures.forEach(feature => {
+          const salId = feature.properties?.EA_CODE ?? feature.id
+          if (salId != null) salById.set(String(salId), feature.properties)
+        })
 
-        const desertCount = salFeatures.filter(
-          f => f.properties['walk_typol'] === 'Pharmacy desert'
-        ).length
+        const visibleSals = [...salById.values()]
+        const isTrue = value => value === 'True' || value === true
+        let totalPopulation = 0
+        let townshipPopulation = 0
+        let beyondWalkPopulation = 0
+        let beyondDrivePopulation = 0
+        let beyondWalkCount = 0
+        let beyondDriveCount = 0
+        let driveThresholdAvailable = false
+        let driveDesertCount = 0
 
-        const pctDesert = salFeatures.length > 0
-          ? Math.round((desertCount / salFeatures.length) * 100)
-          : 0
+        visibleSals.forEach(properties => {
+          const population = Number(properties.sal2023_es)
+          const hasPopulation = properties.sal2023_es != null
+            && Number.isFinite(population)
+            && population > 0
+          const beyondWalk = isTrue(properties.exceeds_wa)
+          const exceedsDriveThreshold = isTrue(properties.exceeds_dr)
 
-        const rankVals = salFeatures
-          .map(f => f.properties['walk_rank'])
-          .filter(v => v != null && !isNaN(v))
+          if (properties.exceeds_dr != null) driveThresholdAvailable = true
+          if (hasPopulation) {
+            totalPopulation += population
+            if (properties.EA_TYPE === 'Township' || properties.EA_TYPE === 'Township_*') {
+              townshipPopulation += population
+            }
+            if (beyondWalk) beyondWalkPopulation += population
+            if (exceedsDriveThreshold) beyondDrivePopulation += population
+          }
+          if (beyondWalk) beyondWalkCount += 1
+          if (exceedsDriveThreshold) beyondDriveCount += 1
+          if (properties.drive_typo === 'Pharmacy desert') driveDesertCount += 1
+        })
 
-        const avgRank = rankVals.length > 0
-          ? (rankVals.reduce((s, v) => s + v, 0) / rankVals.length).toFixed(2)
-          : '–'
+        const populationShare = population => totalPopulation > 0
+          ? `${Math.round((population / totalPopulation) * 100)}% of viewport population`
+          : 'population unavailable'
+        const driveMetric = driveThresholdAvailable
+          ? {
+              label: 'SALs >10 km drive',
+              value: beyondDriveCount.toLocaleString(),
+              subtext: populationShare(beyondDrivePopulation),
+            }
+          : {
+              label: 'Drive pharmacy deserts',
+              value: driveDesertCount.toLocaleString(),
+              subtext: 'SALs classified as Pharmacy desert',
+            }
 
         setDynamicStats([
           {
-            label:   'Pharmacies',
-            value:   pharmacyCount.toLocaleString(),
-            subtext: 'in view',
+            label: 'Pharmacies in view',
+            value: pharmacyFeatures.length.toLocaleString(),
+            subtext: 'points in viewport',
           },
           {
-            label:   'Pharmacy deserts',
-            value:   `${pctDesert}%`,
-            subtext: 'of SALs in viewport',
+            label: 'Township population',
+            value: totalPopulation > 0
+              ? `${Math.round((townshipPopulation / totalPopulation) * 100)}%`
+              : '–',
+            subtext: 'of visible SAL population',
           },
           {
-            label:   'Avg walk rank',
-            value:   avgRank,
-            subtext: 'normalised 0–1',
+            label: 'SALs >3 km walk',
+            value: beyondWalkCount.toLocaleString(),
+            subtext: populationShare(beyondWalkPopulation),
           },
+          driveMetric,
         ])
       })
     })
@@ -358,6 +393,7 @@ function MapPage() {
         />
         <div className="map-area" ref={mapContainer} />
       </div>
+      <Footer />
     </div>
   )
 }

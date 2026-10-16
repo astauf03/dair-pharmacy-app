@@ -13,6 +13,7 @@ import {
   RACE_COLORS,
   RACE_LABELS,
   RACE_PROPERTY_MAP,
+  PHARMACY_DOT_PAINT,
   WALK_TYPOLOGY_COLORS,
 } from '../constants/mapStyles'
 
@@ -34,6 +35,8 @@ const TOWNSHIPS = {
   },
 }
 
+const SHOW_TYPOLOGY_SHARES = false
+
 const EMPTY_FEATURE_COLLECTION = { type: 'FeatureCollection', features: [] }
 
 const EA_TYPE_LEGEND = [
@@ -47,7 +50,7 @@ const EA_TYPE_LEGEND = [
 const DISTANCE_LEGEND = [
   { color: '#C0392B', label: '>3 km to nearest pharmacy' },
   { color: '#2980B9', label: '≤3 km to nearest pharmacy' },
-  { color: '#007A4D', label: 'Pharmacy' },
+  { color: PHARMACY_DOT_PAINT['circle-color'], label: 'Pharmacy' },
 ]
 
 const WALK_TYPOLOGY_LEGEND = [
@@ -86,7 +89,7 @@ const STEPS = [
     heading: 'Olievenhoutbosch Study Area',
     body: 'There are 82 enumeration areas in the Olievenhoutbosch township. Olievenhoutbosch is located between major cities like Midrand, Centurion, and Pretoria. Let us examine the pharmacy access conditions.  ',
     layers: ['extent-fill', 'extent-line'],
-    zoom: 13.5,
+    zoom: 12.2,
   },
   {
     township: 'ohb',
@@ -97,7 +100,7 @@ const STEPS = [
     layers: ['extent-fill', 'extent-line', 'ea-type', 'ea-type-line'],
     legend: EA_TYPE_LEGEND,
     legendTitle: 'Neighborhood type',
-    zoom: 13.5,
+    zoom: 13,
   },
   {
     township: 'ohb',
@@ -538,14 +541,16 @@ function MapSummary({ step, analysis }) {
         {TOWNSHIPS[step.township].label}
       </span>
       <span>
-        {analysis.FeatureCount} enumeration areas 
+        {analysis.featureCount} {analysis.featureCount === 1 ? 'area' : 'areas'}
       </span>
       {step.topic === 'distance' ? (
         <>
           <strong>
             {analysis.distance.within3km} of {analysis.distance.within3km + analysis.distance.over3km} areas within 3 km
           </strong>
-          <span>{analysis.distance.over3km} area beyond 3 km</span>
+          <span>
+            {analysis.distance.over3km} {analysis.distance.over3km === 1 ? 'area' : 'areas'} beyond 3 km
+          </span>
         </>
       ) : (
         <ul>
@@ -561,14 +566,16 @@ function MapSummary({ step, analysis }) {
             {typologyRows.map(([type, definition]) => (
               <li key={type}>
                 <span><strong>{type}</strong> — {definition}</span>
-                <strong>
-                  {analysis.population > 0
-                    ? `${((analysis.typologyPopulation[type] / analysis.population) * 100).toLocaleString('en-ZA', {
-                        minimumFractionDigits: 1,
-                        maximumFractionDigits: 1,
-                      })}%`
-                    : '0.0%'}
-                </strong>
+                {SHOW_TYPOLOGY_SHARES && (
+                  <strong>
+                    {analysis.population > 0
+                      ? `${((analysis.typologyPopulation[type] / analysis.population) * 100).toLocaleString('en-ZA', {
+                          minimumFractionDigits: 1,
+                          maximumFractionDigits: 1,
+                        })}%`
+                      : '0.0%'}
+                  </strong>
+                )}
               </li>
             ))}
           </ul>
@@ -619,11 +626,7 @@ export default function N4() {
         source: 'pharmacy-points',
         layout: { visibility: 'none' },
         paint: {
-          'circle-radius': ['interpolate', ['linear'], ['zoom'], 8, 2, 12, 5],
-          'circle-color': '#007A4D',
-          'circle-opacity': 0.9,
-          'circle-stroke-color': '#ffffff',
-          'circle-stroke-width': 1,
+          ...PHARMACY_DOT_PAINT,
         },
       })
 

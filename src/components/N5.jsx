@@ -11,6 +11,7 @@ import {
   EA_TYPE_FILL_EXPRESSION,
   EA_TYPE_LABELS,
   EA_TYPE_ORDER,
+  PHARMACY_DOT_PAINT,
   WALK_TYPOLOGY_COLORS,
 } from '../constants/mapStyles'
 
@@ -361,7 +362,7 @@ function buildLegend(step, provinceAnalysis) {
 
   if (step.showPharmacies) {
     items.push({
-      color: EA_TYPE_COLORS['Parks and recreation'],
+      color: PHARMACY_DOT_PAINT['circle-color'],
       label: 'Pharmacy',
     })
   }
@@ -592,11 +593,7 @@ function addMapLayers(map) {
     source: 'n5-pharmacies',
     layout: { visibility: 'none' },
     paint: {
-      'circle-radius': 4,
-      'circle-color': EA_TYPE_COLORS['Parks and recreation'],
-      'circle-opacity': 0.95,
-      'circle-stroke-color': '#ffffff',
-      'circle-stroke-width': 1,
+      ...PHARMACY_DOT_PAINT,
     },
   })
 }

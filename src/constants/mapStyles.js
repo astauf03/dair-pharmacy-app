@@ -179,6 +179,14 @@ export const DENSITY_COLOR_STOPS = [
   { value: 10000, color: '#FDE725', label: '10,000+' },
 ]
 
+export const PHARMACY_DOT_PAINT = {
+  'circle-radius': ['interpolate', ['linear'], ['zoom'], 6, 1.5, 12, 5],
+  'circle-color': '#007A4D',
+  'circle-stroke-color': '#ffffff',
+  'circle-stroke-width': 0.75,
+  'circle-opacity': 0.9,
+}
+
 export const DENSITY_COLOR_EXPRESSION = [
   'interpolate',
   ['linear'],

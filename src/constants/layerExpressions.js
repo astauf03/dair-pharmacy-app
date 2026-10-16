@@ -1,6 +1,7 @@
 // layerExpressions.js
 // All Mapbox GL JS paint expressions for the DAIR pharmacy access map.
 import {
+  DENSITY_COLOR_STOPS,
   EA_TYPE_COLORS,
   EA_TYPE_DEFAULT_COLOR,
   WALK_TYPOLOGY_COLORS,
@@ -101,12 +102,11 @@ export const EA_TYPE_COLOR = [
 
 // ── 8. % BLACK AFRICAN — warm earth ramp ────────────────────────────────────
 export const PCT_BLACK_STOPS = [
-  { value: 0.0, color: '#F5F0E8' },
-  { value: 0.2, color: '#D4C4A0' },
-  { value: 0.4, color: '#A89060' },
-  { value: 0.6, color: '#7A6040' },
-  { value: 0.8, color: '#4A3828' },
-  { value: 1.0, color: '#1A1410' },
+  { value: 0.0, color: '#f2f0f7' },
+  { value: 0.25, color: '#cbc9e2' },
+  { value: 0.5, color: '#9e9ac8' },
+  { value: 0.75, color: '#756bb1' },
+  { value: 1.0, color: '#54278f' },
 ]
 
 export const PCT_BLACK_COLOR = [
@@ -115,15 +115,8 @@ export const PCT_BLACK_COLOR = [
   ...PCT_BLACK_STOPS.flatMap(({ value, color }) => [value, color]),
 ]
 
-// ── 9. POPULATION DENSITY — sand (sparse) → dark brown (dense) ───────────────
-export const POP_DENSITY_STOPS = [
-  { value: 0, color: '#F5F0E8' },
-  { value: 200, color: '#E8D5A0' },
-  { value: 500, color: '#D4A850' },
-  { value: 2000, color: '#B07820' },
-  { value: 5000, color: '#7A4E10' },
-  { value: 10000, color: '#3A2008' },
-]
+// ── 9. POPULATION DENSITY ────────────────────────────────────────────────────
+export const POP_DENSITY_STOPS = DENSITY_COLOR_STOPS
 
 export const POP_DENSITY_COLOR = [
   'interpolate', ['linear'],
@@ -134,15 +127,15 @@ export const POP_DENSITY_COLOR = [
 
 // ── 10. ECONOMIC STATUS ──────────────────────────────────────────────────────
 export const ECON_STATUS_COLORS = {
-  Wealthy: '#d4a030',
-  Non_Wealthy: '#6B5C4E',
-  Non_Residential: '#C8B89A',
+  Wealthy: '#7B3294',
+  Non_Wealthy: '#E66101',
+  Non_Residential: '#BDBDBD',
 }
 
 export const ECON_STATUS_COLOR = [
   'match', ['get', 'econ_statu'],
   ...Object.entries(ECON_STATUS_COLORS).flat(),
-  '#F5F0E8',
+  ECON_STATUS_COLORS.Non_Residential,
 ]
 
 // ── 11. TRANSPORT GAP — bivariate: walk vs drive ─────────────────────────────

@@ -10,7 +10,10 @@ import {
 import {
   SNAP_FLAG_COLOR,
   SNAP_FLAG_OPACITY_VALUE,
+  PCT_BLACK_STOPS,
+  POP_DENSITY_STOPS,
 } from '../constants/layerExpressions'
+import { PHARMACY_DOT_PAINT } from '../constants/mapStyles'
 
 // ─────────────────────────────────────────────
 // Constants
@@ -54,19 +57,11 @@ const ACCESS_RAMP = [
   '#c8d8e8', '#e8c97a', '#ebc159', '#d4a030',
 ]
 
-// TODO(pass 2): replace these chips with the shared population-density stops.
-const POP_DENSITY_CHIPS = [
-  { color: '#F5F0E8', label: 'Sparse' },
-  { color: '#C8B89A', label: ''       },
-  { color: '#6B5C4E', label: ''       },
-  { color: '#2A2318', label: ''       },
-  { color: '#1A1A1A', label: 'Dense'  },
-]
-
 const STATS_PLACEHOLDER = [
-  { label: 'Pharmacies',           value: '–', subtext: 'visible in viewport'        },
-  { label: 'SALs beyond 3km walk', value: '–', subtext: 'exceeds walk k=1 threshold' },
-  { label: 'Avg walk rank',        value: '–', subtext: 'mean normalised walk rank'   },
+  { label: 'Pharmacies in view', value: '–', subtext: 'points in viewport' },
+  { label: 'Township population', value: '–', subtext: 'share of visible population' },
+  { label: 'SALs >3 km walk', value: '–', subtext: 'count; population share when available' },
+  { label: 'SALs >10 km drive', value: '–', subtext: 'count; population share when available' },
 ]
 
 // ─────────────────────────────────────────────
@@ -97,6 +92,32 @@ function LegendRamp({ colors, lowLabel = 'Low', highLabel = 'High' }) {
       <div className="legend__ramp">
         {colors.map((hex, i) => (
           <div key={i} className="legend__ramp-seg" style={{ background: hex }} />
+        ))}
+      </div>
+    </>
+  )
+}
+
+function LegendStopRamp({ stops, formatLabel = stop => stop.label ?? stop.value }) {
+  const maxValue = stops[stops.length - 1].value
+  const gradient = `linear-gradient(to right, ${stops.map(({ color, value }) => (
+    `${color} ${(value / maxValue) * 100}%`
+  )).join(', ')})`
+
+  return (
+    <>
+      <div className="legend__ramp" style={{ background: gradient }} />
+      <div
+        className="legend__stop-labels"
+        style={{ gridTemplateColumns: `repeat(${stops.length}, minmax(0, 1fr))` }}
+      >
+        {stops.map((stop, index) => (
+          <span
+            key={stop.value}
+            className={index === 0 ? 'legend__stop-label--first' : index === stops.length - 1 ? 'legend__stop-label--last' : ''}
+          >
+            {formatLabel(stop)}
+          </span>
         ))}
       </div>
     </>
@@ -149,7 +170,13 @@ function ActiveLegend({ layers }) {
       {/* Overlay indicators */}
       {layers['pharmacy-dots'] && (
         <div className="legend__entry" style={{ marginTop: 8 }}>
-          <span className="legend__dot" />
+          <span
+            className="legend__dot"
+            style={{
+              background: PHARMACY_DOT_PAINT['circle-color'],
+              borderColor: PHARMACY_DOT_PAINT['circle-stroke-color'],
+            }}
+          />
           <span className="legend__entry-label">Pharmacy location</span>
         </div>
       )}
@@ -193,8 +220,10 @@ function ActiveLegend({ layers }) {
       {layers['pct-black-african'] && (
         <>
           <p className="legend__sublabel" style={{ marginTop: 8 }}>% Black African</p>
-          {/* TODO(pass 2): derive this ramp from the shared percent-Black stops */}
-          <LegendRamp colors={ACCESS_RAMP} lowLabel="0%" highLabel="100%" />
+          <LegendStopRamp
+            stops={PCT_BLACK_STOPS}
+            formatLabel={({ value }) => `${Math.round(value * 100)}%`}
+          />
         </>
       )}
 
@@ -207,21 +236,8 @@ function ActiveLegend({ layers }) {
 
       {layers['pop-density'] && (
         <>
-          <p className="legend__sublabel" style={{ marginTop: 8 }}>Population density</p>
-          {/* TODO(pass 2): derive these chips from the shared population-density stops */}
-          <div className="legend__chips">
-            {POP_DENSITY_CHIPS.map((chip, i) => (
-              <div key={i} className="legend__chip">
-                <div
-                  className="legend__chip-swatch"
-                  style={{ background: chip.color }}
-                />
-                {chip.label && (
-                  <span className="legend__chip-label">{chip.label}</span>
-                )}
-              </div>
-            ))}
-          </div>
+          <p className="legend__sublabel" style={{ marginTop: 8 }}>Population density (people/km²)</p>
+          <LegendStopRamp stops={POP_DENSITY_STOPS} />
         </>
       )}
 
