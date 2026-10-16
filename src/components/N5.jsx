@@ -62,7 +62,7 @@ const STEPS = [
     province: 'gauteng',
     topic: 'ea-type',
     heading: 'Gauteng: EA_TYPE',
-    body: 'Circles are colored by the EA_TYPE recorded for each point. ', // TODO: Rewrite placeholder story copy.
+    body: 'Circles are colored by the EA_TYPE recorded for each point. ', 
   },
   {
     province: 'kzn',
@@ -75,33 +75,33 @@ const STEPS = [
     topic: 'ea-type',
     showPharmacies: true,
     heading: 'Gauteng: EA_TYPE and pharmacies',
-    body: 'EA_TYPE circles and pharmacy points are visible together. ', // TODO: Rewrite placeholder story copy.
+    body: 'Gauteng has 1,453 pharmacies , roughly one for every 10,400 people in Gauteng. ', 
   },
   {
     province: 'kzn',
     topic: 'ea-type',
     showPharmacies: true,
     heading: 'KwaZulu-Natal: EA_TYPE and pharmacies',
-    body: 'EA_TYPE circles and pharmacy points are visible together. ', // TODO: Rewrite placeholder story copy.
+    body: 'KwaZulu-Natal has 699 pharmacies, roughly one for every 17,800 people in KwaZulu-Natal',
   },
   {
     province: 'gauteng',
     topic: 'walk-typology',
     heading: 'Gauteng: walk access typology',
-    body: 'Circles are colored by their recorded walk-access typology. ', // TODO: Rewrite placeholder story copy.
+    body: 'About 16% of the population in Gauteng is more than 3 km from a pharmacy on foot', 
   },
   {
     province: 'gauteng',
     topic: 'walk-typology',
     showPharmacies: true,
     heading: 'Gauteng: walk access and pharmacies',
-    body: 'Walk-access typology circles and pharmacy points are visible together. ', // TODO: Rewrite placeholder story copy.
+    body: 'About 16% of the population in Gauteng is more than 3 km from a pharmacy on foot ', 
   },
   {
     province: 'kzn',
     topic: 'walk-typology',
     heading: 'KwaZulu-Natal: walk access typology',
-    body: 'Circles are colored by their recorded walk-access typology. ', // TODO: Rewrite placeholder story copy.
+    body: 'About 63% of the population in KwaZulu-Natal is more than 3 km from a pharmacy on foot. Most of that gap sits in traditional residential areas, the former homeland areas', 
   },
   {
     province: 'kzn',
@@ -120,7 +120,7 @@ const STEPS = [
     province: 'kzn',
     topic: 'density',
     heading: 'KwaZulu-Natal: population density',
-    body: 'Circle size represents estimated population per square kilometre. ', // TODO: Rewrite placeholder story copy.
+    body: 'Dense places are not necessarily better served. The informal settlements in KwaMashu pack in about 26,700 people per km², more than three times its township areas. ', // TODO: Rewrite placeholder story copy.
   },
 ]
 
