@@ -1,5 +1,6 @@
 .map-container {
-  display: flex;              
+  position: relative;
+  display: flex;
   height: calc(100vh - 96px);
   background-color: var(--surface-warm);
 }
@@ -7,5 +8,18 @@
 
 .map-area {
   flex: 1;
-  height: 100%;               
+  height: 100%;
+}
+
+@media (max-width: 640px) {
+  .map-container {
+    height: calc(100vh - 96px);
+    height: calc(100dvh - 96px);
+    min-height: 420px;
+  }
+
+  .map-area {
+    position: absolute;
+    inset: 0;
+  }
 }

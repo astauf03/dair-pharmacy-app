@@ -46,16 +46,14 @@ function ContextBand() {
   }, [hasEntered])
 
   const stat1 = useCounter(80, 1400, 0, hasEntered, 0)
-  const stat2 = useCounter(72.1, 1800, 300, hasEntered, 1)
-
   return (
     <section className="context-band" ref={sectionRef}>
       <span className="context-band__eyebrow">Context</span>
 
-      {/* ── TWO-STAT + HOOK PROSE ── */}
+      {/* ── KEY STAT + INTRODUCTION ── */}
       <div className={`context-band__grid ${hasEntered ? "is-visible" : ""}`}>
 
-        {/* LEFT: two stats only */}
+        {/* LEFT: key statistic */}
         <div className="context-band__stats">
 
           <div className="context-band__stat context-band__stat--1">
@@ -64,30 +62,18 @@ function ContextBand() {
               {stat1}<span className="context-band__percent">%</span>
             </div>
             <p className="context-band__stat-label">
-              of South Africans, but receive only half of national health funding
-            </p>
-          </div>
-
-          <div className="context-band__stat-divider" />
-
-          <div className="context-band__stat context-band__stat--2">
-            <p className="context-band__stat-lead-in">Across Gauteng and KwaZulu-Natal,</p>
-            <div className="context-band__number context-band__number--accent">
-              {stat2}<span className="context-band__percent">%</span>
-            </div>
-            <p className="context-band__stat-label">
-              placeholder
+              of South Africans are served by public pharmacies, which receive only half of
+              national health funding
             </p>
           </div>
 
         </div>
 
-        {/* RIGHT: hook prose */}
+        {/* RIGHT: introduction */}
         <div className="context-band__prose">
-          <p className="context-band__lead">
-            80% of South Africans are served by public pharmacies. 16% are served by private
-            pharmacies. Yet private facilities receive 50% of the funding allocated by the
-            South African government for healthcare.
+          <p className="context-band__body">
+            Private pharmacies serve a further 16% of South Africans, yet receive half of the
+            funding allocated by the South African government for healthcare.
           </p>
           <p className="context-band__body">
             The{" "}
@@ -107,14 +93,13 @@ function ContextBand() {
 
       </div>
 
-      {/* ── FULL-WIDTH NARRATIVE ── */}
+      {/* ── FULL-WIDTH SITE CONTEXT ── */}
       <div className="context-band__narrative">
         <p className="context-band__narrative-eyebrow">South Africa — Site Context</p>
 
         <div className="context-band__narrative-body">
           <p>
-            Public pharmacies in South Africa serve about 80% of the population but receive
-            only about 50% of government funding. Until the{" "}
+            Until the{" "}
             <span className="highlight-gold">National Health Insurance (NHI) Act of 2024</span>,
             uninsured South Africans could be denied service. The Act created a public fund
             to subsidize care and medicines, with significant implications for people in

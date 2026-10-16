@@ -1,11 +1,19 @@
 import "./footer.css"
-
+import teamMembers from "../constants/teammembers"
 
 function Footer() {
   return (
     <footer className="footer">
-      <p className="footer__text">
-        Tess Vu | Joey Cahill | Jill Kalman | Alex Stauffer | MUSA Practicum 2026 (we can add portfolio links or something)
+      <p className="footer__text footer__members">
+        {teamMembers.map((member, index) => (
+          <span className="footer__member" key={member.name}>
+            {member.portfolio
+              ? <a href={member.portfolio} target="_blank" rel="noreferrer" className="footer__link">{member.name}</a>
+              : member.name}
+            {index < teamMembers.length - 1 && <span aria-hidden="true"> | </span>}
+          </span>
+        ))}
+        <span className="footer__program">MUSA Practicum 2026</span>
       </p>
       <p className="footer__text">
         In partnership with{" "}

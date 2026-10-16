@@ -5,632 +5,799 @@ import * as d3 from 'd3'
 import StepCard from './StepCard'
 import './n4.css'
 import {
-  CHART_EA_TYPES,
-  EA_TYPE_ORDER,
+  EA_TYPE_FILL_EXPRESSION,
+  EA_TYPE_COLORS,
   EA_TYPE_LABELS,
+  EA_TYPE_ORDER,
   RACE_KEYS,
   RACE_COLORS,
   RACE_LABELS,
-  EA_TYPE_FILL_EXPRESSION,
+  RACE_PROPERTY_MAP,
+  PHARMACY_DOT_PAINT,
+  WALK_TYPOLOGY_COLORS,
 } from '../constants/mapStyles'
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN
 const BASE = import.meta.env.BASE_URL || '/'
 
-const GAUTENG_GEOJSON  = `${BASE}data/gauteng_polygons.geojson`
-const KZN_GEOJSON      = `${BASE}data/kzn_polygons.geojson`
-const OHB_GEOJSON      = `${BASE}data/olievenhoutbosch.geojson`
-const KWAMASHU_GEOJSON = `${BASE}data/kwamashu.geojson`
-const PHARMACIES       = `${BASE}data/pharmacies.geojson`
+const TOWNSHIPS = {
+  ohb: {
+    label: 'Olievenhoutbosch, Gauteng',
+    data: `${BASE}data/olievenhoutbosch.geojson`,
+    center: [28.09933, -25.91161],
+    zoom: 12,
+  },
+  kwamashu: {
+    label: 'KwaMashu, KwaZulu-Natal',
+    data: `${BASE}data/kwamashu.geojson`,
+    center: [30.999595108490706, -29.742955059262513],
+    zoom: 12.5,
+  },
+}
 
-const LEFT_DEFAULT  = { center: [28.09933, -25.91161], zoom: 12, label: 'Olievenhoutbosch · Gauteng' }
-const RIGHT_DEFAULT = { center: [30.96, -29.80], zoom: 12, label: 'KwaMashu · Durban' }
+const SHOW_TYPOLOGY_SHARES = false
 
-const OHB_BBOX      = [27.94, -26.12, 28.24, -25.82]
-const KWAMASHU_BBOX  = [30.81, -29.93, 31.11, -29.63]
+const EMPTY_FEATURE_COLLECTION = { type: 'FeatureCollection', features: [] }
 
 const EA_TYPE_LEGEND = [
-  { color: '#8B2500', label: 'Township' },
-  { color: '#C4713A', label: 'Informal residential' },
-  { color: '#6B8FA8', label: 'Formal residential / Suburb' },
-  { color: '#4A7C6F', label: 'Traditional residential' },
-  { color: '#A89860', label: 'Smallholdings' },
-  { color: '#C8B878', label: 'Farms' },
-  { color: '#002395', label: 'Commercial' },
-  { color: '#555566', label: 'Industrial' },
+  { color: EA_TYPE_COLORS.Township, label: 'Township' },
+  { color: EA_TYPE_COLORS['Informal residential'], label: 'Informal residential' },
+  { color: EA_TYPE_COLORS['Formal residential'], label: 'Formal residential / suburb' },
+  { color: EA_TYPE_COLORS.Vacant, label: 'Vacant' },
+  { color: EA_TYPE_COLORS['Collective living quarters'], label: 'Collective living quarters' },
 ]
 
-const EXCEEDS_WALK_COLOR = [
-  'match', ['get', 'exceeds_walk_k1_3km'],
-  'True', '#C0392B',
-  'False', '#3498DB',
-  '#999999',
+const DISTANCE_LEGEND = [
+  { color: '#C0392B', label: '>3 km to nearest pharmacy' },
+  { color: '#2980B9', label: '≤3 km to nearest pharmacy' },
+  { color: PHARMACY_DOT_PAINT['circle-color'], label: 'Pharmacy' },
+]
+
+const WALK_TYPOLOGY_LEGEND = [
+  ...Object.entries(WALK_TYPOLOGY_COLORS).map(([label, color]) => ({ label, color })),
+  { color: '#007A4D', label: 'Pharmacy' },
 ]
 
 const WALK_TYPOLOGY_COLOR = [
-  'match', ['get', 'walk_typology'],
-  'Pharmacy desert',      '#8B0000',
-  'Connectivity gap',     '#C0392B',
-  'Demand overcrowding',  '#E67E22',
-  'Underserved',          '#F1C40F',
-  'Adequate',             '#82C46C',
-  'Well-served',          '#27AE60',
+  'match',
+  ['get', 'walk_typology'],
+  ...Object.entries(WALK_TYPOLOGY_COLORS).flat(),
   '#CCCCCC',
 ]
 
+const WALK_TYPOLOGY_DEFINITIONS = {
+  'Well-served': 'Walking access to pharmacies is good.',
+  'Demand overcrowding': 'Pharmacy access is strained by high local demand.',
+  'Connectivity gap': 'Road or network connectivity limits access.',
+  'Access gap': 'Walking access to a pharmacy is limited.',
+  'Pharmacy desert': 'The area is far from pharmacies by walking.',
+  'Artifact zone': 'A high access score is driven by low local demand.',
+}
+
+const DISTANCE_3KM_COLOR = [
+  'case',
+  ['==', ['get', 'walk_dist_k1_km'], null], '#B0A090',
+  ['>', ['get', 'walk_dist_k1_km'], 3], '#C0392B',
+  '#2980B9',
+]
+
 const STEPS = [
-  //labels about study area names?
   {
-    eyebrow: 'Township Deep Dive: Olievenhoutbosch and KwaMashu',
-    heading: 'What surrounds each township?',
-    body: "Olievenhoutbosch is a rapidly growing township in the Tshwane municipality of Gauteng, sitting at the edge of formal and informal settlement patterns. Its residential makeup is predominantly formal township housing, with a smaller informal residential component on its fringes [9].",
-    body2: 'KwaMashu is a township located approximately 19 km north of Durban. It was formed between 1958 and 1965 from the displacement of communities living in the informal settlements of Umkhumbane (Cato Manor). Its founding was a deliberate product of apartheid spatial engineering [10].',
-    leftFly:  { center: [28.09933, -25.91161], zoom: 12 },
-    rightFly: { center: [30.96037, -29.75753], zoom: 12 },
-    layers: ['township-outline', 'township-fill', 'ea-type', 'ea-type-line'],
+    township: 'ohb',
+    topic: 'extent',
+    eyebrow: 'Olievenhoutbosch, City of Tshwane, Gauteng',
+    heading: 'Olievenhoutbosch Study Area',
+    body: 'There are 82 enumeration areas in the Olievenhoutbosch township. Olievenhoutbosch is located between major cities like Midrand, Centurion, and Pretoria. Let us examine the pharmacy access conditions.  ',
+    layers: ['extent-fill', 'extent-line'],
+    zoom: 12.2,
+  },
+  {
+    township: 'ohb',
+    topic: 'ea-type',
+    eyebrow: 'Olievenhoutbosch, City of Tshwane, Gauteng / Neighborhood type',
+    heading: 'Census neighborhood types across Olievenhoutbosch',
+    body: 'The neighborhood type classification filtered to Olievenhoutbosch shows township, informal residential, and vacant areas. These metrics are derived from the South African census data.',
+    layers: ['extent-fill', 'extent-line', 'ea-type', 'ea-type-line'],
     legend: EA_TYPE_LEGEND,
     legendTitle: 'Neighborhood type',
+    zoom: 13,
   },
   {
-    eyebrow: 'Demographics',
+    township: 'ohb',
+    topic: 'race',
+    eyebrow: 'Olievenhoutbosch, Gauteng / Population',
     heading: 'Racial composition by neighborhood type',
-    body: 'Demographically, Olievenhoutbosch has a racial distribution of roughly 98.0% Black African, 11 sub-places and 82 enumeration areas, of which 66 EAs are "Township" (68,564 people). 88% of its areas are classified as non-wealthy [11].',
-    body2: 'KwaMashu spans 7 sub-places and 131 enumeration areas. Of these, 60 EAs are classified as "Township" (48,867 people), with 22 additional EAs classified as "Informal residential" (13,763 people). It is 99.6% Black African, and 86% of its areas are economically classified as non-wealthy [12].',
-    leftFly:  { center: [28.09933, -25.91161], zoom: 11 },
-    rightFly: { center: [30.96037, -29.75753], zoom: 11 },
-    layers: ['township-outline', 'ea-type', 'ea-type-line'],
+    body: 'Beyond this portion shows a barchart of the racial distribution by nieghborhood type in Olievenhoutbosch. The racial makeup of Olievenhoutbosch is as follows: Black African 98.0%, Other 1.2%, Coloured 0.6%, Indian/Asian 0.2%',
+    legend: EA_TYPE_LEGEND,
+    legendTitle: 'Neighborhood type',
     showChart: true,
-    showDensity: true,
-  },
-  //Fix Binary layout.. currently it is gray, should be blue and red True or False fill colors.
-  {
-    eyebrow: 'First Look at Access from a Distance',
-    heading: 'Areas with a walking distance greater than 3 km to nearest pharmacy',
-    body: 'Red polygons mark SALs where the nearest pharmacy is more than 3 km away on foot. These aren\'t empty fields — they are dense residential zones.',
-    leftFly:  { center: [28.09933, -25.91161], zoom: 12 },
-    rightFly: { center: [30.96037, -29.75753], zoom: 12 },
-    layers: ['township-outline', 'access-binary', 'pharmacies'],
-    legend: [
-      { color: '#C0392B', label: '>3 km to nearest pharmacy' },
-      { color: '#3498DB', label: '≤3 km to nearest pharmacy' },
-      { color: '#007A4D', label: 'Pharmacy' },
-    ],
-    legendTitle: 'Walk distance',
+    zoom: 13.5,
   },
   {
-    eyebrow: 'Walking Access Typology',
-    heading: 'The pharmacy desert',
-    body: 'Each SAL classified by walk-mode access typology. The darkest red zones a formal phrearmacy deserts — a direct legacy of where infrastructure was never built. Also there needs to be more discussion on what living in a pharmacy desert may mean compared to a "Well-served" area. What might contribute to some SALs have pharmacies but have less access than their neighbors? ',
-    leftFly:  { center: [28.09933, -25.91161], zoom: 12 },
-    rightFly: { center: [30.96037, -29.75753], zoom: 12 },
-    layers: ['township-outline', 'walk-typology', 'pharmacies'],
-    legend: [
-      { color: '#8B0000', label: 'Pharmacy desert' },
-      { color: '#C0392B', label: 'Connectivity gap' },
-      { color: '#E67E22', label: 'Demand overcrowding' },
-      { color: '#F1C40F', label: 'Underserved' },
-      { color: '#82C46C', label: 'Adequate' },
-      { color: '#27AE60', label: 'Well-served' },
-      { color: '#007A4D', label: 'Pharmacy' },
-    ],
-    legendTitle: 'Walk access typology',
+    township: 'ohb',
+    topic: 'distance',
+    eyebrow: 'Olievenhoutbosch, Gauteng / Walking distance',
+    heading: 'Which areas are more than 3 km from a pharmacy?',
+    body: 'There are about 4 private pharmacies in Olievenhoutbosch, 81 of 82 areas are within a 3 km walk of a pharmacy. ',
+    layers: ['extent-line', 'distance', 'pharmacies'],
+    legend: DISTANCE_LEGEND,
+    legendTitle: 'Nearest-pharmacy walking distance',
+    zoom: 12.5,
+  },
+  {
+    township: 'ohb',
+    topic: 'typology',
+    eyebrow: 'Olievenhoutbosch, Gauteng / Walk access',
+    heading: 'Walk-access typology',
+    body: 'The final layer distinguishes pharmacy deserts from other access conditions. These are the walking metrics. 30 of the 82 enumeartion areas are classified as "well-served". Distance is not the problem, crowding is. Half of residents live where a pharmacy is close but shared by many people, and only 44% live in well-served areas.',
+    layers: ['extent-line', 'walk-typology', 'pharmacies'],
+    legend: WALK_TYPOLOGY_LEGEND,
+    legendTitle: 'Walk-access typology',
+    zoom: 12.5,
+  },
+  {
+    township: 'kwamashu',
+    topic: 'extent',
+    eyebrow: 'KwaMashu, KwaZulu-Natal',
+    heading: 'KwaMashu study area',
+    body: 'Moving on to KwaMashu, this is a township in KwaZulu-Natal. KwaMashu is located west of Durban and has less enumeration areas than Olievenhoutbosch. Let us examine the pharmacy access conditions.',
+    layers: ['extent-fill', 'extent-line'],
+    zoom: 12,
+  },
+  {
+    township: 'kwamashu',
+    topic: 'ea-type',
+    eyebrow: 'KwaMashu, KwaZulu-Natal / Neighborhood type',
+    heading: 'Census neighborhood types across KwaMashu',
+    body: 'The neighborhood type classification filtered to KwaMashu shows township, informal residential, formal residential and vacant census areas.',
+    layers: ['extent-fill', 'extent-line', 'ea-type', 'ea-type-line'],
+    legend: EA_TYPE_LEGEND,
+    legendTitle: 'Neighborhood type',
+    zoom: 12.2,
+  },
+  {
+    township: 'kwamashu',
+    topic: 'race',
+    eyebrow: 'KwaMashu, KwaZulu-Natal / Population',
+    heading: 'Racial composition by neighborhood type',
+    body: 'Below this portion shows a barchart of the racial distribution by nieghborhood type in KwaMashu. The racial distribution of KwaMashu is as follows: Black African 98.6%, Indian/Asian 1.0%, Coloured 0.2%.',
+    layers: ['extent-fill', 'extent-line', 'ea-type', 'ea-type-line'],
+    legend: EA_TYPE_LEGEND,
+    legendTitle: 'Neighborhood type',
+    showChart: true,
+    zoom: 12.25,
+  },
+  {
+    township: 'kwamashu',
+    topic: 'distance',
+    eyebrow: 'KwaMashu, KwaZulu-Natal / Walking distance',
+    heading: 'Which areas are more than 3 km from a pharmacy?',
+    body: 'The enumeration areas are classified from their measured walking distance to the nearest pharmacy. About 60% of the EAs in KwaMashu (152 of 253) are more than 3 km from a pharmacy on foot, mostly in the east. The farthest is 6.6 km',
+    layers: ['extent-line', 'distance', 'pharmacies'],
+    legend: DISTANCE_LEGEND,
+    legendTitle: 'Nearest-pharmacy walking distance',
+    zoom: 12.4,
+  },
+  {
+    township: 'kwamashu',
+    topic: 'typology',
+    eyebrow: 'KwaMashu, KwaZulu-Natal / Walk access',
+    heading: 'Walk-access typology',
+    body: 'Only about one in five residents lives in a well-served area. The 152 areas beyond 3 km break into three groups: access gaps (97 areas), artifact zones where few people live (34), and pharmacy deserts (21',
+    layers: ['extent-line', 'walk-typology', 'pharmacies'],
+    legend: WALK_TYPOLOGY_LEGEND,
+    legendTitle: 'Walk-access typology',
+    zoom: 12.5,
   },
 ]
 
-//D3 data chart is broken, redo with Rechart or delete 
-
-const ALL_LAYERS = [
-  'township-fill',
-  'township-outline',
+const AREA_LAYERS = [
+  'extent-fill',
+  'extent-line',
   'ea-type',
   'ea-type-line',
-  'access-binary',
+  'distance',
   'walk-typology',
-  'pharmacies',
 ]
 
-function buildChartDataFromGeoJSON(geojson, bbox) {
-  const [minLng, minLat, maxLng, maxLat] = bbox
-  const groups = {}
+const RACE_PROPERTY_BY_LABEL = Object.fromEntries(
+  Object.entries(RACE_PROPERTY_MAP).map(([property, label]) => [label, property]),
+)
 
-  for (const f of geojson.features) {
-    const p = f.properties
-    if (!p?.EA_TYPE) continue
-    if (!CHART_EA_TYPES.has(p.EA_TYPE)) continue
+function normalizeEAType(value) {
+  if (typeof value !== 'string') return null
+  const normalized = value.replace(/_\*$/, '')
+  return normalized === 'Small holdings' ? 'Smallholdings' : normalized
+}
 
-    const centroid = getCentroid(f.geometry)
-    if (centroid) {
-      const [lng, lat] = centroid
-      if (lng < minLng || lng > maxLng || lat < minLat || lat > maxLat) continue
-    }
-
-    const type = p.EA_TYPE
-    if (!groups[type]) {
-      groups[type] = { type, sal2023_est: 0, area_km2: 0, Black_African: 0, Coloured: 0, Indian_Asian: 0, White: 0, Other: 0 }
-    }
-    const g = groups[type]
-    g.sal2023_est   += p.sal2023_est   ?? 0
-    g.area_km2      += p.area_km2      ?? 0
-    g.Black_African += p.Black_African ?? 0
-    g.Coloured      += p.Coloured      ?? 0
-    g.Indian_Asian  += p.Indian_Asian  ?? 0
-    g.White         += p.White         ?? 0
-    g.Other         += p.Other         ?? 0
+function numericValue(value) {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : 0
+  if (typeof value === 'string' && value.trim()) {
+    const parsed = Number(value)
+    return Number.isFinite(parsed) ? parsed : 0
   }
+  return 0
+}
 
-  return EA_TYPE_ORDER.filter(t => groups[t]).map(t => {
-    const g = groups[t]
-    const total = g.sal2023_est || 1
-    return {
-      type: EA_TYPE_LABELS[g.type] ?? g.type,
-      density: g.area_km2 > 0 ? Math.round(g.sal2023_est / g.area_km2) : 0,
-      'Black African': Math.round((g.Black_African / total) * 100),
-      'Coloured':      Math.round((g.Coloured      / total) * 100),
-      'Indian/Asian':  Math.round((g.Indian_Asian  / total) * 100),
-      'White':         Math.round((g.White         / total) * 100),
-      'Other':         Math.round((g.Other         / total) * 100),
-    }
+function removeExactDuplicateFeatures(features) {
+  const seen = new Set()
+  return features.filter(feature => {
+    const code = feature.properties?.EA_CODE
+    if (code == null || !feature.geometry) return true
+
+    const key = `${code}:${JSON.stringify(feature.geometry)}`
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
   })
 }
 
-function getCentroid(geometry) {
-  if (!geometry) return null
-  if (geometry.type === 'Point') return geometry.coordinates
-  if (geometry.type === 'Polygon') {
-    const ring = geometry.coordinates[0]
-    let lng = 0, lat = 0
-    for (const [x, y] of ring) { lng += x; lat += y }
-    return [lng / ring.length, lat / ring.length]
+function buildTownshipAnalysis(geojson) {
+  if (!Array.isArray(geojson?.features)) {
+    throw new Error('Township data is not a GeoJSON FeatureCollection.')
   }
-  if (geometry.type === 'MultiPolygon') {
-    const ring = geometry.coordinates[0][0]
-    let lng = 0, lat = 0
-    for (const [x, y] of ring) { lng += x; lat += y }
-    return [lng / ring.length, lat / ring.length]
+
+  const features = removeExactDuplicateFeatures(geojson.features)
+  const groups = new Map()
+  const eaTypeCounts = {}
+  const typologyCounts = {}
+  const typologyPopulation = {}
+  const walkDistances = []
+  const distance = { over3km: 0, within3km: 0, unknown: 0 }
+  let population = 0
+
+  for (const feature of features) {
+    const properties = feature.properties ?? {}
+    const type = normalizeEAType(properties.EA_TYPE)
+    const featurePopulation = numericValue(properties.sal2023_est)
+    population += featurePopulation
+
+    if (type) eaTypeCounts[type] = (eaTypeCounts[type] ?? 0) + 1
+
+    const rawDistance = properties.walk_dist_k1_km
+    const walkDistance = typeof rawDistance === 'number'
+      ? rawDistance
+      : typeof rawDistance === 'string' && rawDistance.trim()
+        ? Number(rawDistance)
+        : Number.NaN
+
+    if (!Number.isFinite(walkDistance)) distance.unknown += 1
+    else {
+      walkDistances.push(walkDistance)
+      if (walkDistance > 3) distance.over3km += 1
+      else distance.within3km += 1
+    }
+
+    const typology = properties.walk_typology
+    if (typeof typology === 'string') {
+      typologyCounts[typology] = (typologyCounts[typology] ?? 0) + 1
+      typologyPopulation[typology] =
+        (typologyPopulation[typology] ?? 0) + featurePopulation
+    }
+
+    if (!type) continue
+
+    if (!groups.has(type)) {
+      groups.set(type, {
+        population: 0,
+        area: 0,
+        races: Object.fromEntries(RACE_KEYS.map(key => [key, 0])),
+      })
+    }
+
+    const group = groups.get(type)
+    group.population += featurePopulation
+    group.area += numericValue(properties.area_km2)
+    for (const race of RACE_KEYS) {
+      group.races[race] += numericValue(properties[RACE_PROPERTY_BY_LABEL[race]])
+    }
   }
-  return null
+
+  const chartTypes = [
+    ...EA_TYPE_ORDER.filter(type => groups.get(type)?.population > 0),
+    ...[...groups.keys()]
+      .filter(type => !EA_TYPE_ORDER.includes(type) && groups.get(type).population > 0)
+      .sort(),
+  ]
+  const chartData = chartTypes.map(type => {
+    const group = groups.get(type)
+
+    const raceTotal = RACE_KEYS.reduce((sum, key) => sum + group.races[key], 0)
+
+    return {
+      type: EA_TYPE_LABELS[type] ?? type,
+      density: group.area > 0 ? Math.round(group.population / group.area) : 0,
+      ...Object.fromEntries(
+        RACE_KEYS.map(key => [
+          key,
+          raceTotal > 0 ? Math.round((group.races[key] / raceTotal) * 100) : 0,
+        ]),
+      ),
+    }
+  })
+
+  return {
+    featureCount: features.length,
+    sourceFeatureCount: geojson.features.length,
+    duplicateFeatureCount: geojson.features.length - features.length,
+    geojson: { ...geojson, features },
+    eaTypeCounts,
+    typologyCounts,
+    typologyPopulation,
+    population,
+    distance: { ...distance, median: d3.median(walkDistances) },
+    chartData,
+  }
 }
 
-const MARGIN    = { top: 24, right: 36, bottom: 60, left: 8 }
-const BAR_MAX_H = 160
+const CHART_MARGIN = { top: 24, right: 32, bottom: 60, left: 8 }
+const CHART_MAX_HEIGHT = 150
 
-function drawDualChart(svgEl, width, showDensity, leftData, rightData) {
-  if (!svgEl || !width || !leftData?.length || !rightData?.length) return
+function drawTownshipChart(svgElement, width, chartData) {
+  if (!svgElement || !width || !chartData?.length) return
 
-  const height    = BAR_MAX_H + MARGIN.top + MARGIN.bottom + 20
-  const maxChartW = Math.min(width, 800)
-  const offsetX   = (width - maxChartW) / 2
-  const gapW      = 40
-  const halfW     = (maxChartW - MARGIN.left - MARGIN.right - gapW) / 2
-  const innerH    = BAR_MAX_H
-
-  const svg = d3.select(svgEl).attr('width', width).attr('height', height)
+  const height = CHART_MAX_HEIGHT + CHART_MARGIN.top + CHART_MARGIN.bottom
+  const maxWidth = Math.min(width, 760)
+  const offsetX = (width - maxWidth) / 2
+  const innerWidth = maxWidth - CHART_MARGIN.left - CHART_MARGIN.right
+  const svg = d3.select(svgElement).attr('width', width).attr('height', height)
   svg.selectAll('*').remove()
 
-  const allDensities = [...leftData, ...rightData].map(d => d.density)
-  const maxDensity   = d3.max(allDensities) || 1
-  const yScale       = d3.scaleLinear().domain([0, maxDensity]).range([0, innerH])
-  const barH         = d => showDensity ? yScale(d.density) : innerH
-
-  function drawHalf(parent, data, xOffset, label) {
-    const g = parent.append('g').attr('transform', `translate(${xOffset},${MARGIN.top})`)
-
-    g.append('text')
-      .attr('x', halfW / 2)
-      .attr('y', -8)
-      .attr('text-anchor', 'middle')
-      .attr('font-size', '10px')
-      .attr('font-weight', '600')
-      .attr('fill', '#2C3E6B')
-      .text(label)
-
-    const xScale = d3.scaleBand()
-      .domain(data.map(d => d.type))
-      .range([0, halfW])
-      .paddingInner(0.25)
-      .paddingOuter(0.05)
-
-    g.selectAll('.gl')
-      .data([25, 50, 75])
-      .join('line')
-      .attr('x1', 0).attr('x2', halfW)
-      .attr('y1', d => innerH - (d / 100) * innerH)
-      .attr('y2', d => innerH - (d / 100) * innerH)
-      .attr('stroke', 'rgba(60,60,80,0.06)')
-      .attr('stroke-dasharray', '3,4')
-
-    const stack  = d3.stack().keys(RACE_KEYS).value((d, key) => d[key] ?? 0)
-    const layers = stack(data)
-
-    const bg = g.selectAll('.bg')
-      .data(data, d => d.type)
-      .join('g')
-      .attr('class', 'bg')
-      .attr('transform', d => `translate(${xScale(d.type)},0)`)
-
-    layers.forEach((layer, li) => {
-      const key = layer.key
-      bg.selectAll(`.seg-${li}`)
-        .data(d => {
-          const seg = layer.find(s => s.data.type === d.type)
-          return [{ d, seg, key }]
-        })
-        .join('rect')
-        .attr('class', `seg-${li}`)
-        .attr('x', 0)
-        .attr('width', xScale.bandwidth())
-        .attr('fill', RACE_COLORS[key])
-        .attr('y', innerH)
-        .attr('height', 0)
-        .transition()
-        .duration(550)
-        .delay(li * 80)
-        .ease(d3.easeCubicOut)
-        .attr('y', ({ d, seg }) => {
-          const h = barH(d)
-          return innerH - h + (seg[0] / 100) * h
-        })
-        .attr('height', ({ d, seg }) => {
-          const h = barH(d)
-          return Math.max(0, ((seg[1] - seg[0]) / 100) * h)
-        })
-    })
-
-    bg.append('text')
-      .attr('class', 'density-lbl')
-      .attr('x', xScale.bandwidth() / 2)
-      .attr('text-anchor', 'middle')
-      .attr('font-size', '9px')
-      .attr('fill', '#2C3E6B')
-      .attr('font-weight', '600')
-      .text(d => d.density >= 1000 ? `${(d.density / 1000).toFixed(1)}k` : `${d.density}`)
-      .attr('y', innerH)
-      .attr('opacity', 0)
-      .transition()
-      .duration(400)
-      .delay(showDensity ? 500 : 0)
-      .attr('y', d => innerH - barH(d) - 5)
-      .attr('opacity', showDensity ? 1 : 0)
-
-    bg.selectAll('.x-lbl-line')
-      .data(d => d.type.split('\n').map((line, i) => ({ line, i, bw: xScale.bandwidth() })))
-      .join('text')
-      .attr('class', 'x-lbl-line')
-      .attr('x', ({ bw }) => bw / 2)
-      .attr('y', ({ i }) => innerH + 12 + i * 10)
-      .attr('text-anchor', 'middle')
-      .attr('font-size', '7.5px')
-      .attr('fill', 'rgba(40,40,60,0.5)')
-      .text(({ line }) => line)
-  }
-
   const root = svg.append('g')
+    .attr('transform', `translate(${offsetX + CHART_MARGIN.left},${CHART_MARGIN.top})`)
+  const x = d3.scaleBand()
+    .domain(chartData.map(row => row.type))
+    .range([0, innerWidth])
+    .paddingInner(0.3)
+    .paddingOuter(0.1)
+  const maxDensity = d3.max(chartData, row => row.density) || 1
+  const densityScale = d3.scaleLinear().domain([0, maxDensity]).range([0, CHART_MAX_HEIGHT])
+  const stack = d3.stack().keys(RACE_KEYS).value((row, key) => row[key] ?? 0)
+  const layers = stack(chartData)
 
-  drawHalf(root, leftData,  offsetX + MARGIN.left, LEFT_DEFAULT.label)
-  drawHalf(root, rightData, offsetX + MARGIN.left + halfW + gapW, RIGHT_DEFAULT.label)
+  root.selectAll('.n4-chart-gridline')
+    .data([25, 50, 75])
+    .join('line')
+    .attr('class', 'n4-chart-gridline')
+    .attr('x1', 0)
+    .attr('x2', innerWidth)
+    .attr('y1', value => CHART_MAX_HEIGHT - (value / 100) * CHART_MAX_HEIGHT)
+    .attr('y2', value => CHART_MAX_HEIGHT - (value / 100) * CHART_MAX_HEIGHT)
+    .attr('stroke', 'rgba(60,60,80,0.08)')
+    .attr('stroke-dasharray', '3,4')
 
-  root.append('line')
-    .attr('x1', offsetX + MARGIN.left + halfW + gapW / 2)
-    .attr('x2', offsetX + MARGIN.left + halfW + gapW / 2)
-    .attr('y1', MARGIN.top - 12)
-    .attr('y2', MARGIN.top + innerH)
-    .attr('stroke', 'rgba(60,60,80,0.12)')
-    .attr('stroke-width', 1)
-    .attr('stroke-dasharray', '4,3')
+  const bars = root.selectAll('.n4-chart-bar')
+    .data(chartData, row => row.type)
+    .join('g')
+    .attr('class', 'n4-chart-bar')
+    .attr('transform', row => `translate(${x(row.type)},0)`)
+
+  layers.forEach((layer, index) => {
+    bars.selectAll(`.n4-chart-segment-${index}`)
+      .data(row => [{
+        row,
+        segment: layer.find(item => item.data.type === row.type),
+      }])
+      .join('rect')
+      .attr('class', `n4-chart-segment-${index}`)
+      .attr('x', 0)
+      .attr('width', x.bandwidth())
+      .attr('fill', RACE_COLORS[layer.key])
+      .attr('y', ({ row, segment }) =>
+        CHART_MAX_HEIGHT - densityScale(row.density) +
+        (segment[0] / 100) * densityScale(row.density))
+      .attr('height', ({ row, segment }) =>
+        Math.max(0, ((segment[1] - segment[0]) / 100) * densityScale(row.density)))
+  })
+
+  bars.append('text')
+    .attr('class', 'n4-chart-density')
+    .attr('x', x.bandwidth() / 2)
+    .attr('y', row => CHART_MAX_HEIGHT - densityScale(row.density) - 5)
+    .attr('text-anchor', 'middle')
+    .attr('font-size', '9px')
+    .attr('font-weight', '600')
+    .attr('fill', '#2C3E6B')
+    .text(row => row.density >= 1000
+      ? `${(row.density / 1000).toFixed(1)}k people/km²`
+      : `${row.density.toLocaleString('en-ZA')} people/km²`)
+
+  bars.selectAll('.n4-chart-x-label')
+    .data(row => row.type.split('\n').map((line, index) => ({ line, index })))
+    .join('text')
+    .attr('class', 'n4-chart-x-label')
+    .attr('x', x.bandwidth() / 2)
+    .attr('y', ({ index }) => CHART_MAX_HEIGHT + 14 + index * 11)
+    .attr('text-anchor', 'middle')
+    .attr('font-size', '8.5px')
+    .attr('fill', 'rgba(40,40,60,0.55)')
+    .text(({ line }) => line)
 }
 
-function addDataLayers(map, side, salSource) {
-  map.addSource(`${side}-township`, {
-    type: 'geojson',
-    data: side === 'left' ? OHB_GEOJSON : KWAMASHU_GEOJSON,
-  })
-  map.addLayer({
-    id: `${side}-township-fill`, type: 'fill',
-    source: `${side}-township`,
-    layout: { visibility: 'none' },
-    paint: { 'fill-color': '#8B2500', 'fill-opacity': 0.04 },
-  })
-  map.addLayer({
-    id: `${side}-township-outline`, type: 'line',
-    source: `${side}-township`,
-    layout: { visibility: 'none' },
-    paint: { 'line-color': '#616161', 'line-width': 2.5, 'line-dasharray': [2, 1], 'line-opacity': 0.9 },
-  })
-
-  map.addSource(`${side}-sal`, {
-    type: 'geojson',
-    data: salSource,
-  })
+function addAreaLayers(map, township) {
+  const source = `${township}-areas`
+  map.addSource(source, { type: 'geojson', data: EMPTY_FEATURE_COLLECTION })
 
   map.addLayer({
-    id: `${side}-ea-type`, type: 'fill',
-    source: `${side}-sal`,
+    id: `${township}-extent-fill`,
+    type: 'fill',
+    source,
+    layout: { visibility: 'none' },
+    paint: { 'fill-color': '#8B2500', 'fill-opacity': 0.07 },
+  })
+  map.addLayer({
+    id: `${township}-extent-line`,
+    type: 'line',
+    source,
     layout: { visibility: 'none' },
     paint: {
-      'fill-color': EA_TYPE_FILL_EXPRESSION,
-      'fill-opacity': 0.7,
+      'line-color': '#4A342E',
+      'line-width': 1.5,
+      'line-dasharray': [2, 1],
+      'line-opacity': 0.8,
     },
   })
   map.addLayer({
-    id: `${side}-ea-type-line`, type: 'line',
-    source: `${side}-sal`,
+    id: `${township}-ea-type`,
+    type: 'fill',
+    source,
     layout: { visibility: 'none' },
-    paint: { 'line-color': '#ffffff', 'line-width': 0.3, 'line-opacity': 0.4 },
+    paint: { 'fill-color': EA_TYPE_FILL_EXPRESSION, 'fill-opacity': 0.76 },
   })
-
   map.addLayer({
-  id: `${side}-access-binary`,
-  type: 'fill',
-  source: `${side}-sal`,
-  layout: { visibility: 'none' },
-  paint: {
-    'fill-color': [
-      'match', ['get', 'exceeds_walk_k1_3km'],
-      'TRUE', '#C0392B',
-      'FALSE', '#3498DB',
-      '#cccccc'
-    ],
-    'fill-opacity': 0.7
+    id: `${township}-ea-type-line`,
+    type: 'line',
+    source,
+    layout: { visibility: 'none' },
+    paint: { 'line-color': '#ffffff', 'line-width': 0.45, 'line-opacity': 0.55 },
+  })
+  map.addLayer({
+    id: `${township}-distance`,
+    type: 'fill',
+    source,
+    layout: { visibility: 'none' },
+    paint: { 'fill-color': DISTANCE_3KM_COLOR, 'fill-opacity': 0.78 },
+  })
+  map.addLayer({
+    id: `${township}-walk-typology`,
+    type: 'fill',
+    source,
+    layout: { visibility: 'none' },
+    paint: { 'fill-color': WALK_TYPOLOGY_COLOR, 'fill-opacity': 0.84 },
+  })
+}
+
+function setStepLayers(map, step) {
+  for (const township of Object.keys(TOWNSHIPS)) {
+    for (const layer of AREA_LAYERS) {
+      const id = `${township}-${layer}`
+      if (map.getLayer(id)) {
+        const visible = township === step.township && step.layers.includes(layer)
+        map.setLayoutProperty(id, 'visibility', visible ? 'visible' : 'none')
+      }
+    }
   }
-})
 
-  map.addLayer({
-    id: `${side}-walk-typology`, type: 'fill',
-    source: `${side}-sal`,
-    layout: { visibility: 'none' },
-    paint: {
-      'fill-color': WALK_TYPOLOGY_COLOR,
-      'fill-opacity': 0.8,
-    },
-  })
-
-  map.addSource(`${side}-pharmacies`, {
-    type: 'geojson',
-    data: PHARMACIES,
-  })
-  map.addLayer({
-    id: `${side}-pharmacies`, type: 'circle',
-    source: `${side}-pharmacies`,
-    layout: { visibility: 'none' },
-    paint: {
-      'circle-radius': 4,
-      'circle-color': '#007A4D',
-      'circle-opacity': 0.9,
-      'circle-stroke-color': '#ffffff',
-      'circle-stroke-width': 1,
-    },
-  })
+  if (map.getLayer('pharmacies')) {
+    map.setLayoutProperty(
+      'pharmacies',
+      'visibility',
+      step.layers.includes('pharmacies') ? 'visible' : 'none',
+    )
+  }
 }
 
-function MapLegend({ items, title }) {
+function MapLegend({ items, title, compact = false }) {
+  const compactLabels = {
+    'Well-served': 'Well-Served',
+    'Demand overcrowding': 'Demand Overcrowding',
+    'Connectivity gap': 'Connectivity Gap',
+    'Access gap': 'Access Gap',
+    'Pharmacy desert': 'Pharmacy Desert',
+    'Artifact zone': 'Artifact Zone',
+  }
+
   return (
-    <div className="n4__map-legend">
+    <div className={`n4__map-legend ${compact ? 'n4__map-legend--typology' : ''}`}>
       {title && <span className="n4__map-legend-title">{title}</span>}
       {items.map(({ color, label }) => (
         <span key={label} className="n4__map-legend-item">
           <span className="n4__map-legend-swatch" style={{ background: color }} />
-          {label}
+          {compact ? compactLabels[label] ?? label : label}
         </span>
       ))}
     </div>
   )
 }
 
-export default function N4() {
-  const mapLeftContainer  = useRef(null)
-  const mapRightContainer = useRef(null)
-  const mapLeft   = useRef(null)
-  const mapRight  = useRef(null)
-  const loadedCount = useRef(0)
-  const mapHasFired = useRef(false)
-  const svgRef    = useRef(null)
-  const chartRef  = useRef(null)
+function MapSummary({ step, analysis }) {
+  if (!analysis) return null
+  const typologyRows = step.topic === 'typology'
+    ? Object.entries(WALK_TYPOLOGY_DEFINITIONS)
+      .filter(([type]) => analysis.typologyCounts[type])
+    : []
 
-  const [activeStep,  setActiveStep]  = useState(0)
-  const [mapLoaded,   setMapLoaded]   = useState(false)
-  const [showChart,   setShowChart]   = useState(false)
-  const [showDensity, setShowDensity] = useState(false)
-  const [chartData,   setChartData]   = useState({ left: null, right: null })
+  let rows = []
+  if (step.topic === 'ea-type' || step.topic === 'race') {
+    rows = EA_TYPE_ORDER
+      .filter(type => analysis.eaTypeCounts[type])
+      .map(type => [`${EA_TYPE_LABELS[type] ?? type}`.replace('\n', ' '), analysis.eaTypeCounts[type]])
+    for (const [type, count] of Object.entries(analysis.eaTypeCounts)) {
+      if (!EA_TYPE_ORDER.includes(type)) rows.push([type.replace(/_\*$/, ''), count])
+    }
+  } else if (step.topic === 'typology') {
+    rows = Object.entries(WALK_TYPOLOGY_COLORS)
+      .filter(([type]) => analysis.typologyCounts[type])
+      .map(([type]) => [type, analysis.typologyCounts[type]])
+    for (const [type, count] of Object.entries(analysis.typologyCounts)) {
+      if (!(type in WALK_TYPOLOGY_COLORS)) rows.push([type, count])
+    }
+  }
+
+  return (
+    <div className="n4__map-summary" aria-live="polite">
+      <span className="n4__map-summary-title">
+        {TOWNSHIPS[step.township].label}
+      </span>
+      <span>
+        {analysis.featureCount} {analysis.featureCount === 1 ? 'area' : 'areas'}
+      </span>
+      {step.topic === 'distance' ? (
+        <>
+          <strong>
+            {analysis.distance.within3km} of {analysis.distance.within3km + analysis.distance.over3km} areas within 3 km
+          </strong>
+          <span>
+            {analysis.distance.over3km} {analysis.distance.over3km === 1 ? 'area' : 'areas'} beyond 3 km
+          </span>
+        </>
+      ) : (
+        <ul>
+          {rows.map(([label, count]) => (
+            <li key={label}><span>{label}</span><strong>{count}</strong></li>
+          ))}
+        </ul>
+      )}
+      {step.topic === 'typology' && (
+        <details className="n4__map-summary-definitions">
+          <summary>What these mean</summary>
+          <ul>
+            {typologyRows.map(([type, definition]) => (
+              <li key={type}>
+                <span><strong>{type}</strong> — {definition}</span>
+                {SHOW_TYPOLOGY_SHARES && (
+                  <strong>
+                    {analysis.population > 0
+                      ? `${((analysis.typologyPopulation[type] / analysis.population) * 100).toLocaleString('en-ZA', {
+                          minimumFractionDigits: 1,
+                          maximumFractionDigits: 1,
+                        })}%`
+                      : '0.0%'}
+                  </strong>
+                )}
+              </li>
+            ))}
+          </ul>
+          <span className="n4__map-summary-note">
+          </span>
+        </details>
+      )}
+    </div>
+  )
+}
+
+export default function N4() {
+  const mapContainer = useRef(null)
+  const map = useRef(null)
+  const chartContainer = useRef(null)
+  const svgRef = useRef(null)
+
+  const [activeStep, setActiveStep] = useState(0)
+  const [mapLoaded, setMapLoaded] = useState(false)
+  const [showChart, setShowChart] = useState(false)
+  const [analysisByTownship, setAnalysisByTownship] = useState({})
+  const [chartError, setChartError] = useState(null)
 
   useEffect(() => {
-    if (mapLeft.current || mapRight.current) return
+    if (map.current || !mapContainer.current) return
 
-    mapLeft.current = new mapboxgl.Map({
-      container: mapLeftContainer.current,
+    const storyMap = new mapboxgl.Map({
+      container: mapContainer.current,
       style: 'mapbox://styles/mapbox/light-v11',
-      center: LEFT_DEFAULT.center,
-      zoom: LEFT_DEFAULT.zoom,
+      center: TOWNSHIPS.ohb.center,
+      zoom: TOWNSHIPS.ohb.zoom,
       interactive: false,
     })
+    map.current = storyMap
 
-    mapRight.current = new mapboxgl.Map({
-      container: mapRightContainer.current,
-      style: 'mapbox://styles/mapbox/light-v11',
-      center: RIGHT_DEFAULT.center,
-      zoom: RIGHT_DEFAULT.zoom,
-      interactive: false,
+    storyMap.on('load', () => {
+      if (map.current !== storyMap) return
+
+      addAreaLayers(storyMap, 'ohb')
+      addAreaLayers(storyMap, 'kwamashu')
+      storyMap.addSource('pharmacy-points', {
+        type: 'geojson',
+        data: `${BASE}data/pharmacies.geojson`,
+      })
+      storyMap.addLayer({
+        id: 'pharmacies',
+        type: 'circle',
+        source: 'pharmacy-points',
+        layout: { visibility: 'none' },
+        paint: {
+          ...PHARMACY_DOT_PAINT,
+        },
+      })
+
+      window._map = storyMap
+      storyMap.resize()
+      setMapLoaded(true)
     })
-
-    const onLoad = (map, side, salSource) => {
-      addDataLayers(map, side, salSource)
-      loadedCount.current += 1
-      if (loadedCount.current === 2) setMapLoaded(true)
-    }
-
-    mapLeft.current.on('load', () => onLoad(mapLeft.current, 'left', GAUTENG_GEOJSON))
-    mapRight.current.on('load', () => onLoad(mapRight.current, 'right', KZN_GEOJSON))
+    storyMap.on('error', event => console.warn('N4 map error:', event.error ?? event))
 
     return () => {
-      mapLeft.current?.remove();  mapLeft.current  = null
-      mapRight.current?.remove(); mapRight.current = null
+      storyMap.remove()
+      if (map.current === storyMap) map.current = null
+      if (window._map === storyMap) delete window._map
     }
   }, [])
 
   useEffect(() => {
-    Promise.all([
-      fetch(GAUTENG_GEOJSON).then(r => r.json()),
-      fetch(KZN_GEOJSON).then(r => r.json()),
-    ]).then(([gp, kzn]) => {
-      setChartData({
-        left:  buildChartDataFromGeoJSON(gp, OHB_BBOX),
-        right: buildChartDataFromGeoJSON(kzn, KWAMASHU_BBOX),
-      })
-    }).catch(() => {})
+    let cancelled = false
+
+    const loadAnalysis = async () => {
+      try {
+        const responses = await Promise.all(
+          Object.entries(TOWNSHIPS).map(async ([key, township]) => {
+            const response = await fetch(township.data)
+            if (!response.ok) {
+              throw new Error(`Unable to load ${township.label} data (${response.status}).`)
+            }
+            return [key, buildTownshipAnalysis(await response.json())]
+          }),
+        )
+        if (!cancelled) setAnalysisByTownship(Object.fromEntries(responses))
+      } catch (error) {
+        console.error('N4 township analysis data failed to load:', error)
+        if (!cancelled) setChartError(error)
+      }
+    }
+
+    loadAnalysis()
+    return () => { cancelled = true }
   }, [])
 
   useEffect(() => {
-    if (!mapLoaded) return
+    if (!mapLoaded || !map.current) return
 
-    const toggle = (map, layerId, visible) => {
-      if (map?.getLayer(layerId))
-        map.setLayoutProperty(layerId, 'visibility', visible ? 'visible' : 'none')
+    for (const [township, analysis] of Object.entries(analysisByTownship)) {
+      const source = map.current.getSource(`${township}-areas`)
+      if (source && 'setData' in source) source.setData(analysis.geojson)
     }
+  }, [mapLoaded, analysisByTownship])
 
-    const applyStep = (index) => {
-      const step = STEPS[index]
-      const setLayers = (map, side, layerNames) => {
-        ALL_LAYERS.forEach(l => toggle(map, `${side}-${l}`, layerNames.includes(l)))
-      }
-
-      if (step.splitLayers) {
-        setLayers(mapLeft.current,  'left',  step.layersLeft  ?? [])
-        setLayers(mapRight.current, 'right', step.layersRight ?? [])
-      } else {
-        const layers = step.layers ?? []
-        setLayers(mapLeft.current,  'left',  layers)
-        setLayers(mapRight.current, 'right', layers)
-      }
-    }
+  useEffect(() => {
+    if (!mapLoaded || !map.current) return
 
     const scroller = scrollama()
     scroller
-      .setup({ step: '.n4 .step-card', offset: 0.85, progress: true })
+      .setup({ step: '.n4 .step-card', offset: 0.8, progress: true })
       .onStepEnter(({ index }) => {
-        setActiveStep(index)
         const step = STEPS[index]
-        mapHasFired.current = false
-        setShowChart(false)
-        setShowDensity(false)
-        applyStep(index)
+        if (!step) return
 
-        if (!step.showChart) {
-          mapLeft.current?.flyTo({ ...(step.leftFly ?? step.fly ?? {}), duration: 2200, essential: true })
-          mapRight.current?.flyTo({ ...(step.rightFly ?? step.fly ?? {}), duration: 2200, essential: true })
-        }
+        setActiveStep(index)
+        setShowChart(false)
+        setStepLayers(map.current, step)
+        map.current.flyTo({
+          center: TOWNSHIPS[step.township].center,
+          zoom: step.zoom,
+          duration: 2200,
+          essential: true,
+        })
       })
       .onStepProgress(({ index, progress }) => {
-        const step = STEPS[index]
-        if (!step.showChart) return
-
-        if (progress > 0.2 && !mapHasFired.current) {
-          mapLeft.current?.flyTo({ ...(step.leftFly ?? step.fly ?? {}), duration: 2200, essential: true })
-          mapRight.current?.flyTo({ ...(step.rightFly ?? step.fly ?? {}), duration: 2200, essential: true })
-          mapHasFired.current = true
-        }
-
-        if (progress > 0.85) {
-          setShowChart(true)
-          setShowDensity(!!step.showDensity)
-        } else {
-          setShowChart(false)
-        }
+        setShowChart(Boolean(STEPS[index]?.showChart && progress > 0.72))
       })
-      .onStepExit(({ index }) => {
-        if (STEPS[index].showChart) {
-          setShowChart(false)
-          setShowDensity(false)
-          mapHasFired.current = false
-        }
+      .onStepExit(() => {
+        setShowChart(false)
       })
 
     return () => scroller.destroy()
   }, [mapLoaded])
 
-  useEffect(() => {
-    if (svgRef.current) d3.select(svgRef.current).selectAll('*').remove()
-  }, [chartData])
-
-  useEffect(() => {
-    if (!showChart || !chartRef.current || !svgRef.current) return
-    if (!chartData.left || !chartData.right) return
-    const w = chartRef.current.getBoundingClientRect().width
-    drawDualChart(svgRef.current, w, showDensity, chartData.left, chartData.right)
-  }, [showChart, showDensity, chartData])
-
-  useEffect(() => {
-    if (!chartRef.current) return
-    const ro = new ResizeObserver(() => {
-      if (!showChart || !svgRef.current || !chartData.left || !chartData.right) return
-      const w = chartRef.current.getBoundingClientRect().width
-      drawDualChart(svgRef.current, w, showDensity, chartData.left, chartData.right)
-    })
-    ro.observe(chartRef.current)
-    return () => ro.disconnect()
-  }, [showChart, showDensity, chartData])
-
   const step = STEPS[activeStep]
-  const chartEyebrow = showDensity
-    ? 'Neighborhood type · composition + density · side-by-side'
-    : 'Neighborhood type · racial composition · side-by-side'
+  const analysis = analysisByTownship[step.township]
+  const chartData = analysis?.chartData
+
+  useEffect(() => {
+    if (!showChart || !chartContainer.current || !svgRef.current || !chartData) return
+    drawTownshipChart(
+      svgRef.current,
+      chartContainer.current.getBoundingClientRect().width,
+      chartData,
+    )
+  }, [showChart, chartData])
+
+  useEffect(() => {
+    if (!chartContainer.current) return
+    const observer = new ResizeObserver(() => {
+      if (!showChart || !chartContainer.current || !svgRef.current || !chartData) return
+      drawTownshipChart(
+        svgRef.current,
+        chartContainer.current.getBoundingClientRect().width,
+        chartData,
+      )
+    })
+    observer.observe(chartContainer.current)
+    return () => observer.disconnect()
+  }, [showChart, chartData])
 
   return (
     <section className="n4" id="n4">
       <div className="n4__steps">
-        {STEPS.map((s, i) => (
-          <StepCard key={i} {...s} isActive={activeStep === i} variant="pharmacy" />
+        {STEPS.map((storyStep, index) => (
+          <StepCard
+            key={`${storyStep.township}-${storyStep.topic}`}
+            {...storyStep}
+            isActive={activeStep === index}
+            variant="pharmacy"
+          />
         ))}
       </div>
 
       <div className="n4__graphic">
-        <div className="n4__map-panel">
-          <span className="n4__map-label">{LEFT_DEFAULT.label}</span>
-          <div
-            ref={mapLeftContainer}
-            className="n4__map"
-            style={{ opacity: showChart ? 0.18 : 1, transition: 'opacity 0.7s ease' }}
-          />
-        </div>
+        <span className="n4__map-label">{TOWNSHIPS[step.township].label}</span>
+        <div
+          ref={mapContainer}
+          className="n4__map"
+          style={{
+            opacity: showChart ? 0.62 : 1,
+            transition: 'opacity 0.7s ease',
+          }}
+        />
 
-        <div className="n4__map-divider" />
-
-        <div className="n4__map-panel">
-          <span className="n4__map-label">{RIGHT_DEFAULT.label}</span>
-          <div
-            ref={mapRightContainer}
-            className="n4__map"
-            style={{ opacity: showChart ? 0.18 : 1, transition: 'opacity 0.7s ease' }}
-          />
-        </div>
-
-        {step?.legend && !showChart && (
+        {step.legend && !showChart && (
           <MapLegend
             items={step.legend}
             title={step.legendTitle}
+            compact={step.topic === 'typology'}
           />
         )}
+        <MapSummary step={step} analysis={analysis} />
 
         <div
-          ref={chartRef}
+          ref={chartContainer}
           className={`n4__chart-overlay ${showChart ? 'n4__chart-overlay--visible' : ''}`}
         >
           <div className="n4__chart-header">
-            <p className="n4__chart-eyebrow">{chartEyebrow}</p>
+            <p className="n4__chart-eyebrow">
+              {TOWNSHIPS[step.township].label} / Population density and racial composition by neighborhood type
+            </p>
             {showChart && (
               <div className="n4__chart-legend">
-                {RACE_KEYS.map(k => (
-                  <span key={k} className="n4__legend-item">
-                    <span className="n4__legend-swatch" style={{ background: RACE_COLORS[k] }} />
-                    {RACE_LABELS[k]}
+                {RACE_KEYS.map(key => (
+                  <span key={key} className="n4__legend-item">
+                    <span className="n4__legend-swatch" style={{ background: RACE_COLORS[key] }} />
+                    {RACE_LABELS[key]}
                   </span>
                 ))}
               </div>
             )}
           </div>
 
-          <svg ref={svgRef} style={{ display: 'block', overflow: 'visible' }} />
 
+          {showChart && chartError && (
+            <p className="n4__chart-error" role="alert">
+              Township demographics could not be loaded: {chartError.message}
+            </p>
+          )}
+          {showChart && !chartError && !chartData && (
+            <p className="n4__chart-loading">Loading township demographics...</p>
+          )}
+          <svg ref={svgRef} style={{ display: 'block', overflow: 'visible' }} />
           <p className="n4__chart-source">
-            DAIR, 2011 SAL + 2023 WARD raw data, 2023 predicted data
+            Racial counts and EA_TYPE from township SAL polygons; density uses 2023 population estimate / km².
           </p>
         </div>
       </div>

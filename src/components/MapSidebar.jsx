@@ -1,5 +1,19 @@
 import { useState } from 'react'
 import './mapsidebar.css'
+import {
+  TYPOLOGY_LEGEND,
+  EA_TYPE_LEGEND,
+  EXCEEDS_WALK_LEGEND,
+  TRANSPORT_GAP_LEGEND,
+  ECON_STATUS_LEGEND,
+} from '../constants/legendData'
+import {
+  SNAP_FLAG_COLOR,
+  SNAP_FLAG_OPACITY_VALUE,
+  PCT_BLACK_STOPS,
+  POP_DENSITY_STOPS,
+} from '../constants/layerExpressions'
+import { PHARMACY_DOT_PAINT } from '../constants/mapStyles'
 
 // ─────────────────────────────────────────────
 // Constants
@@ -37,41 +51,17 @@ const LAYERS = [
 ]
 
 // Legend data keyed by active access layer
+// TODO(pass 2): derive this ramp from the shared walk-distance stops.
 const ACCESS_RAMP = [
   '#002395', '#1a4fa8', '#4a80c4', '#8ab0d8',
   '#c8d8e8', '#e8c97a', '#ebc159', '#d4a030',
 ]
 
-const TYPOLOGY_LEGEND = [
-  { color: '#002395', label: 'Pharmacy desert'     },
-  { color: '#4a80c4', label: 'Access gap'          },
-  { color: '#8ab0d8', label: 'Connectivity gap'    },
-  { color: '#C8B89A', label: 'Artifact zone'       },
-  { color: '#e8c97a', label: 'Demand overcrowding' },
-  { color: '#d4a030', label: 'Well-served'         },
-]
-
-const EA_TYPE_LEGEND = [
-  { color: '#442520', label: 'Township'              },
-  { color: '#6B5C4E', label: 'Informal residential'  },
-  { color: '#C8B89A', label: 'Formal / Suburb'       },
-  { color: '#8ab0d8', label: 'Traditional'           },
-  { color: '#002395', label: 'Commercial'            },
-  { color: '#EDE7DC', label: 'Farms / Smallholdings' },
-]
-
-const POP_DENSITY_CHIPS = [
-  { color: '#F5F0E8', label: 'Sparse' },
-  { color: '#C8B89A', label: ''       },
-  { color: '#6B5C4E', label: ''       },
-  { color: '#2A2318', label: ''       },
-  { color: '#1A1A1A', label: 'Dense'  },
-]
-
 const STATS_PLACEHOLDER = [
-  { label: 'Pharmacies',           value: '–', subtext: 'visible in viewport'        },
-  { label: 'SALs beyond 3km walk', value: '–', subtext: 'exceeds walk k=1 threshold' },
-  { label: 'Avg walk rank',        value: '–', subtext: 'mean normalised walk rank'   },
+  { label: 'Pharmacies in view', value: '–', subtext: 'points in viewport' },
+  { label: 'Township population', value: '–', subtext: 'share of visible population' },
+  { label: 'SALs >3 km walk', value: '–', subtext: 'count; population share when available' },
+  { label: 'SALs >10 km drive', value: '–', subtext: 'count; population share when available' },
 ]
 
 // ─────────────────────────────────────────────
@@ -103,6 +93,43 @@ function LegendRamp({ colors, lowLabel = 'Low', highLabel = 'High' }) {
         {colors.map((hex, i) => (
           <div key={i} className="legend__ramp-seg" style={{ background: hex }} />
         ))}
+      </div>
+    </>
+  )
+}
+
+function LegendStopRamp({ stops, formatLabel = stop => stop.label ?? stop.value }) {
+  const maxValue = stops[stops.length - 1].value
+  const gradient = `linear-gradient(to right, ${stops.map(({ color, value }) => (
+    `${color} ${(value / maxValue) * 100}%`
+  )).join(', ')})`
+
+  return (
+    <>
+      <div className="legend__ramp" style={{ background: gradient }} />
+      <div className="legend__stop-labels">
+        {stops.map((stop, index) => {
+          const position = (stop.value / maxValue) * 100
+          const previousPosition = index > 0
+            ? (stops[index - 1].value / maxValue) * 100
+            : null
+          const crowded = previousPosition !== null && position - previousPosition < 12
+          const alignment = index === 0
+            ? 'legend__stop-label--first'
+            : index === stops.length - 1
+              ? 'legend__stop-label--last'
+              : ''
+
+          return (
+            <span
+              key={stop.value}
+              className={`legend__stop-label ${alignment} ${crowded ? 'legend__stop-label--staggered' : ''}`}
+              style={{ left: `${position}%` }}
+            >
+              {formatLabel(stop)}
+            </span>
+          )
+        })}
       </div>
     </>
   )
@@ -146,6 +173,7 @@ function ActiveLegend({ layers }) {
           <p className="legend__sublabel">
             {activeAccess.id === 'walk-dist-k1' ? 'Walk distance to k=1 pharmacy' : 'Walk distance to k=3 pharmacy'}
           </p>
+          {/* TODO(pass 2): derive ramp stops from shared walk-distance colors */}
           <LegendRamp colors={[...ACCESS_RAMP].reverse()} lowLabel="Near" highLabel="Far" />
         </>
       )}
@@ -153,34 +181,41 @@ function ActiveLegend({ layers }) {
       {/* Overlay indicators */}
       {layers['pharmacy-dots'] && (
         <div className="legend__entry" style={{ marginTop: 8 }}>
-          <span className="legend__dot" />
+          <span
+            className="legend__dot"
+            style={{
+              background: PHARMACY_DOT_PAINT['circle-color'],
+              borderColor: PHARMACY_DOT_PAINT['circle-stroke-color'],
+            }}
+          />
           <span className="legend__entry-label">Pharmacy location</span>
         </div>
       )}
 
       {layers['exceeds-walk-3km'] && (
-        <div className="legend__entry" style={{ marginTop: 4 }}>
-          <span className="legend__swatch" style={{ background: '#002395' }} />
-          <span className="legend__entry-label">Beyond 3km walk</span>
-        </div>
+        EXCEEDS_WALK_LEGEND.map(({ color, label }) => (
+          <div key={label} className="legend__entry" style={{ marginTop: 4 }}>
+            <span className="legend__swatch" style={{ background: color }} />
+            <span className="legend__entry-label">{label}</span>
+          </div>
+        ))
       )}
 
       {layers['transport-gap'] && (
-        <>
-          <div className="legend__entry" style={{ marginTop: 4 }}>
-            <span className="legend__swatch" style={{ background: '#c73c16' }} />
-            <span className="legend__entry-label">Walk desert, drive served</span>
+        TRANSPORT_GAP_LEGEND.map(({ color, label }, index) => (
+          <div key={label} className="legend__entry" style={{ marginTop: index === 0 ? 4 : 2 }}>
+            <span className="legend__swatch" style={{ background: color }} />
+            <span className="legend__entry-label">{label}</span>
           </div>
-          <div className="legend__entry" style={{ marginTop: 2 }}>
-            <span className="legend__swatch" style={{ background: '#002395' }} />
-            <span className="legend__entry-label">No access either mode</span>
-          </div>
-        </>
+        ))
       )}
 
       {layers['walk-snap-flag'] && (
         <div className="legend__entry" style={{ marginTop: 4 }}>
-          <span className="legend__swatch" style={{ background: '#c73c16', opacity: 0.4 }} />
+          <span
+            className="legend__swatch"
+            style={{ background: SNAP_FLAG_COLOR, opacity: SNAP_FLAG_OPACITY_VALUE }}
+          />
           <span className="legend__entry-label">Data uncertainty (snap &gt;500m)</span>
         </div>
       )}
@@ -195,38 +230,27 @@ function ActiveLegend({ layers }) {
 
       {layers['pct-black-african'] && (
         <>
-          <p className="legend__sublabel" style={{ marginTop: 8 }}>% Black African</p>
-          <LegendRamp colors={ACCESS_RAMP} lowLabel="0%" highLabel="100%" />
+          <p className="legend__sublabel legend__sublabel--ramp" style={{ marginTop: 8 }}>% Black African</p>
+          <LegendStopRamp
+            stops={PCT_BLACK_STOPS}
+            formatLabel={({ value }) => `${Math.round(value * 100)}%`}
+          />
         </>
       )}
 
       {layers['econ-status'] && (
         <>
           <p className="legend__sublabel" style={{ marginTop: 8 }}>Economic status</p>
-          <LegendSwatches items={[
-            { color: '#d4a030', label: 'Wealthy'          },
-            { color: '#002395', label: 'Non-wealthy'      },
-            { color: '#C8B89A', label: 'Non-residential'  },
-          ]} />
+          <LegendSwatches items={ECON_STATUS_LEGEND} />
         </>
       )}
 
       {layers['pop-density'] && (
         <>
-          <p className="legend__sublabel" style={{ marginTop: 8 }}>Population density</p>
-          <div className="legend__chips">
-            {POP_DENSITY_CHIPS.map((chip, i) => (
-              <div key={i} className="legend__chip">
-                <div
-                  className="legend__chip-swatch"
-                  style={{ background: chip.color }}
-                />
-                {chip.label && (
-                  <span className="legend__chip-label">{chip.label}</span>
-                )}
-              </div>
-            ))}
-          </div>
+          <p className="legend__sublabel legend__sublabel--ramp" style={{ marginTop: 8 }}>
+            Population density (people/km²)
+          </p>
+          <LegendStopRamp stops={POP_DENSITY_STOPS} />
         </>
       )}
 

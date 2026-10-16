@@ -1,408 +1,385 @@
 import { useEffect, useRef, useState } from 'react'
 import mapboxgl from 'mapbox-gl'
 import scrollama from 'scrollama'
-import {
-  BarChart, Bar, XAxis, YAxis, Tooltip,
-  ResponsiveContainer, Cell, LabelList,
-} from 'recharts'
 import StepCard from './StepCard'
 import './n5.css'
 import {
-  CHART_EA_TYPES,
-  EA_TYPE_ORDER,
-  EA_TYPE_LABELS,
+  DENSITY_COLOR_EXPRESSION,
+  DENSITY_COLOR_STOPS,
+  DENSITY_CIRCLE_RADIUS,
+  EA_TYPE_COLORS,
   EA_TYPE_FILL_EXPRESSION,
+  EA_TYPE_LABELS,
+  EA_TYPE_ORDER,
+  PHARMACY_DOT_PAINT,
+  WALK_TYPOLOGY_COLORS,
 } from '../constants/mapStyles'
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN
 const BASE = import.meta.env.BASE_URL || '/'
+const EMPTY_FEATURE_COLLECTION = { type: 'FeatureCollection', features: [] }
+const NUMBER_FORMAT = new Intl.NumberFormat('en-ZA', { maximumFractionDigits: 0 })
 
-const GAUTENG_GEOJSON  = `${BASE}data/gauteng_polygons.geojson`
-const KZN_GEOJSON      = `${BASE}data/kzn_polygons.geojson`
-const GAUTENG_BOUNDARY = `${BASE}data/gauteng_boundary.geojson`
-const KZN_BOUNDARY     = `${BASE}data/kzn_boundary.geojson`
-const PHARMACIES       = `${BASE}data/pharmacies.geojson`
+const PROVINCES = {
+  gauteng: {
+    label: 'Gauteng',
+    data: `${BASE}data/gauteng.geojson`,
+    boundary: `${BASE}data/gauteng_boundary.geojson`,
+    center: [28.13, -26.02],
+    zoom: 8,
+  },
+  kzn: {
+    label: 'KwaZulu-Natal',
+    data: `${BASE}data/kzn.geojson`,
+    boundary: `${BASE}data/kzn_boundary.geojson`,
+    center: [30.88, -28.94],
+    zoom: 7,
+  },
+}
 
-const LEFT_DEFAULT  = { center: [28.09, -26.08], zoom: 8, label: 'Gauteng' }
-const RIGHT_DEFAULT = { center: [30.96, -29.71], zoom: 9, label: 'KwaZulu-Natal' }
+const PHARMACIES_DATA = `${BASE}data/pharmacies.geojson`
+const AREA_LAYER_IDS = ['n5-ea-type', 'n5-walk-typology', 'n5-density']
+const BOUNDARY_LAYER_IDS = ['n5-gauteng-boundary', 'n5-kzn-boundary']
 
-const WALK_TYPOLOGY_COLOR = [
-  'match', ['get', 'walk_typology'],
-  'Pharmacy desert',      '#8B0000',
-  'Connectivity gap',     '#C0392B',
-  'Demand overcrowding',  '#E67E22',
-  'Underserved',          '#F1C40F',
-  'Adequate',             '#82C46C',
-  'Well-served',          '#27AE60',
-  '#CCCCCC',
+const WALK_TYPOLOGY_COLOR_EXPRESSION = [
+  'match',
+  ['get', 'walk_typology'],
+  ...Object.entries(WALK_TYPOLOGY_COLORS).flat(),
+  'rgba(0, 0, 0, 0)',
 ]
 
-const DENSITY_FILL_COLOR = [
-  'interpolate', ['linear'],
-  ['/', ['get', 'sal2023_est'], ['max', ['get', 'area_km2'], 0.001]],
-  0,     '#002395',  // --data-access-1 / --color-blue: near-zero density, rural
-  500,   '#4a80c4',  // --data-access-3: low density
-  2000,  '#c8d8e8',  // --data-access-5: medium density
-  5000,  '#e8c97a',  // --data-access-6: high-density transition
-  10000, '#d4a030',  // --data-access-8 / --color-gold-dark: urban core, highest density
-]
-
-const DENSITY_LEGEND = [
-  { color: '#002395', label: '0 ppl/km²' },   // --data-access-1
-  { color: '#4a80c4', label: '500' },           // --data-access-3
-  { color: '#c8d8e8', label: '2,000' },         // --data-access-5
-  { color: '#e8c97a', label: '5,000' },         // --data-access-6
-  { color: '#d4a030', label: '10,000+' },       // --data-access-8
-]
-
-const ACCESS_TIERS = [
-  { key: 'Well-served',          color: '#27AE60' },
-  { key: 'Adequate',             color: '#82C46C' },
-  { key: 'Underserved',          color: '#F1C40F' },
-  { key: 'Demand overcrowding',  color: '#E67E22' },
-  { key: 'Connectivity gap',     color: '#C0392B' },
-  { key: 'Pharmacy desert',      color: '#8B0000' },
-]
-
-const EA_TYPE_LEGEND = [
-  { color: '#8B2500', label: 'Township' },
-  { color: '#C4713A', label: 'Informal residential' },
-  { color: '#6B8FA8', label: 'Formal residential / Suburb' },
-  { color: '#4A7C6F', label: 'Traditional residential' },
-  { color: '#A89860', label: 'Smallholdings' },
-  { color: '#C8B878', label: 'Farms' },
-  { color: '#002395', label: 'Commercial' },
-  { color: '#555566', label: 'Industrial' },
-]
-
-const WALK_TYPOLOGY_LEGEND = [
-  { color: '#8B0000', label: 'Pharmacy desert' },
-  { color: '#C0392B', label: 'Connectivity gap' },
-  { color: '#E67E22', label: 'Demand overcrowding' },
-  { color: '#F1C40F', label: 'Underserved' },
-  { color: '#82C46C', label: 'Adequate' },
-  { color: '#27AE60', label: 'Well-served' },
-]
+const WALK_TYPOLOGY_DEFINITIONS = {
+  'Well-served': 'Walking access to pharmacies is good.',
+  'Demand overcrowding': 'Pharmacy access is strained by high local demand.',
+  'Connectivity gap': 'Road or network connectivity limits access.',
+  'Access gap': 'Walking access to a pharmacy is limited.',
+  'Pharmacy desert': 'The area is far from pharmacies by walking.',
+  'Artifact zone': 'A high access score is driven by low local demand.',
+}
 
 const STEPS = [
-
-  // Step 0: Neighborhood type overview — the apartheid spatial pattern before any
-  // pharmacy data appears. Reader needs this social geography baseline to understand
-  // why the access map in step 2 looks the way it does.
   {
-    eyebrow: 'Return to Provinces',
-    heading: 'The pattern at scale',
-    body: 'This pattern is not unique to the two neighborhoods studied. Across Gauteng and KwaZulu-Natal, pharmacy access is dictated by neighborhood type and racial composition. As the province-wide maps show, the same relationship observed in KwaMashu and Olievenhoutbosch holds at scale. Neighborhood type directly translates to accessibility scores, and neighborhood type was largely determined by apartheid.',
-    leftFly:  { center: [28.09, -26.08], zoom: 8 },
-    rightFly: { center: [30.96, -29.71], zoom: 9 },
-    layers: ['ea-type', 'ea-type-line', 'boundary-line'],
-    legend: EA_TYPE_LEGEND,
-    legendTitle: 'Neighborhood type',
-  },
-  // Step 1: reveal pharmacy locations over the EA_TYPE for province context.
-  {
-    eyebrow: 'Pharmacy Distribution',
-    heading: 'Where are the pharmacies?',
-    body: 'Gauteng has over double the regulated pharmacies of KZN. Each KZN pharmacy serves ~15,100 people — 70% more than Gauteng\'s ~8,900.',
-    leftFly:  { center: [28.09, -26.08], zoom: 8 },
-    rightFly: { center: [30.96, -29.71], zoom: 9 },
-    layers: ['ea-type', 'ea-type-line', 'pharmacies', 'boundary-line'],
-    legend: [...EA_TYPE_LEGEND, { color: '#007A4D', label: 'Pharmacy' }],
-    legendTitle: 'Neighborhoods + Pharmacies',
-  },
-
-  // Step 2: Switch from social geography to access geography.
-  // 17.6M people with no walkable pharmacy is the project's core headline statistic.
-  {
-    eyebrow: 'Walk Access',
-    heading: '17.6 million with no walkable pharmacy',
-    body: '72.1% of the combined population has zero walkable pharmacy access. Only 2.5% — about 609,000 people — are well-served on foot.',
-    leftFly:  { center: [28.09, -26.08], zoom: 8 },
-    rightFly: { center: [30.96, -29.71], zoom: 9 },
-    layers: ['walk-typology', 'boundary-line'],
-    legend: WALK_TYPOLOGY_LEGEND,
-    legendTitle: 'Walk access typology',
-  },
-  // Step 3: Add pharmacies back over walk typology — the spatial mismatch is now
-  // visible. Pharmacies exist, but they cluster precisely where access is already adequate.
-  {
-    eyebrow: 'Pharmacies + Access',
-    heading: 'The spatial mismatch',
-    body: 'Pharmacies cluster where access is already adequate. The areas that need them most — townships, traditional settlements — are the furthest from care.',
-    leftFly:  { center: [28.09, -26.08], zoom: 8 },
-    rightFly: { center: [30.96, -29.71], zoom: 9 },
-    layers: ['walk-typology', 'pharmacies', 'boundary-line'],
-    legend: [...WALK_TYPOLOGY_LEGEND, { color: '#007A4D', label: 'Pharmacy' }],
-    legendTitle: 'Access + Pharmacies',
-  },
-  // // Step 4: Split view — left=EA_TYPE (who lives where), right=walk-typology (access).
-  // Side-by-side makes the apartheid correlation directly legible without a chart.
-  // The splitLayers flag tells applyStep() to configure each map independently.
-  {
-    eyebrow: 'The Apartheid Correlation',
-    heading: 'Neighborhood type meets pharmacy gap',
-    body: 'The question of who can reach a pharmacy is inseparable from the question of where apartheid placed them.',
-    leftFly:  { center: [28.09, -26.08], zoom: 7.5 },
-    rightFly: { center: [30.96, -29.71], zoom: 8.5 },
-    splitLayers: true,
-    layersLeft:  ['ea-type', 'ea-type-line', 'boundary-line'],
-    layersRight: ['walk-typology', 'boundary-line'],
-  },
-  // Step 5: Population density choropleth — gold zones are the densest areas.
-  // High density + poor access = where the pharmacy desert hits hardest.
-  // This layer uses a Mapbox interpolate expression (sal2023_est / area_km2);
-  // no pre-computed density field is required in the GeoJSON.
-  {
-    eyebrow: 'Where People Actually Live',
-    heading: 'Population density reveals the stakes',
-    body: 'The gold zones are the densest — and often the most underserved. High population density without pharmacy access concentrates the burden of the gap.',
-    leftFly:  { center: [28.09, -26.08], zoom: 8 },
-    rightFly: { center: [30.96, -29.71], zoom: 16 },
-    layers: ['density-fill', 'boundary-line'],
-    showDensityLegend: true,
-  },
-
-  // Step 6: Recharts bar chart — population broken down by walk access tier.
-  // showChart triggers the chart overlay; chartType selects which Recharts component.
-  // The horizontal bar layout makes the 72% figure viscerally legible.
-  {
-    eyebrow: 'By the Numbers',
-    heading: 'Population by walk access tier',
-    body: 'The combined Gauteng + KZN population classified by walk-mode pharmacy access score.',
-    leftFly:  { center: [28.09, -26.08], zoom: 8 },
-    rightFly: { center: [30.96, -29.71], zoom: 16 },
-    layers: ['walk-typology', 'boundary-line'],
-    showChart: true,
-    chartType: 'access-pop',
-    legend: WALK_TYPOLOGY_LEGEND,
-    legendTitle: 'Walk access typology',
+    province: 'gauteng',
+    topic: 'ea-type',
+    heading: 'Gauteng: EA_TYPE',
+    body: 'Circles are colored by the EA_TYPE recorded for each point. ', 
   },
   {
-    eyebrow: 'Looking Forward',
-    heading: 'Confronting the geography apartheid built',
-    body: 'The NHI Act of 2024 expands financial access — but closing the gap requires investing in pharmacy infrastructure where it\'s needed most.',
-    leftFly:  { center: [28.09, -26.08], zoom: 7 },
-    rightFly: { center: [30.96, -29.71], zoom: 16 },
-    layers: [],
-    isClosing: true
+    province: 'kzn',
+    topic: 'ea-type',
+    heading: 'KwaZulu-Natal: EA_TYPE',
+    body: 'Circles are colored by the EA_TYPE recorded for each point. ', // TODO: Rewrite placeholder story copy.
+  },
+  {
+    province: 'gauteng',
+    topic: 'ea-type',
+    showPharmacies: true,
+    heading: 'Gauteng: EA_TYPE and pharmacies',
+    body: 'Gauteng has 1,453 pharmacies , roughly one for every 10,400 people in Gauteng. ', 
+  },
+  {
+    province: 'kzn',
+    topic: 'ea-type',
+    showPharmacies: true,
+    heading: 'KwaZulu-Natal: EA_TYPE and pharmacies',
+    body: 'KwaZulu-Natal has 699 pharmacies, roughly one for every 17,800 people in KwaZulu-Natal',
+  },
+  {
+    province: 'gauteng',
+    topic: 'walk-typology',
+    heading: 'Gauteng: walk access typology',
+    body: 'About 16% of the population in Gauteng is more than 3 km from a pharmacy on foot', 
+  },
+  {
+    province: 'gauteng',
+    topic: 'walk-typology',
+    showPharmacies: true,
+    heading: 'Gauteng: walk access and pharmacies',
+    body: 'About 16% of the population in Gauteng is more than 3 km from a pharmacy on foot ', 
+  },
+  {
+    province: 'kzn',
+    topic: 'walk-typology',
+    heading: 'KwaZulu-Natal: walk access typology',
+    body: 'About 63% of the population in KwaZulu-Natal is more than 3 km from a pharmacy on foot. Most of that gap sits in traditional residential areas, the former homeland areas', 
+  },
+  {
+    province: 'kzn',
+    topic: 'walk-typology',
+    showPharmacies: true,
+    heading: 'KwaZulu-Natal: walk access and pharmacies',
+    body: 'Walk-access typology circles and pharmacy points are visible together. ', // TODO: Rewrite placeholder story copy.
+  },
+  {
+    province: 'gauteng',
+    topic: 'density',
+    heading: 'Gauteng: population density',
+    body: 'Circle size represents estimated population per square kilometre. ', // TODO: Rewrite placeholder story copy.
+  },
+  {
+    province: 'kzn',
+    topic: 'density',
+    heading: 'KwaZulu-Natal: population density',
+    body: 'Dense places are not necessarily better served. The informal settlements in KwaMashu pack in about 26,700 people per km², more than three times its township areas. ', // TODO: Rewrite placeholder story copy.
   },
 ]
 
+// TODO: Add any later data-story beats after these ten map beats.
 
- //All layer suffixes managed by applyStep(). Each map uses these prefixed with
-// 'left-' or 'right-'. boundary-line is included so the closing step can hide it.
-const ALL_LAYERS = [
-  'ea-type',
-  'ea-type-line',
-  'density-fill',
-  'walk-typology',
-  'pharmacies',
-  'boundary-line',
-]
+function numericValue(value, field, featureCode) {
+  const number = typeof value === 'number' ? value : Number(value)
+  if (!Number.isFinite(number)) {
+    throw new Error(`Invalid ${field} value for enumeration area ${featureCode ?? '(unknown)'}.`)
+  }
+  return number
+}
 
-function buildAccessPopData(geojson) {
-  const tiers = {}
-  ACCESS_TIERS.forEach(t => { tiers[t.key] = 0 })
+function normalizeEAType(value) {
+  if (typeof value !== 'string') return null
+  const normalized = value.replace(/_\*$/, '')
+  return normalized === 'Small holdings' ? 'Smallholdings' : normalized
+}
 
-  for (const f of geojson.features) {
-    const p = f.properties
-    if (!p) continue
-    const typ = p.walk_typology ?? ''
-    const pop = p.sal2023_est ?? 0
-    if (tiers[typ] !== undefined) tiers[typ] += pop
+function removeExactDuplicateFeatures(features) {
+  const seen = new Set()
+  return features.filter(feature => {
+    const code = feature.properties?.EA_CODE
+    if (code == null || !feature.geometry) return true
+
+    const key = `${code}:${JSON.stringify(feature.geometry)}`
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}
+
+function orderedEntries(stats) {
+  const keys = [
+    ...EA_TYPE_ORDER,
+    ...Object.keys(EA_TYPE_LABELS),
+    ...[...stats.keys()].sort(),
+  ]
+  return [...new Set(keys)]
+    .filter(key => stats.has(key))
+    .map(key => [key, stats.get(key)])
+}
+
+function buildProvinceAnalysis(geojson, provinceKey) {
+  if (geojson?.type !== 'FeatureCollection' || !Array.isArray(geojson.features)) {
+    throw new Error(`${PROVINCES[provinceKey].label} data is not a GeoJSON FeatureCollection.`)
   }
 
-  const total = Object.values(tiers).reduce((a, b) => a + b, 0) || 1
-  return ACCESS_TIERS.map(t => ({
-    name: t.key,
-    population: tiers[t.key],
-    percent: Math.round((tiers[t.key] / total) * 1000) / 10,
-    color: t.color,
-  }))
-}
+  const uniqueFeatures = removeExactDuplicateFeatures(geojson.features)
+  const pointFeatures = uniqueFeatures.filter(feature => feature.geometry?.type === 'Point')
+  const excludedNonPointFeatureCount = uniqueFeatures.length - pointFeatures.length
+  const nullWalkTypologyFeatureCount = uniqueFeatures.filter(
+    feature => feature.properties?.walk_typology == null,
+  ).length
+  const eaTypeStats = new Map()
+  const walkTypologyStats = new Map()
+  let population = 0
+  let area = 0
 
-//function buildAccessByEAData(geojson) {
-  //const groups = {}
+  const normalizedFeatures = pointFeatures.map(feature => {
+    const properties = feature.properties ?? {}
+    const eaType = normalizeEAType(properties.EA_TYPE)
+    const code = properties.EA_CODE
 
-  //for (const f of geojson.features) {
-    //const p = f.properties
-    //if (!p?.EA_TYPE) continue
-    //if (!CHART_EA_TYPES.has(p.EA_TYPE)) continue
+    if (!eaType || !Object.hasOwn(EA_TYPE_COLORS, eaType)) {
+      throw new Error(`Unknown EA_TYPE "${properties.EA_TYPE}" in ${PROVINCES[provinceKey].label}.`)
+    }
 
-    //const type = p.EA_TYPE
-    //if (!groups[type]) {
-      //groups[type] = { type, total: 0 }
-      //ACCESS_TIERS.forEach(t => {
-        //groups[type][`walk_${t.key}`] = 0
-        //groups[type][`drive_${t.key}`] = 0
-      //})
-    //}
-    //const g = groups[type]
-    //const pop = p.sal2023_est ?? 0
-    //const walkTyp = p.walk_typology ?? ''
-    //const driveTyp = p.drive_typology ?? ''
-    //g.total += pop
-    //if (g[`walk_${walkTyp}`] !== undefined) g[`walk_${walkTyp}`] += pop
-    //if (g[`drive_${driveTyp}`] !== undefined) g[`drive_${driveTyp}`] += pop
-  //}
+    const featurePopulation = numericValue(properties.sal2023_est, 'sal2023_est', code)
+    const featureArea = numericValue(properties.area_km2, 'area_km2', code)
+    const walkTypology = properties.walk_typology
 
-  //return EA_TYPE_ORDER.filter(t => groups[t]).map(t => {
-    //const g = groups[t]
-    //const total = g.total || 1
-    //const row = { type: (EA_TYPE_LABELS[t] ?? t).replace('\n', ' '), population: g.total }
-    //ACCESS_TIERS.forEach(tier => {
-      //row[`walk_${tier.key}`] = Math.round((g[`walk_${tier.key}`] / total) * 100)
-      //row[`drive_${tier.key}`] = Math.round((g[`drive_${tier.key}`] / total) * 100)
-    //})
-    //return row
-  //})
-//}
+    population += featurePopulation
+    area += featureArea
 
-function AccessPopChart({ data }) {
-  if (!data?.length) return null
-  return (
-    <div className="n5__chart-container">
-      <p className="n5__chart-title">Population by walk access tier</p>
-      <ResponsiveContainer width="100%" height={220}>
-        <BarChart data={data} layout="vertical" margin={{ top: 5, right: 80, bottom: 5, left: 140 }}>
-          <XAxis type="number" hide />
-          <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: '#555' }} width={135} />
-          <Tooltip
-            formatter={(val) => `${(val / 1000000).toFixed(2)}M people`}
-            labelStyle={{ fontWeight: 600 }}
-          />
-          <Bar dataKey="population" radius={[0, 4, 4, 0]}>
-            {data.map((entry, i) => (
-              <Cell key={i} fill={entry.color} />
-            ))}
-            <LabelList
-              dataKey="percent"
-              position="right"
-              formatter={(v) => `${v}%`}
-              style={{ fontSize: 11, fill: '#333', fontWeight: 600 }}
-            />
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
-      <p className="n5__chart-source">Combined Gauteng + KZN · 2SFCA walk accessibility score</p>
-    </div>
+    const eaStats = eaTypeStats.get(eaType) ?? { count: 0, population: 0 }
+    eaStats.count += 1
+    eaStats.population += featurePopulation
+    eaTypeStats.set(eaType, eaStats)
+
+    if (typeof walkTypology === 'string' && walkTypology.trim()) {
+      if (!Object.hasOwn(WALK_TYPOLOGY_COLORS, walkTypology)) {
+        throw new Error(`Unknown walk_typology "${walkTypology}" in ${PROVINCES[provinceKey].label}.`)
+      }
+      const typologyStats = walkTypologyStats.get(walkTypology) ?? { count: 0, population: 0 }
+      typologyStats.count += 1
+      typologyStats.population += featurePopulation
+      walkTypologyStats.set(walkTypology, typologyStats)
+    }
+
+    return {
+      ...feature,
+      properties: { ...properties, EA_TYPE: eaType },
+    }
+  })
+
+  if (!pointFeatures.length) {
+    throw new Error(`${PROVINCES[provinceKey].label} data contains no Point features.`)
+  }
+
+  const analysis = {
+    provinceKey,
+    sourceFeatureCount: geojson.features.length,
+    uniqueFeatureCount: uniqueFeatures.length,
+    duplicateFeatureCount: geojson.features.length - uniqueFeatures.length,
+    pointFeatureCount: normalizedFeatures.length,
+    excludedNonPointFeatureCount,
+    nullWalkTypologyFeatureCount,
+    eaTypeStats,
+    walkTypologyStats,
+    population,
+    area,
+    density: area > 0 ? population / area : 0,
+    geojson: { type: 'FeatureCollection', features: normalizedFeatures },
+  }
+
+  console.info(
+    `N5 ${PROVINCES[provinceKey].label}: ${analysis.sourceFeatureCount.toLocaleString()} source features, ` +
+    `${analysis.uniqueFeatureCount.toLocaleString()} unique features ` +
+    `(${analysis.pointFeatureCount.toLocaleString()} mapped points; ` +
+    `${analysis.duplicateFeatureCount.toLocaleString()} exact duplicates).`,
   )
+  return analysis
 }
 
-function AccessByEAChart({ data }) {
-  if (!data?.length) return null
-  return (
-    <div className="n5__chart-container">
-      <p className="n5__chart-title">Access tier distribution by neighborhood type</p>
-      <ResponsiveContainer width="100%" height={280}>
-        <BarChart data={data} margin={{ top: 5, right: 30, bottom: 50, left: 10 }}>
-          <XAxis
-            dataKey="type"
-            tick={{ fontSize: 9, fill: '#555' }}
-            angle={-25}
-            textAnchor="end"
-            height={60}
-          />
-          <YAxis
-            domain={[0, 100]}
-            tick={{ fontSize: 9, fill: '#999' }}
-            tickFormatter={(v) => `${v}%`}
-          />
-          <Tooltip
-            formatter={(val, name) => [`${val}%`, name]}
-            labelStyle={{ fontWeight: 600 }}
-          />
-          <Legend
-            wrapperStyle={{ fontSize: 10, paddingTop: 8 }}
-          />
-          {ACCESS_TIERS.slice().reverse().map(t => (
-            <Bar key={t.key} dataKey={t.key} stackId="a" fill={t.color} />
-          ))}
-        </BarChart>
-      </ResponsiveContainer>
-      <p className="n5__chart-source">Combined Gauteng + KZN · % of population per EA_TYPE</p>
-    </div>
-  )
+function normalizeProvince(value) {
+  const normalized = typeof value === 'string'
+    ? value.toLowerCase().replace(/[^a-z]/g, '')
+    : ''
+  if (normalized === 'gauteng') return 'gauteng'
+  if (normalized === 'kwazulunatal') return 'kzn'
+  return null
 }
 
-function addDataLayers(map, side, salSource) {
-  map.addSource(`${side}-boundary`, {
-    type: 'geojson',
-    data: side === 'left' ? GAUTENG_BOUNDARY : KZN_BOUNDARY,
-  })
-  map.addLayer({
-    id: `${side}-boundary-line`, type: 'line',
-    source: `${side}-boundary`,
-    layout: { visibility: 'none' },
-    paint: { 'line-color': '#1A1A1A', 'line-width': 1.5, 'line-opacity': 0.6 },
-  })
+function buildPharmacyAnalysis(geojson) {
+  if (geojson?.type !== 'FeatureCollection' || !Array.isArray(geojson.features)) {
+    throw new Error('Pharmacy data is not a GeoJSON FeatureCollection.')
+  }
 
-  //SAL polygon source, used by ea-type, density fill, walk typology 
+  const pharmaciesByProvince = { gauteng: [], kzn: [] }
+  let unassignedCount = 0
 
-  map.addSource(`${side}-sal`, {
-    type: 'geojson',
-    data: salSource,
-  })
+  for (const feature of geojson.features) {
+    const province = normalizeProvince(feature.properties?.PROVINCE)
+    if (province && feature.geometry?.type === 'Point') {
+      pharmaciesByProvince[province].push(feature)
+    } else {
+      unassignedCount += 1
+    }
+  }
 
-  //EA_TYPE layer with categorical fill and white outline for legibility
-
-  map.addLayer({
-    id: `${side}-ea-type`, type: 'fill',
-    source: `${side}-sal`,
-    layout: { visibility: 'none' },
-    paint: { 'fill-color': EA_TYPE_FILL_EXPRESSION, 'fill-opacity': 0.7 },
-  })
-  map.addLayer({
-    id: `${side}-ea-type-line`, type: 'line',
-    source: `${side}-sal`,
-    layout: { visibility: 'none' },
-    paint: { 'line-color': '#ffffff', 'line-width': 0.3, 'line-opacity': 0.4 },
-  })
-
-  map.addLayer({
-    id: `${side}-density-fill`, type: 'fill',
-    source: `${side}-sal`,
-    layout: { visibility: 'none' },
-    paint: {
-      'fill-color': DENSITY_FILL_COLOR,
-      'fill-opacity': 0.82,
+  return {
+    sourceFeatureCount: geojson.features.length,
+    counts: {
+      gauteng: pharmaciesByProvince.gauteng.length,
+      kzn: pharmaciesByProvince.kzn.length,
     },
-  })
+    unassignedCount,
+    byProvince: Object.fromEntries(
+      Object.entries(pharmaciesByProvince).map(([key, features]) => [
+        key,
+        { type: 'FeatureCollection', features },
+      ]),
+    ),
+  }
+}
 
-  map.addLayer({
-    id: `${side}-walk-typology`, type: 'fill',
-    source: `${side}-sal`,
-    layout: { visibility: 'none' },
-    paint: { 'fill-color': WALK_TYPOLOGY_COLOR, 'fill-opacity': 0.8 },
-  })
+let dataLoadPromise
 
-  // Pharmacies layer — point data from the GeoJSON source, styled as green circles with white outlines.
+function loadN5Data() {
+  if (!dataLoadPromise) {
+    dataLoadPromise = Promise.all([
+      ...Object.entries(PROVINCES).map(async ([key, province]) => {
+        const response = await fetch(province.data)
+        if (!response.ok) {
+          throw new Error(`Unable to load ${province.label} data (${response.status}).`)
+        }
+        return [key, buildProvinceAnalysis(await response.json(), key)]
+      }),
+      (async () => {
+        const response = await fetch(PHARMACIES_DATA)
+        if (!response.ok) {
+          throw new Error(`Unable to load pharmacy data (${response.status}).`)
+        }
+        return ['pharmacies', buildPharmacyAnalysis(await response.json())]
+      })(),
+    ]).then(entries => {
+      const data = Object.fromEntries(entries)
+      console.info(
+        `N5 pharmacies: ${data.pharmacies.counts.gauteng.toLocaleString()} assigned to Gauteng, ` +
+        `${data.pharmacies.counts.kzn.toLocaleString()} assigned to KwaZulu-Natal, ` +
+        `${data.pharmacies.unassignedCount.toLocaleString()} unassigned.`,
+      )
+      return data
+    }).catch(error => {
+      dataLoadPromise = null
+      throw error
+    })
+  }
+  return dataLoadPromise
+}
 
-  map.addSource(`${side}-pharmacies`, {
-    type: 'geojson',
-    data: PHARMACIES,
-  })
-  map.addLayer({
-    id: `${side}-pharmacies`, type: 'circle',
-    source: `${side}-pharmacies`,
-    layout: { visibility: 'none' },
-    paint: {
-      'circle-radius': 4,
-      'circle-color': '#007A4D',
-      'circle-opacity': 0.9,
-      'circle-stroke-color': '#ffffff',
-      'circle-stroke-width': 1,
-    },
-  })
+function formatNumber(value) {
+  return NUMBER_FORMAT.format(value)
+}
+
+function formatPercent(value) {
+  return `${value.toLocaleString('en-ZA', {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  })}%`
+}
+
+function formatArea(value) {
+  return `${value.toLocaleString('en-ZA', {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  })} km2`
+}
+
+function displayEAType(type) {
+  return (EA_TYPE_LABELS[type] ?? type).replace(/\n/g, ' ')
+}
+
+function buildLegend(step, provinceAnalysis) {
+  let items
+  if (step.topic === 'ea-type') {
+    items = orderedEntries(provinceAnalysis.eaTypeStats).map(([type]) => ({
+      color: EA_TYPE_COLORS[type],
+      label: displayEAType(type),
+    }))
+  } else if (step.topic === 'walk-typology') {
+    items = Object.keys(WALK_TYPOLOGY_COLORS)
+      .filter(type => provinceAnalysis.walkTypologyStats.has(type))
+      .map(type => ({ color: WALK_TYPOLOGY_COLORS[type], label: type }))
+  } else {
+    return []
+  }
+
+  if (step.showPharmacies) {
+    items.push({
+      color: PHARMACY_DOT_PAINT['circle-color'],
+      label: 'Pharmacy',
+    })
+  }
+  return items
 }
 
 function MapLegend({ items, title }) {
   return (
     <div className="n5__map-legend">
-      {title && <span className="n5__map-legend-title">{title}</span>}
+      <span className="n5__map-legend-title">{title}</span>
       {items.map(({ color, label }) => (
         <span key={label} className="n5__map-legend-item">
-          <span className="n5__map-legend-swatch" style={{ background: color }} />
+          <span
+            className="n5__map-legend-swatch"
+            style={{ backgroundColor: color }}
+            aria-hidden="true"
+          />
           {label}
         </span>
       ))}
@@ -413,10 +390,14 @@ function MapLegend({ items, title }) {
 function DensityLegend() {
   return (
     <div className="n5__map-legend">
-      <span className="n5__map-legend-title">Population density (ppl/km²)</span>
-      {DENSITY_LEGEND.map(({ color, label }) => (
+      <span className="n5__map-legend-title">Population density (people/km2)</span>
+      {DENSITY_COLOR_STOPS.map(({ color, label }) => (
         <span key={label} className="n5__map-legend-item">
-          <span className="n5__map-legend-swatch" style={{ background: color }} />
+          <span
+            className="n5__map-legend-swatch"
+            style={{ backgroundColor: color }}
+            aria-hidden="true"
+          />
           {label}
         </span>
       ))}
@@ -424,205 +405,337 @@ function DensityLegend() {
   )
 }
 
-export default function N5() {
-  const mapLeftContainer  = useRef(null)
-  const mapRightContainer = useRef(null)
-  const mapLeft   = useRef(null)
-  const mapRight  = useRef(null)
-  // tracks how many maps finisehd loading their data layers
-  const loadedCount = useRef(0)
-
-  // The chartFlyFired ref prevents the flyTo animation from triggering multiple times
-
-  const chartFlyFired = useRef(false)
-
-  const [activeStep,    setActiveStep]    = useState(0)
-  const [mapLoaded,     setMapLoaded]     = useState(false)
-  const [showChart,     setShowChart]     = useState(false)
-  const [accessPopData, setAccessPopData] = useState(null)
-
-  //Initializies both maps 
-
-  useEffect(() => {
-    if (mapLeft.current || mapRight.current) return
-
-    mapLeft.current = new mapboxgl.Map({
-      container: mapLeftContainer.current,
-      style: 'mapbox://styles/mapbox/light-v11',
-      center: LEFT_DEFAULT.center,
-      zoom: LEFT_DEFAULT.zoom,
-      interactive: false,
-    })
-
-    mapRight.current = new mapboxgl.Map({
-      container: mapRightContainer.current,
-      style: 'mapbox://styles/mapbox/light-v11',
-      center: RIGHT_DEFAULT.center,
-      zoom: RIGHT_DEFAULT.zoom,
-      interactive: false,
-    })
-
-    const onLoad = (map, side, salSource) => {
-      addDataLayers(map, side, salSource)
-      loadedCount.current += 1
-      if (loadedCount.current === 2) {
-        // Resize both maps BEFORE setting mapLoaded.
-        // Mapbox calculates canvas dimensions at initialization — if the component
-        // mounts inside a sticky flex layout that has zero height at that moment
-        // (common with SSR or deferred rendering), the canvas will be blank.
-        // Calling resize() after both maps finish loading forces a recalculation
-        // using the actual DOM dimensions that exist after layout settles.
-        mapLeft.current.resize()
-        mapRight.current.resize()
-        setMapLoaded(true)
-      }
-    }
-
-    mapLeft.current.on('load', () => onLoad(mapLeft.current, 'left', GAUTENG_GEOJSON))
-    mapRight.current.on('load', () => onLoad(mapRight.current, 'right', KZN_GEOJSON))
-
-    return () => {
-      mapLeft.current?.remove();  mapLeft.current  = null
-      mapRight.current?.remove(); mapRight.current = null
-    }
-  }, [])
-
-  //Chart data fetch 
-
-  useEffect(() => {
-    Promise.all([
-      fetch(GAUTENG_GEOJSON).then(r => r.json()),
-      fetch(KZN_GEOJSON).then(r => r.json()),
-    ]).then(([gp, kzn]) => {
-      const combined = { type: 'FeatureCollection', features: [...gp.features, ...kzn.features] }
-      setAccessPopData(buildAccessPopData(combined))
-    }).catch(() => {})
-  }, [])
-
-  // Scrollama set up 
-
-  useEffect(() => {
-    if (!mapLoaded) return
-
-    const toggle = (map, layerId, visible) => {
-      if (map?.getLayer(layerId))
-        map.setLayoutProperty(layerId, 'visibility', visible ? 'visible' : 'none')
-    }
-
-    const applyStep = (index) => {
-      const step = STEPS[index]
-      const setLayers = (map, side, layerNames) => {
-        ALL_LAYERS.forEach(l => toggle(map, `${side}-${l}`, layerNames.includes(l)))
-      }
-
-      if (step.splitLayers) {
-        setLayers(mapLeft.current,  'left',  step.layersLeft  ?? [])
-        setLayers(mapRight.current, 'right', step.layersRight ?? [])
-      } else {
-        const layers = step.layers ?? []
-        setLayers(mapLeft.current,  'left',  layers)
-        setLayers(mapRight.current, 'right', layers)
-      }
-    }
-
-    const scroller = scrollama()
-    scroller
-      .setup({ step: '.n5 .step-card', offset: 0.85, progress: true })
-      .onStepEnter(({ index }) => {
-        setActiveStep(index)
-        const step = STEPS[index]
-        setShowChart(false)
-        applyStep(index)
-
-        if (!step.showChart) {
-          mapLeft.current?.flyTo({ ...(step.leftFly ?? {}), duration: 2500, essential: true })
-          mapRight.current?.flyTo({ ...(step.rightFly ?? {}), duration: 2500, essential: true })
-        }
-      })
-      .onStepProgress(({ index, progress }) => {
-        const step = STEPS[index]
-        if (!step.showChart) return
-
-        if (progress > 0.2) {
-          mapLeft.current?.flyTo({ ...(step.leftFly ?? {}), duration: 2500, essential: true })
-          mapRight.current?.flyTo({ ...(step.rightFly ?? {}), duration: 2500, essential: true })
-        }
-
-      setShowChart(progress > 0.75)
-      })
-      .onStepExit(({ index }) => {
-        if (STEPS[index].showChart) {
-          setShowChart(false)
-          chartFlyFired.current = false
-        }
-      })
-
-    return () => scroller.destroy()
-  }, [mapLoaded])
-
-  const step = STEPS[activeStep]
+function MapSummary({ step, provinceAnalysis, pharmacyAnalysis }) {
+  const province = PROVINCES[step.province]
+  const eaRows = step.topic === 'ea-type'
+    ? orderedEntries(provinceAnalysis.eaTypeStats)
+    : []
+  const typologyRows = step.topic === 'walk-typology'
+    ? Object.entries(WALK_TYPOLOGY_COLORS)
+      .filter(([type]) => provinceAnalysis.walkTypologyStats.has(type))
+      .map(([type]) => [type, provinceAnalysis.walkTypologyStats.get(type)])
+    : []
 
   return (
-  <section className="n5" id="n5">
+    <aside className="n5__map-summary" aria-live="polite">
+      <span className="n5__map-summary-title">{province.label} / map data</span>
+      {step.topic === 'ea-type' && (
+        <>
+          <ul className="n5__summary-metrics">
+            <li>
+              <span>Unique mapped enumeration areas (EAs)</span>
+              <strong>{formatNumber(provinceAnalysis.pointFeatureCount)}</strong>
+            </li>
+            <li>
+              <span>Population (2023 estimates)</span>
+              <strong>{formatNumber(provinceAnalysis.population)}</strong>
+            </li>
+          </ul>
+          <div className="n5__map-summary-columns">
+            <span>Neighborhood Type</span><span>EAs</span><span>Population</span>
+          </div>
+          <ul>
+            {eaRows.map(([type, stats]) => (
+              <li key={type}>
+                <span>{displayEAType(type)}</span>
+                <strong>{formatNumber(stats.count)}</strong>
+                <strong>{formatNumber(stats.population)}</strong>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+
+      {step.topic === 'walk-typology' && (
+        <>
+          <div className="n5__map-summary-columns">
+            <span>Walk typology</span><span>Areas</span><span>Population / share</span>
+          </div>
+          <ul>
+            {typologyRows.map(([type, stats]) => (
+              <li key={type}>
+                <span>{type}</span>
+                <strong>{formatNumber(stats.count)}</strong>
+                <strong>
+                  {formatNumber(stats.population)} / {formatPercent(
+                    provinceAnalysis.population > 0
+                      ? (stats.population / provinceAnalysis.population) * 100
+                      : 0,
+                  )}
+                </strong>
+              </li>
+            ))}
+          </ul>
+          <p className="n5__map-summary-note">
+            Artifact zone reflects high access scores in low-demand areas. Routing uncertainty can be explored in the map page's walk-snap-flag layer.
+          </p>
+          <details className="n5__map-summary-definitions">
+            <summary>What these mean</summary>
+            <ul>
+              {typologyRows.map(([type]) => (
+                <li key={type}>
+                  <span><strong>{type}</strong> — {WALK_TYPOLOGY_DEFINITIONS[type]}</span>
+                </li>
+              ))}
+            </ul>
+          </details>
+        </>
+      )}
+
+      {step.topic === 'density' && (
+        <ul className="n5__summary-metrics">
+          <li><span>Population</span><strong>{formatNumber(provinceAnalysis.population)}</strong></li>
+          <li><span>Total area</span><strong>{formatArea(provinceAnalysis.area)}</strong></li>
+          <li>
+            <span>Overall density</span>
+            <strong>
+              {provinceAnalysis.density.toLocaleString('en-ZA', {
+                minimumFractionDigits: 1,
+                maximumFractionDigits: 1,
+              })} people/km2
+            </strong>
+          </li>
+        </ul>
+      )}
+
+      {step.showPharmacies && (
+        <ul className="n5__summary-metrics">
+          <li>
+            <span>Pharmacies</span>
+            <strong>{formatNumber(pharmacyAnalysis.counts[step.province])}</strong>
+          </li>
+        </ul>
+      )}
+
+      <p className="n5__map-summary-note">
+        {formatNumber(provinceAnalysis.pointFeatureCount)} mapped points from{' '}
+        {formatNumber(provinceAnalysis.sourceFeatureCount)} source features;{' '}
+        {formatNumber(provinceAnalysis.duplicateFeatureCount)} exact duplicates removed and{' '}
+        {formatNumber(provinceAnalysis.excludedNonPointFeatureCount)} non-point feature(s) excluded.
+        {' '}{formatNumber(provinceAnalysis.nullWalkTypologyFeatureCount)} source feature(s) have no
+        walk typology and are excluded from tier counts.
+      </p>
+    </aside>
+  )
+}
+
+function addMapLayers(map) {
+  map.addSource('n5-areas', {
+    type: 'geojson',
+    data: EMPTY_FEATURE_COLLECTION,
+  })
+  map.addSource('n5-pharmacies', {
+    type: 'geojson',
+    data: EMPTY_FEATURE_COLLECTION,
+  })
+  map.addSource('n5-gauteng-boundary-source', {
+    type: 'geojson',
+    data: PROVINCES.gauteng.boundary,
+  })
+  map.addSource('n5-kzn-boundary-source', {
+    type: 'geojson',
+    data: PROVINCES.kzn.boundary,
+  })
+
+  map.addLayer({
+    id: 'n5-gauteng-boundary',
+    type: 'line',
+    source: 'n5-gauteng-boundary-source',
+    layout: { visibility: 'none' },
+    paint: { 'line-color': EA_TYPE_COLORS.Industrial, 'line-width': 1.5, 'line-opacity': 0.8 },
+  })
+  map.addLayer({
+    id: 'n5-kzn-boundary',
+    type: 'line',
+    source: 'n5-kzn-boundary-source',
+    layout: { visibility: 'none' },
+    paint: { 'line-color': EA_TYPE_COLORS.Industrial, 'line-width': 1.5, 'line-opacity': 0.8 },
+  })
+  map.addLayer({
+    id: 'n5-ea-type',
+    type: 'circle',
+    source: 'n5-areas',
+    layout: { visibility: 'none' },
+    paint: {
+      'circle-color': EA_TYPE_FILL_EXPRESSION,
+      'circle-radius': DENSITY_CIRCLE_RADIUS,
+      'circle-opacity': 0.82,
+      'circle-stroke-color': '#ffffff',
+      'circle-stroke-width': 0.25,
+    },
+  })
+  map.addLayer({
+    id: 'n5-density',
+    type: 'circle',
+    source: 'n5-areas',
+    layout: { visibility: 'none' },
+    paint: {
+      'circle-color': DENSITY_COLOR_EXPRESSION,
+      'circle-radius': DENSITY_CIRCLE_RADIUS,
+      'circle-opacity': 0.72,
+    },
+  })
+  map.addLayer({
+    id: 'n5-walk-typology',
+    type: 'circle',
+    source: 'n5-areas',
+    filter: ['all', ['has', 'walk_typology'], ['!=', ['get', 'walk_typology'], null]],
+    layout: { visibility: 'none' },
+    paint: {
+      'circle-color': WALK_TYPOLOGY_COLOR_EXPRESSION,
+      'circle-radius': 2.5,
+      'circle-opacity': 0.82,
+    },
+  })
+  map.addLayer({
+    id: 'n5-pharmacies',
+    type: 'circle',
+    source: 'n5-pharmacies',
+    layout: { visibility: 'none' },
+    paint: {
+      ...PHARMACY_DOT_PAINT,
+    },
+  })
+}
+
+export default function N5() {
+  const mapContainer = useRef(null)
+  const map = useRef(null)
+  const [activeStep, setActiveStep] = useState(0)
+  const [mapLoaded, setMapLoaded] = useState(false)
+  const [analysis, setAnalysis] = useState(null)
+  const [dataError, setDataError] = useState(null)
+
+  useEffect(() => {
+    let cancelled = false
+    loadN5Data()
+      .then(data => {
+        if (!cancelled) setAnalysis(data)
+      })
+      .catch(error => {
+        console.error('N5 analysis data failed to load:', error)
+        if (!cancelled) setDataError(error)
+      })
+    return () => { cancelled = true }
+  }, [])
+
+  useEffect(() => {
+    if (map.current || !mapContainer.current) return undefined
+
+    const storyMap = new mapboxgl.Map({
+      container: mapContainer.current,
+      style: 'mapbox://styles/mapbox/light-v11',
+      center: PROVINCES.gauteng.center,
+      zoom: PROVINCES.gauteng.zoom,
+      interactive: false,
+    })
+    map.current = storyMap
+
+    storyMap.on('load', () => {
+      if (map.current !== storyMap) return
+      addMapLayers(storyMap)
+      storyMap.resize()
+      setMapLoaded(true)
+    })
+    storyMap.on('error', event => console.warn('N5 map error:', event.error ?? event))
+
+    return () => {
+      storyMap.remove()
+      if (map.current === storyMap) map.current = null
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!mapLoaded || !analysis || !map.current) return undefined
+    const storyMap = map.current
+
+    const applyStep = index => {
+      const step = STEPS[index]
+      if (!step) return
+
+      const provinceAnalysis = analysis[step.province]
+      storyMap.getSource('n5-areas').setData(provinceAnalysis.geojson)
+      storyMap.getSource('n5-pharmacies').setData(analysis.pharmacies.byProvince[step.province])
+
+      const visibleAreaLayer = step.topic === 'ea-type'
+        ? 'n5-ea-type'
+        : step.topic === 'walk-typology'
+          ? 'n5-walk-typology'
+          : 'n5-density'
+      for (const layerId of AREA_LAYER_IDS) {
+        storyMap.setLayoutProperty(layerId, 'visibility', layerId === visibleAreaLayer ? 'visible' : 'none')
+      }
+      for (const layerId of BOUNDARY_LAYER_IDS) {
+        const isActiveBoundary = layerId === `n5-${step.province}-boundary`
+        storyMap.setLayoutProperty(layerId, 'visibility', isActiveBoundary ? 'visible' : 'none')
+      }
+      storyMap.setLayoutProperty('n5-pharmacies', 'visibility', step.showPharmacies ? 'visible' : 'none')
+      storyMap.flyTo({
+        center: PROVINCES[step.province].center,
+        zoom: PROVINCES[step.province].zoom,
+        duration: 2000,
+        essential: true,
+      })
+      setActiveStep(index)
+    }
+
+    applyStep(0)
+    const scroller = scrollama()
+    scroller
+      .setup({ step: '.n5 .step-card', offset: 0.8 })
+      .onStepEnter(({ index }) => applyStep(index))
+
+    return () => scroller.destroy()
+  }, [mapLoaded, analysis])
+
+  const step = STEPS[activeStep]
+  const provinceAnalysis = analysis?.[step.province]
+  const legend = provinceAnalysis ? buildLegend(step, provinceAnalysis) : []
+
+  return (
+    <section className="n5" id="n5">
       <div className="n5__scroll">
         <div className="n5__steps">
-          {STEPS.map((s, i) => (
-            <StepCard key={i} {...s} isActive={activeStep === i} variant="disparity" />
+          {STEPS.map((storyStep, index) => (
+            <StepCard
+              key={`${storyStep.province}-${storyStep.topic}-${index}`}
+              {...storyStep}
+              eyebrow={PROVINCES[storyStep.province].label}
+              isActive={activeStep === index}
+              variant="disparity"
+            />
           ))}
         </div>
 
-        {/* n5__graphic: position:sticky keeps it fixed while .n5__steps scrolls.
-            position:relative is required for absolutely-positioned overlays inside. */}
         <div className="n5__graphic">
-          <div className="n5__map-panel">
-            <span className="n5__map-label">{LEFT_DEFAULT.label}</span>
-            <div
-              ref={mapLeftContainer}
-              className="n5__map"
-              style={{ opacity: showChart ? 0.18 : 1, transition: 'opacity 0.7s ease' }}
-            />
-          </div>
+          <div ref={mapContainer} className="n5__map" />
+          <span className="n5__map-label">
+            {PROVINCES[step.province].label}
+          </span>
 
-        <div className="n5__map-divider" />
-
-        <div className="n5__map-panel">
-            <span className="n5__map-label">{RIGHT_DEFAULT.label}</span>
-            <div
-              ref={mapRightContainer}
-              className="n5__map"
-              style={{ opacity: showChart ? 0.18 : 1, transition: 'opacity 0.7s ease' }}
-            />
-          </div>
-
-         {/* Standard legend — shown when step has a legend, no chart, no special overlays */}
-          {step?.legend && !showChart && !step?.showDensityLegend && !step?.isClosing && (
-            <MapLegend items={step.legend} title={step.legendTitle} />
+          {dataError && (
+            <p className="n5__error" role="alert">
+              Province analysis could not be loaded: {dataError.message}
+            </p>
+          )}
+          {!dataError && !analysis && (
+            <p className="n5__loading">Loading province data...</p>
           )}
 
-          {/* Density ramp legend — shown only for step 5 (density-fill layer) */}
-          {step?.showDensityLegend && !showChart && !step?.isClosing && (
-            <DensityLegend />
-          )}
-
-          {/* Chart overlay — covers the full graphic panel when showChart is true.
-              position:absolute + inset:0 fills .n5__graphic (position:relative parent).
-              background rgba provides legibility without fully hiding the map. */}
-          {showChart && step?.chartType === 'access-pop' && (
-            <div className="n5__chart-overlay n5__chart-overlay--visible">
-              <AccessPopChart data={accessPopData} />
-            </div>
-          )}
-
-          {/* Closing overlay — dark full-panel card for the final narrative step.
-              Appears when step.isClosing is true; replaces map with a pull quote. */}
-          {step?.isClosing && (
-            <div className="n5__closing">
-              <p className="n5__pull-quote">
-                The NHI Act of 2024 expands who can afford a pharmacy visit.
-                But it cannot move pharmacies closer to where people live.
-                Closing the gap means investing in the geography apartheid built.
-              </p>
-            </div>
+          {provinceAnalysis && analysis && (
+            <>
+              <MapSummary
+                step={step}
+                provinceAnalysis={provinceAnalysis}
+                pharmacyAnalysis={analysis.pharmacies}
+              />
+              {step.topic === 'density'
+                ? <DensityLegend />
+                : <MapLegend
+                    items={legend}
+                    title={step.topic === 'ea-type' ? 'EA_TYPE' : 'Walk access typology'}
+                  />}
+            </>
           )}
         </div>
       </div>

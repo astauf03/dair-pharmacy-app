@@ -1,161 +1,174 @@
-// TODO: confirm exact field names and values from data export once available.
 // layerExpressions.js
 // All Mapbox GL JS paint expressions for the DAIR pharmacy access map.
-//
+import {
+  DENSITY_COLOR_STOPS,
+  EA_TYPE_COLORS,
+  EA_TYPE_DEFAULT_COLOR,
+  WALK_TYPOLOGY_COLORS,
+} from './mapStyles'
+
 // FIELD NAME TRUNCATIONS (Tilesets CLI 10-char limit):
 //   walk_typology       → walk_typol     walk_dist_k1_km  → walk_dist_
 //   walk_dist_k3_km     → walk_dis_2     drive_typology   → drive_typo
 //   exceeds_walk_k1_3km → exceeds_wa     walk_snap_flag   → walk_sna_1
 //   sal2023_est         → sal2023_es     Black_African    → Black_Afri
 //   econ_status         → econ_statu     pop_total_2011   → pop_total_
-//   Ai_drive            → i_drive
 //
-// Boolean fields ('True'/'False' strings, not JS booleans):
+// Boolean fields may be encoded as JSON booleans or 'True'/'False' strings:
 //   exceeds_wa, walk_sna_1, drive_sn_1
-// TODO: confirm exact field names and values from data export once available.
+//
+// Walk typology values (confirmed from data):
+//   Well-served | Access gap | Demand overcrowding | Connectivity gap |
+//   Pharmacy desert | Artifact zone
 
-
-// ── 1. WALK TYPOLOGY ─
+// ── 1. WALK TYPOLOGY ─────────────────────────────────────────────────────────
+// Severity order: Well-served → Access gap → Demand overcrowding →
+//                 Connectivity gap → Pharmacy desert → Artifact zone
 export const WALK_TYPOLOGY_COLOR = [
   'match', ['get', 'walk_typol'],
-  'Pharmacy desert',     '#002395',
-  'Access gap',          '#4a80c4',
-  'Connectivity gap',    '#8ab0d8',
-  'Artifact zone',       '#C8B89A',
-  'Demand overcrowding', '#e8c97a',
-  'Well-served',         '#d4a030',
-  /* fallback */         '#C8B89A',
+  ...Object.entries(WALK_TYPOLOGY_COLORS).flat(),
+  '#CCCCCC',
 ]
 
-// ── 2. DRIVE TYPOLOGY 
+// ── 2. DRIVE TYPOLOGY ────────────────────────────────────────────────────────
 export const DRIVE_TYPOLOGY_COLOR = [
   'match', ['get', 'drive_typo'],
-  'Pharmacy desert',     '#002395',
-  'Access gap',          '#4a80c4',
-  'Connectivity gap',    '#8ab0d8',
-  'Artifact zone',       '#C8B89A',
-  'Demand overcrowding', '#e8c97a',
-  'Well-served',         '#d4a030',
-  /* fallback */         '#C8B89A',
+  ...Object.entries(WALK_TYPOLOGY_COLORS).flat(),
+  '#C8B89A',
 ]
 
-// ── 3. WALK DISTANCE K=1 (nearest pharmacy) 
-// Reversed ramp: near = gold (good), far = blue (bad)
-export const WALK_DIST_K1_COLOR = [
-  'interpolate', ['linear'], ['get', 'walk_dist_'],
-  0,    '#d4a030',
-  1,    '#e8c97a',
-  3,    '#c8d8e8',
-  5,    '#4a80c4',
-  10,   '#002395',
-  50,   '#001060',
+// ── 3. WALK DISTANCE K=1 (nearest pharmacy) ──────────────────────────────────
+export const WALK_DIST_K1_STOPS = [
+  { value: 0, color: '#d4a030' },
+  { value: 1, color: '#e8c97a' },
+  { value: 3, color: '#c8d8e8' },
+  { value: 5, color: '#4a80c4' },
+  { value: 10, color: '#002395' },
+  { value: 50, color: '#001060' },
 ]
 
 // ── 4. WALK DISTANCE K=3 (third nearest — fragility layer) ───────────────────
-export const WALK_DIST_K3_COLOR = [
-  'interpolate', ['linear'], ['get', 'walk_dis_2'],
-  0,    '#d4a030',
-  3,    '#e8c97a',
-  10,   '#c8d8e8',
-  20,   '#4a80c4',
-  50,   '#002395',
+export const WALK_DIST_K3_STOPS = [
+  { value: 0, color: '#d4a030' },
+  { value: 3, color: '#e8c97a' },
+  { value: 10, color: '#c8d8e8' },
+  { value: 20, color: '#4a80c4' },
+  { value: 50, color: '#002395' },
 ]
 
-// ── 5. EXCEEDS WALK K1 3KM — binary disparity layer ─────────────────────────
-// 'True'  = nearest pharmacy > 3km walk = pharmacy desert
-// 'False' = within 3km = accessible
-// Values are STRINGS not booleans (Python CSV export preserves capitalised True/False)
+function walkDistanceColor(property, stops) {
+  return [
+    'case',
+    ['all', ['has', property], ['!=', ['get', property], null]],
+    [
+      'interpolate', ['linear'], ['to-number', ['get', property], 0],
+      ...stops.flatMap(({ value, color }) => [value, color]),
+    ],
+    '#C8B89A',
+  ]
+}
+
+export const WALK_DIST_K1_COLOR = walkDistanceColor('walk_dist_', WALK_DIST_K1_STOPS)
+export const WALK_DIST_K3_COLOR = walkDistanceColor('walk_dis_2', WALK_DIST_K3_STOPS)
+
+// ── 5. EXCEEDS WALK K1 3KM — binary disparity layer ──────────────────────────
+export const EXCEEDS_WALK_COLORS = {
+  true: '#C0392B',
+  false: '#2980B9',
+  fallback: '#C8B89A',
+}
+
 export const EXCEEDS_WALK_COLOR = [
   'match', ['get', 'exceeds_wa'],
-  'True',  '#C0392B',   // red — beyond 3km, underserved
-  'False', '#2980B9',   // blue — within 3km, accessible
-  /* fallback */ '#C8B89A',
+  true, EXCEEDS_WALK_COLORS.true,
+  'True', EXCEEDS_WALK_COLORS.true,
+  false, EXCEEDS_WALK_COLORS.false,
+  'False', EXCEEDS_WALK_COLORS.false,
+  EXCEEDS_WALK_COLORS.fallback,
 ]
 
 export const EXCEEDS_WALK_OPACITY = 0.75
 
-// ── 6. SNAP FLAG — data quality overlay ────
-// walk_sna_1 = 'True' means snap distance > 500m: interpret with caution
-// Rendered as a semi-transparent warning wash on top of whatever layer is active.
-// 'True'  = flagged   → visible orange-red wash
-// 'False' = clean     → fully transparent (shows layer beneath unchanged)
+// ── 6. SNAP FLAG — data quality overlay ──────────────────────────────────────
 export const SNAP_FLAG_COLOR = '#c73c16'
+export const SNAP_FLAG_OPACITY_VALUE = 0.30
 
 export const SNAP_FLAG_OPACITY = [
   'match', ['get', 'walk_sna_1'],
-  'True',  0.30,
+  true, SNAP_FLAG_OPACITY_VALUE,
+  'True', SNAP_FLAG_OPACITY_VALUE,
+  false, 0,
   'False', 0,
   0,
 ]
 
 // ── 7. EA_TYPE — settlement / apartheid footprint ────────────────────────────
-// _* variants are tile-boundary splits — listed explicitly alongside clean values
 export const EA_TYPE_COLOR = [
   'match', ['get', 'EA_TYPE'],
-  'Township',                     '#8B2500',
-  'Informal residential',         '#C4713A',
-  'Informal residential_*',       '#C4713A',
-  'Formal residential',           '#6B8FA8',
-  'Formal residential_*',         '#6B8FA8',
-  'Suburb',                       '#6B8FA8',   // treat same as formal
-  'Traditional residential',      '#4A7C6F',
-  'Traditional residential_*',    '#4A7C6F',
-  'Smallholdings',                '#A89860',
-  'Small holdings_*',             '#A89860',
-  'Farms',                        '#C8B878',
-  'Farms_*',                      '#C8B878',
-  'Commercial',                   '#002395',
-  'Industrial',                   '#555566',
-  'Industrial_*',                 '#555566',
-  'Vacant',                       '#E8E4DC',
-  'Vacant_*',                     '#E8E4DC',
-  'Parks and recreation',         '#007A4D',
-  'Parks and recreation_*',       '#007A4D',
-  'Collective living quarters',   '#ebc159',
-  'Collective living quarters_*', '#ebc159',
-  /* fallback */                  '#E8E4DC',
+  ...Object.entries(EA_TYPE_COLORS).flat(),
+  EA_TYPE_DEFAULT_COLOR,
 ]
 
-// ── 8. % BLACK AFRICAN — warm earth ramp (distinct from access blue→gold) ────
-// Parchment → amber → deep brown. Never confusable with access encoding.
+// ── 8. % BLACK AFRICAN — warm earth ramp ────────────────────────────────────
+export const PCT_BLACK_STOPS = [
+  { value: 0.0, color: '#f2f0f7' },
+  { value: 0.25, color: '#cbc9e2' },
+  { value: 0.5, color: '#9e9ac8' },
+  { value: 0.75, color: '#756bb1' },
+  { value: 1.0, color: '#54278f' },
+]
+
 export const PCT_BLACK_COLOR = [
-  'interpolate', ['linear'],
-  ['/', ['get', 'Black_Afri'], ['max', ['get', 'pop_total_'], 1]],
-  0,    '#F5F0E8',
-  0.25, '#e8d5b0',
-  0.5,  '#d4a96a',
-  0.75, '#8c5a1a',
-  1,    '#2A2318',
+  'case',
+  [
+    'all',
+    ['has', 'Black_Afri'],
+    ['has', 'pop_total_'],
+    ['!=', ['get', 'Black_Afri'], null],
+    ['!=', ['get', 'pop_total_'], null],
+    ['>', ['to-number', ['get', 'pop_total_'], 0], 0],
+  ],
+  [
+    'interpolate', ['linear'],
+    [
+      '/',
+      ['to-number', ['get', 'Black_Afri'], 0],
+      ['max', ['to-number', ['get', 'pop_total_'], 0], 1],
+    ],
+    ...PCT_BLACK_STOPS.flatMap(({ value, color }) => [value, color]),
+  ],
+  '#C8B89A',
 ]
 
-// ── 9. POPULATION DENSITY — blue (low) → gold (high) ────────────────────────
-// to-number guards handle string-encoded values from GeoJSON/tileset exports.
-// max(..., 0.01) prevents division-by-zero on zero-area polygons.
-// Tileset truncated names: sal2023_est → sal2023_es, area_km2 unchanged
+// ── 9. POPULATION DENSITY ────────────────────────────────────────────────────
+export const POP_DENSITY_STOPS = DENSITY_COLOR_STOPS
+
 export const POP_DENSITY_COLOR = [
   'interpolate', ['linear'],
   ['/', ['to-number', ['get', 'sal2023_es'], 0],
         ['max', ['to-number', ['get', 'area_km2'], 0], 0.01]],
-  0,     '#002395',
-  500,   '#4a80c4',
-  2000,  '#c8d8e8',
-  5000,  '#e8c97a',
-  10000, '#d4a030',
+  ...POP_DENSITY_STOPS.flatMap(({ value, color }) => [value, color]),
 ]
 
-// ── 10. ECONOMIC STATUS ─────────────────────
+// ── 10. ECONOMIC STATUS ──────────────────────────────────────────────────────
+export const ECON_STATUS_COLORS = {
+  Wealthy: '#7B3294',
+  Non_Wealthy: '#E66101',
+  Non_Residential: '#BDBDBD',
+}
+
 export const ECON_STATUS_COLOR = [
   'match', ['get', 'econ_statu'],
-  'Wealthy',         '#d4a030',
-  'Non_Wealthy',     '#6B5C4E',
-  'Non_Residential', '#C8B89A',
-  /* fallback */     '#F5F0E8',
+  ...Object.entries(ECON_STATUS_COLORS).flat(),
+  ECON_STATUS_COLORS.Non_Residential,
 ]
 
-// ── 11. TRANSPORT GAP — bivariate: walk vs drive ──────────────────────────────
-// Orange = walk desert but drive well-served (car dependent)
-// Blue   = pharmacy desert by both modes (truly isolated)
-// Transparent = everything else
+// ── 11. TRANSPORT GAP — bivariate: walk vs drive ─────────────────────────────
+export const TRANSPORT_GAP_COLORS = {
+  walkDesertDriveServed: '#c73c16',
+  noAccessEitherMode: '#262323',
+}
+
 export const TRANSPORT_GAP_COLOR = [
   'case',
   ['all',
@@ -164,11 +177,11 @@ export const TRANSPORT_GAP_COLOR = [
       ['==', ['get', 'drive_typo'], 'Well-served'],
       ['==', ['get', 'drive_typo'], 'Demand overcrowding'],
     ],
-  ], '#c73c16',
+  ], TRANSPORT_GAP_COLORS.walkDesertDriveServed,
   ['all',
     ['==', ['get', 'walk_typol'], 'Pharmacy desert'],
     ['==', ['get', 'drive_typo'], 'Pharmacy desert'],
-  ], '#262323',
+  ], TRANSPORT_GAP_COLORS.noAccessEitherMode,
   'rgba(0,0,0,0)',
 ]
 
