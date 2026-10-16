@@ -32,19 +32,63 @@ function About() {
           <div className="about-team__grid">
             {teamMembers.map((member) => (
               <div className="about-card" key={member.email}>
-                <div className="about-card__img-wrap">
-                  <img src={member.img} alt={member.alt} className="about-card__img" />
-                </div>
                 <div className="about-card__body">
-                  <h3 className="about-card__name">{member.name}</h3>
-                  <p className="about-card__title">{member.title}</p>
-                  <p className="about-card__bio">{member.bio}</p>
-                  <p className="about-card__bio2">{member.bio2}</p>
-                  <p className="about-card__bio3">{member.bio3}</p>
-                  <p className="about-card__email">{member.email}</p>
-                  <button className="about-card__btn">Contact</button>
-                  <button className="about-card__btn">LinkedIn</button>
-                  <button className="about-card__btn">GitHub</button>
+                  <div className="about-card__header">
+                    <div className="about-card__img-wrap">
+                      <img src={member.img} alt={member.alt} className="about-card__img" />
+                    </div>
+                    <div className="about-card__identity">
+                      <h3 className="about-card__name">{member.name}</h3>
+                      <p className="about-card__title">{member.title}</p>
+                    </div>
+                  </div>
+                  <div className="about-card__bios">
+                    {['bio', 'bio2', 'bio3'].flatMap(field => {
+                      const paragraphs = member[field]
+                      if (!paragraphs) return []
+                      return (Array.isArray(paragraphs) ? paragraphs : [paragraphs])
+                        .map((paragraph, index) => (
+                          <p className="about-card__bio" key={`${field}-${index}`}>
+                            {paragraph}
+                          </p>
+                        ))
+                    })}
+                  </div>
+                  <div className="about-card__links">
+                    {member.email && (
+                      <a className="about-card__btn" href={`mailto:${member.email}`}>Email</a>
+                    )}
+                    {member.LinkedIn && (
+                      <a
+                        className="about-card__btn"
+                        href={member.LinkedIn}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                      >
+                        LinkedIn
+                      </a>
+                    )}
+                    {member.GitHub && (
+                      <a
+                        className="about-card__btn"
+                        href={member.GitHub}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                      >
+                        GitHub
+                      </a>
+                    )}
+                    {member.portfolio && (
+                      <a
+                        className="about-card__btn"
+                        href={member.portfolio}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                      >
+                        Portfolio
+                      </a>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}

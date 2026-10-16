@@ -12,7 +12,7 @@ const teamMembers = [
     bio: "Alexandra is a spatial data scientist and anthropology enthusiast with a Master of Urban Spatial Analytics from the University of Pennsylvania. Fascinated by language, culture, and the built environemnt, Alexandra is interested in the storytelling potential of spatial data and the ways in which it can be used to understand and address social inequities.",
     bio2: "She is currently applying for a Fulbright grant to teach English in South Korea, and is interested in pursuing a PhD in Anthropology with an urban-spatial focus. Alexandra can be found singing karaoke, studying languages, and chatting up her friends on her days off.",
     email: "astauf03@gmail.com",
-    portfolio: "",
+    portfolio: "https://astauf03.github.io/portfolio/",
     LinkedIn: "https://www.linkedin.com/in/alexandrastauffer",
     GitHub: "https://github.com/astauf03"
   },
@@ -23,10 +23,10 @@ const teamMembers = [
     title: "Project Manager",
     bio: "Jillian is a clinical research coordinator in the Department of Family Medicine and Community Health at Penn Medicine. She specializes in qualitative and spatial analysis to better understand the health behaviors of the community as it relates to the accessibility to primary care, preventive screening, and oncology treatment. ",
     bio2: "The work and research coming out of my team is frequently implemented into international guidelines that dictate the standard of practice of health systems around the world. My background that led me here started at Temple University, where I studied sociology, Spanish, and religion. Ibegan at Penn Medicine as the Spanish liaison coordinator for a trial on the health behaviors of geriatrics in public housing, which eventually led me to complete the MUSA program.",
-    email: "mike@example.com",
+    email: "Jillian.Kalman@pennmedicine.upenn.edu", 
     portfolio: "",
-    LinkedIn: "https://www.linkedin.com/in/jillian-kalman",
-    GitHub: "https://github.com/jillian-kalman"
+    LinkedIn: "https://www.linkedin.com/in/jillian-kalman-661739221/",
+    GitHub: "https://github.com/kalmanj36"
   },
   {
     img: joey,
@@ -36,8 +36,8 @@ const teamMembers = [
     bio: "Joey Cahill is a Data Scientist based in Philadelphia specializing in healthcare research with a Master of Urban Spatial Analytics from the University of Pennsylvania. His primary interest lies in applying rigorous quantitative methods to problems that affect communities. Outside of work you can find him wandering in the woods, dodging traffic on his bike, or trying to keep his cats off the counters.",
     email: "jcahill12345@gmail.com",
     portfolio: "",
-    LinkedIn: "https://www.linkedin.com/in/joey-cahill",
-    GitHub: "https://github.com/joey-cahill"
+    LinkedIn: "https://www.linkedin.com/in/joseph-a-cahill/",
+    GitHub: "https://github.com/jocajoe"
   },
   {
     img: tessa,
