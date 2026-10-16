@@ -107,18 +107,29 @@ function LegendStopRamp({ stops, formatLabel = stop => stop.label ?? stop.value 
   return (
     <>
       <div className="legend__ramp" style={{ background: gradient }} />
-      <div
-        className="legend__stop-labels"
-        style={{ gridTemplateColumns: `repeat(${stops.length}, minmax(0, 1fr))` }}
-      >
-        {stops.map((stop, index) => (
-          <span
-            key={stop.value}
-            className={index === 0 ? 'legend__stop-label--first' : index === stops.length - 1 ? 'legend__stop-label--last' : ''}
-          >
-            {formatLabel(stop)}
-          </span>
-        ))}
+      <div className="legend__stop-labels">
+        {stops.map((stop, index) => {
+          const position = (stop.value / maxValue) * 100
+          const previousPosition = index > 0
+            ? (stops[index - 1].value / maxValue) * 100
+            : null
+          const crowded = previousPosition !== null && position - previousPosition < 12
+          const alignment = index === 0
+            ? 'legend__stop-label--first'
+            : index === stops.length - 1
+              ? 'legend__stop-label--last'
+              : ''
+
+          return (
+            <span
+              key={stop.value}
+              className={`legend__stop-label ${alignment} ${crowded ? 'legend__stop-label--staggered' : ''}`}
+              style={{ left: `${position}%` }}
+            >
+              {formatLabel(stop)}
+            </span>
+          )
+        })}
       </div>
     </>
   )
@@ -219,7 +230,7 @@ function ActiveLegend({ layers }) {
 
       {layers['pct-black-african'] && (
         <>
-          <p className="legend__sublabel" style={{ marginTop: 8 }}>% Black African</p>
+          <p className="legend__sublabel legend__sublabel--ramp" style={{ marginTop: 8 }}>% Black African</p>
           <LegendStopRamp
             stops={PCT_BLACK_STOPS}
             formatLabel={({ value }) => `${Math.round(value * 100)}%`}
@@ -236,7 +247,9 @@ function ActiveLegend({ layers }) {
 
       {layers['pop-density'] && (
         <>
-          <p className="legend__sublabel" style={{ marginTop: 8 }}>Population density (people/km²)</p>
+          <p className="legend__sublabel legend__sublabel--ramp" style={{ marginTop: 8 }}>
+            Population density (people/km²)
+          </p>
           <LegendStopRamp stops={POP_DENSITY_STOPS} />
         </>
       )}

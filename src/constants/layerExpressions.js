@@ -14,7 +14,7 @@ import {
 //   sal2023_est         → sal2023_es     Black_African    → Black_Afri
 //   econ_status         → econ_statu     pop_total_2011   → pop_total_
 //
-// Boolean fields ('True'/'False' strings, not JS booleans):
+// Boolean fields may be encoded as JSON booleans or 'True'/'False' strings:
 //   exceeds_wa, walk_sna_1, drive_sn_1
 //
 // Walk typology values (confirmed from data):
@@ -47,11 +47,6 @@ export const WALK_DIST_K1_STOPS = [
   { value: 50, color: '#001060' },
 ]
 
-export const WALK_DIST_K1_COLOR = [
-  'interpolate', ['linear'], ['get', 'walk_dist_'],
-  ...WALK_DIST_K1_STOPS.flatMap(({ value, color }) => [value, color]),
-]
-
 // ── 4. WALK DISTANCE K=3 (third nearest — fragility layer) ───────────────────
 export const WALK_DIST_K3_STOPS = [
   { value: 0, color: '#d4a030' },
@@ -61,10 +56,20 @@ export const WALK_DIST_K3_STOPS = [
   { value: 50, color: '#002395' },
 ]
 
-export const WALK_DIST_K3_COLOR = [
-  'interpolate', ['linear'], ['get', 'walk_dis_2'],
-  ...WALK_DIST_K3_STOPS.flatMap(({ value, color }) => [value, color]),
-]
+function walkDistanceColor(property, stops) {
+  return [
+    'case',
+    ['all', ['has', property], ['!=', ['get', property], null]],
+    [
+      'interpolate', ['linear'], ['to-number', ['get', property], 0],
+      ...stops.flatMap(({ value, color }) => [value, color]),
+    ],
+    '#C8B89A',
+  ]
+}
+
+export const WALK_DIST_K1_COLOR = walkDistanceColor('walk_dist_', WALK_DIST_K1_STOPS)
+export const WALK_DIST_K3_COLOR = walkDistanceColor('walk_dis_2', WALK_DIST_K3_STOPS)
 
 // ── 5. EXCEEDS WALK K1 3KM — binary disparity layer ──────────────────────────
 export const EXCEEDS_WALK_COLORS = {
@@ -75,7 +80,9 @@ export const EXCEEDS_WALK_COLORS = {
 
 export const EXCEEDS_WALK_COLOR = [
   'match', ['get', 'exceeds_wa'],
+  true, EXCEEDS_WALK_COLORS.true,
   'True', EXCEEDS_WALK_COLORS.true,
+  false, EXCEEDS_WALK_COLORS.false,
   'False', EXCEEDS_WALK_COLORS.false,
   EXCEEDS_WALK_COLORS.fallback,
 ]
@@ -88,7 +95,9 @@ export const SNAP_FLAG_OPACITY_VALUE = 0.30
 
 export const SNAP_FLAG_OPACITY = [
   'match', ['get', 'walk_sna_1'],
+  true, SNAP_FLAG_OPACITY_VALUE,
   'True', SNAP_FLAG_OPACITY_VALUE,
+  false, 0,
   'False', 0,
   0,
 ]
@@ -110,9 +119,25 @@ export const PCT_BLACK_STOPS = [
 ]
 
 export const PCT_BLACK_COLOR = [
-  'interpolate', ['linear'],
-  ['/', ['get', 'Black_Afri'], ['max', ['get', 'pop_total_'], 1]],
-  ...PCT_BLACK_STOPS.flatMap(({ value, color }) => [value, color]),
+  'case',
+  [
+    'all',
+    ['has', 'Black_Afri'],
+    ['has', 'pop_total_'],
+    ['!=', ['get', 'Black_Afri'], null],
+    ['!=', ['get', 'pop_total_'], null],
+    ['>', ['to-number', ['get', 'pop_total_'], 0], 0],
+  ],
+  [
+    'interpolate', ['linear'],
+    [
+      '/',
+      ['to-number', ['get', 'Black_Afri'], 0],
+      ['max', ['to-number', ['get', 'pop_total_'], 0], 1],
+    ],
+    ...PCT_BLACK_STOPS.flatMap(({ value, color }) => [value, color]),
+  ],
+  '#C8B89A',
 ]
 
 // ── 9. POPULATION DENSITY ────────────────────────────────────────────────────

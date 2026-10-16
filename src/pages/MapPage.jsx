@@ -247,12 +247,12 @@ function MapPage() {
         source:       'SA-access',
         'source-layer': 'dair_sal',
         paint:        {
-          'line-color':   '#C8B89A',
-          'line-opacity': 0.4,
+          'line-color':   '#ffffff',
+          'line-opacity': 0.55,
           'line-width':   [
             'interpolate', ['linear'], ['zoom'],
-            6,  0.1,
-            10, 0.4,
+            6,  0.15,
+            10, 0.45,
             13, 0.8,
           ],
         },

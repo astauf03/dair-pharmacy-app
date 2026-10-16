@@ -207,6 +207,14 @@
   margin: 0 0 4px;
 }
 
+.legend__sublabel--ramp {
+  font-size: 11px;
+  letter-spacing: 0;
+  line-height: 1.4;
+  text-transform: none;
+  white-space: nowrap;
+}
+
 .legend__swatches { display: flex; flex-direction: column; gap: 4px; }
 
 .legend__swatch {
@@ -290,6 +298,35 @@
   overflow: hidden;
 }
 
+.legend__stop-labels {
+  position: relative;
+  height: 27px;
+  margin-top: 2px;
+  color: var(--surface-bark);
+  font-size: 9px;
+  line-height: 11px;
+}
+
+.legend__stop-label {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.legend__stop-label--first {
+  transform: none;
+}
+
+.legend__stop-label--last {
+  transform: translateX(-100%);
+}
+
+.legend__stop-label--staggered {
+  top: 13px;
+}
+
 .legend__ramp-seg {
   flex: 1;
 }
@@ -320,4 +357,22 @@
 .legend__entry-label {
   font-size: var(--text-micro);
   color: var(--surface-bark);
+}
+
+@media (max-width: 640px) {
+  .map-sidebar {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    z-index: 2;
+    width: min(320px, calc(100% - 24px));
+    height: auto;
+    max-height: calc(100% - 24px);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.18);
+  }
+
+  .map-sidebar--collapsed {
+    height: auto;
+    padding-top: var(--space-md);
+  }
 }
