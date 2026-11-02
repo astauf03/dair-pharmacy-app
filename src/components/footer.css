@@ -7,9 +7,24 @@
 }
 
 .footer__text {
-  font-size: var(--text-medium);
+  font-size: var(--text-micro);
   color: var(--surface-bark);
   line-height: 1.6;
+}
+
+.footer__members {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: var(--space-sm);
+}
+
+.footer__member {
+  white-space: nowrap;
+}
+
+.footer__program {
+  flex-basis: 100%;
 }
 
 .footer__link {
@@ -19,4 +34,17 @@
 
 .footer__link:hover {
   color: var(--text-on-dark);
+}
+
+@media (max-width: 760px) {
+  .footer {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+    padding: var(--space-md) var(--space-lg);
+  }
+
+  .footer__text {
+    flex: 1 1 100%;
+  }
 }

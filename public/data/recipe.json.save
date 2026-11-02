@@ -1,0 +1,96 @@
+{"message": "Recipe is invalid.", "errors": ["Your recipe specifies a higher maxzoom than is normally allowed. If you need higher precision, please see https://docs.mapbox.com/help/troubleshooting/tileset-recipe-reference/#zoom-level-configuration for information on how to request access to create tiles at higher zoom levels"]}{"message": "Recipe is invalid.", "errors": ["Your recipe specifies a higher maxzoom than is normally allowed. If you need higher precision, please see https://docs.mapbox.com/help/troubleshooting/tileset-recipe-reference/#zoom-level-configuration for information on how to request access to create tiles at higher zoom levels"]}{"message": "Recipe is invalid.", "errors": ["Your recipe specifies a higher maxzoom than is normally allowed. If you need higher precision, please see https://docs.mapbox.com/help/troubleshooting/tileset-recipe-reference/#zoom-level-configuration for information on how to request access to create tiles at higher zoom levels"]}
+  "version": 1,
+{
+  "version": 1,
+  "layers": {
+    "dair_sal": {
+      "source": "mapbox://tileset-source/astauf03/dair-sal",
+      "minzoom": 5,
+      "maxzoom": 14
+    }
+  }
+}{"message": "Recipe is invalid.", "errors": ["Your recipe specifies a higher maxzoom than is normally allowed. If you n>
+  "version": 1,
+{
+  "version": 1,
+  "layers": {
+    "dair_sal": {
+      "source": "mapbox://tileset-source/astauf03/dair-sal",
+      "minzoom": 5,
+      "maxzoom": 14
+    }
+  }
+}
+{"message": "Recipe is invalid.", "errors": ["Your recipe specifies a higher maxzoom than is normally allowed. If you n>
+  "version": 1,
+{
+  "version": 1,
+  "layers": {
+    "dair_sal": {
+      "source": "mapbox://tileset-source/astauf03/dair-sal",
+      "minzoom": 5,
+      "maxzoom": 14
+    }
+  }
+}
+{"message": "Recipe is invalid.", "errors": ["Your recipe specifies a higher maxzoom than is normally allowed. If you n>
+  "version": 1,
+{
+  "version": 1,
+  "layers": {
+    "dair_sal": {
+      "source": "mapbox://tileset-source/astauf03/dair-sal",
+      "minzoom": 5,
+      "maxzoom": 14
+    }
+  }
+}
+{"message": "Recipe is invalid.", "errors": ["Your recipe specifies a higher maxzoom than is normally allowed. If you n>
+  "version": 1,
+{
+  "version": 1,
+  "layers": {
+    "dair_sal": {
+      "source": "mapbox://tileset-source/astauf03/dair-sal",
+      "minzoom": 5,
+      "maxzoom": 14
+    }
+  }
+}
+{"message": "Recipe is invalid.", "errors": ["Your recipe specifies a higher maxzoom than is normally allowed. If you n>
+  "version": 1,
+{
+  "version": 1,
+  "layers": {
+    "dair_sal": {
+      "source": "mapbox://tileset-source/astauf03/dair-sal",
+      "minzoom": 5,
+      "maxzoom": 14
+    }
+  }
+}
+{"message": "Recipe is invalid.", "errors": ["Your recipe specifies a higher maxzoom than is normally allowed. If you n>
+  "version": 1,
+{
+  "version": 1,
+  "layers": {
+    "dair_sal": {
+      "source": "mapbox://tileset-source/astauf03/dair-sal",
+      "minzoom": 5,
+      "maxzoom": 14
+    }
+  }
+}
+{"message": "Recipe is invalid.", "errors": ["Your recipe specifies a higher maxzoom than is normally allowed. If you n>
+  "version": 1,
+{
+  "version": 1,
+  "layers": {
+    "dair_sal": {
+      "source": "mapbox://tileset-source/astauf03/dair-sal",
+      "minzoom": 5,
+      "maxzoom": 14
+    }
+  }
+}
+

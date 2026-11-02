@@ -1,0 +1,74 @@
+[
+  {
+    "type": "Township",
+    "density": 7295,
+    "Black African": 96,
+    "Coloured": 2,
+    "Indian/Asian": 2,
+    "White": 0,
+    "Other": 0
+  },
+  {
+    "type": "Informal\nresidential",
+    "density": 6787,
+    "Black African": 99,
+    "Coloured": 1,
+    "Indian/Asian": 0,
+    "White": 0,
+    "Other": 0
+  },
+  {
+    "type": "Suburb",
+    "density": 2487,
+    "Black African": 47,
+    "Coloured": 6,
+    "Indian/Asian": 6,
+    "White": 40,
+    "Other": 1
+  },
+  {
+    "type": "Traditional\nresidential",
+    "density": 3457,
+    "Black African": 99,
+    "Coloured": 0,
+    "Indian/Asian": 0,
+    "White": 0,
+    "Other": 0
+  },
+  {
+    "type": "Small-\nholdings",
+    "density": 91,
+    "Black African": 52,
+    "Coloured": 2,
+    "Indian/Asian": 1,
+    "White": 44,
+    "Other": 1
+  },
+  {
+    "type": "Farms",
+    "density": 9,
+    "Black African": 77,
+    "Coloured": 2,
+    "Indian/Asian": 1,
+    "White": 21,
+    "Other": 0
+  },
+  {
+    "type": "Commercial",
+    "density": 879,
+    "Black African": 67,
+    "Coloured": 4,
+    "Indian/Asian": 5,
+    "White": 23,
+    "Other": 1
+  },
+  {
+    "type": "Industrial",
+    "density": 102,
+    "Black African": 71,
+    "Coloured": 5,
+    "Indian/Asian": 4,
+    "White": 20,
+    "Other": 1
+  }
+]

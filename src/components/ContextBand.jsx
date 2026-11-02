@@ -1,25 +1,175 @@
+import { useEffect, useRef, useState } from "react"
 import "./contextband.css"
 
+function useCounter(target, duration, delay, hasEntered, decimals = 0) {
+  const [display, setDisplay] = useState(decimals > 0 ? (0).toFixed(decimals) : "0")
+
+  useEffect(() => {
+    if (!hasEntered) return
+
+    let frameId
+    const startTime = performance.now() + delay
+
+    const step = (now) => {
+      if (now < startTime) {
+        frameId = requestAnimationFrame(step)
+        return
+      }
+      const elapsed = now - startTime
+      const progress = Math.min(elapsed / duration, 1)
+      const eased = 1 - Math.pow(1 - progress, 3)
+      const value = eased * target
+      setDisplay(decimals > 0 ? value.toFixed(decimals) : Math.round(value).toString())
+      if (progress < 1) frameId = requestAnimationFrame(step)
+    }
+
+    frameId = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(frameId)
+  }, [hasEntered, target, duration, delay, decimals])
+
+  return display
+}
+
 function ContextBand() {
+  const sectionRef = useRef(null)
+  const [hasEntered, setHasEntered] = useState(false)
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !hasEntered) setHasEntered(true)
+      },
+      { threshold: 0.4 }
+    )
+    if (sectionRef.current) observer.observe(sectionRef.current)
+    return () => observer.disconnect()
+  }, [hasEntered])
+
+  const stat1 = useCounter(80, 1400, 0, hasEntered, 0)
   return (
-    <section className="context-band">
+    <section className="context-band" ref={sectionRef}>
       <span className="context-band__eyebrow">Context</span>
-      <h2 className="context-band__title">Why Map Pharmacy Access?</h2>
 
-      <p className="context-band__body">
-        The catalyst of this project starts with a new healthcare policy passed by the South African parliament that intends to expand public healthcare services, fixing what is currently an imbalanced system. Right now, public and private medicine funding is split 50/50 by the government. However, the public health system serves over 80% of the population, whereas private pharmacies serve about 20%. This new bill seeks to bridge the gap between private and public disparities by making public health insurance acceptable in private pharmacies where supply is at a surplus. The National Health Insurance (NHI) Act of 2024 represents a landmark transformation in South African healthcare policy, establishing a public fund to subsidize the provision of care and medicines across the nation.
-      </p>
+      {/* ── KEY STAT + INTRODUCTION ── */}
+      <div className={`context-band__grid ${hasEntered ? "is-visible" : ""}`}>
 
-      <p className="context-band__body">
-        While the NHI creates funding mechanisms for healthcare provision, its success depends fundamentally on whether populations can physically access healthcare infrastructure, including pharmacies where they can obtain prescribed medications. This spatial dimension of healthcare access is not uniformly distributed across South Africa and reflects historical patterns of development, urbanization, and the enduring legacy of <span className="highlight-red">apartheid</span>-era spatial planning.
-      </p>
+        {/* LEFT: key statistic */}
+        <div className="context-band__stats">
 
-      <p className="context-band__body">
-        Also here is where I will be more specific about the{' '}
-        <span className="highlight-blue">research questions</span>, and then why
-        that might matter to someone from{' '}
-        <span className="highlight-blue">KZN or Gauteng</span>.
-      </p>
+          <div className="context-band__stat context-band__stat--1">
+            <p className="context-band__stat-lead-in">Public pharmacies serve about</p>
+            <div className="context-band__number">
+              {stat1}<span className="context-band__percent">%</span>
+            </div>
+            <p className="context-band__stat-label">
+              of South Africans are served by public pharmacies, which receive only half of
+              national health funding
+            </p>
+          </div>
+
+        </div>
+
+        {/* RIGHT: introduction */}
+        <div className="context-band__prose">
+          <p className="context-band__body">
+            Private pharmacies serve a further 16% of South Africans, yet receive half of the
+            funding allocated by the South African government for healthcare.
+          </p>
+          <p className="context-band__body">
+            The{" "}
+            <span className="highlight-gold">National Health Insurance Act of 2024</span>{" "}
+            set out to close that gap, guaranteeing all South Africans coverage at both
+            private and public pharmacies. Unfortunately, financial access is not the only
+            barrier to pharmacy services for many South Africans. Physical access is just as
+            much of a challenge. A practical question arises: Can people actually reach
+            pharmacies?
+          </p>
+          <p className="context-band__body">
+            This project maps that question across two provinces and finds that geography
+            shaped by decades of oppression under{" "}
+            <span className="highlight-gold">apartheid</span> forms the answer.
+          </p>
+        </div>
+
+      </div>
+
+      {/* ── FULL-WIDTH SITE CONTEXT ── */}
+      <div className="context-band__narrative">
+        <p className="context-band__narrative-eyebrow">South Africa — Site Context</p>
+
+        <div className="context-band__narrative-body">
+          <p>
+            Until the{" "}
+            <span className="highlight-gold">National Health Insurance (NHI) Act of 2024</span>,
+            uninsured South Africans could be denied service. The Act created a public fund
+            to subsidize care and medicines, with significant implications for people in
+            townships and non-wealthy areas. Despite this increase in financial support, the
+            medicinal supply of public pharmacies remains determined by the{" "}
+            <span className="highlight-gold">National Essential Medicines List</span>, while
+            private pharmacies are more likely to carry both generic and branded medicines.
+            In the public sector, pharmacists work across a wider variety of health
+            facilities, including hospitals, community health centers, medical stores, and
+            district, provincial, and national offices.
+          </p>
+          <p>
+            Yet accessibility metrics do not encapsulate the entire story. Residents are not
+            basing their healthcare decisions strictly upon proximity and location, but also
+            on a host of social and economic dynamics that have been{" "}
+            <span className="highlight-gold">spatially produced over time</span>. These
+            dynamics include biases, stigmas, and perceptions of service quality. This means
+            that existing inequities may be reproduced by individual decision-making{" "}
+            <span className="context-band__citation">(Winchester and King, 2018)</span>.
+            Compounding this, there is no official spatial database for pharmacies in South
+            Africa, creating critical data gaps that this project addresses through a
+            combination of private and publicly sourced pharmacy lists then forward geocoding
+            using the Google Places API.
+          </p>
+          <p>
+            While the NHI Act expands financial access to pharmacies, it does not address the
+            spatial inequalities that ultimately determine whether people can reach them.
+            Building off the research of the{" "}
+            <a
+              href="https://dair-institute.org/projects/impacts-of-spatial-apartheid/"
+              target="_blank"
+              rel="noreferrer"
+              className="highlight-gold"
+            >
+              Distributed AI Research Institute (DAIR)
+            </a>,
+            which develops datasets and analytical frameworks for studying persistent spatial
+            inequalities in South African settlements{" "}
+            <span className="context-band__citation">(Sefala et al., 2021)</span>, this
+            study investigates three questions:
+          </p>
+        </div>
+      </div>
+      {/* ── FULL-WIDTH: Research questions ── */}
+      <div className="context-band__questions">
+        <p className="context-band__questions-lead">What we set out to understand</p>
+        <div className="context-band__questions-list">
+          <div className="context-band__question-item">
+            <span className="context-band__question-num">01</span>
+            <p className="context-band__question-text">
+              What is the spatial distribution of pharmacies in Gauteng and KwaZulu-Natal?
+            </p>
+          </div>
+          <div className="context-band__question-item">
+            <span className="context-band__question-num">02</span>
+            <p className="context-band__question-text">
+              What populations face access barriers?
+            </p>
+          </div>
+          <div className="context-band__question-item">
+            <span className="context-band__question-num">03</span>
+            <p className="context-band__question-text">
+              To what extent do patterns of pharmacy access correlate with historical
+              geographies of{" "}
+              <span className="highlight-red">apartheid</span>?
+            </p>
+          </div>
+        </div>
+      </div>
+
     </section>
   )
 }

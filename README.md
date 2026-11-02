@@ -2,7 +2,7 @@
 
 A spatial storytelling application visualizing pharmacy access and healthcare geography across South Africa, focused on Gauteng and KwaZulu-Natal. Built for the [MUSA Practicum 2026](https://pennmusa.github.io/MUSA_801.io/) in collaboration with the [DAIR Institute](https://www.dair-institute.org/).
 
-Live site: (url)
+Live site: https://astauf03.github.io/dair-pharmacy-app/
 
 ---
 
@@ -87,12 +87,7 @@ npm run dev
 
 **Deploy to GitHub Pages:**
 
-```bash
-npm run build
-npm run deploy
-```
-
-This builds to `dist/` and pushes to the `gh-pages` branch via the `gh-packages` package. 
+`.github/workflows/deploy.yml` runs when commits are pushed to the `storymap-v2` and publishes to GitHub Pages. The Mapbox token is read by the build from VITE_MAPBOX_TOKEN, the repo secret (select "Settings", "Secrets and variables", then "Actions"). Make sure to go onto GitHub pages and make sure that it's deployed from "GitHub Actions" ("Settings", then "Pages").
 
 ---
 
