@@ -22,7 +22,7 @@
     branded medicines, but until the NHI Act, access was gated by medical scheme
     membership. That membership tracks income. Income tracks geography. And in the
     public sector, pharmacists work across a wide range of facilities — hospitals,
-    community health centres, medical stores, district and provincial offices — meaning
+    community health centers, medical stores, district and provincial offices — meaning
     supply is scattered unevenly across the landscape.
   </p>
 

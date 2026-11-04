@@ -2,11 +2,12 @@ import { useState } from 'react'
 import './mapsidebar.css'
 import {
   TYPOLOGY_LEGEND,
-  EA_TYPE_LEGEND,
+  SETTLEMENT_TYPE_LEGEND,
   EXCEEDS_WALK_LEGEND,
   TRANSPORT_GAP_LEGEND,
-  ECON_STATUS_LEGEND,
+  WEALTH_CLASS_LEGEND,
 } from '../constants/legendData'
+import { EMPTY_TYPOLOGY_NOTE } from '../constants/dataContract'
 import {
   SNAP_FLAG_COLOR,
   SNAP_FLAG_OPACITY_VALUE,
@@ -34,20 +35,20 @@ const LAYER_GROUPS = [
 
 const LAYERS = [
   // Access — radio group
-  { id: 'walk-typology',     label: 'Walk typology',       defaultOn: true,  group: 'access'  },
-  { id: 'walk-dist-k1',      label: 'Walk distance (k=1)', defaultOn: false, group: 'access'  },
-  { id: 'walk-dist-k3',      label: 'Walk distance (k=3)', defaultOn: false, group: 'access'  },
-  { id: 'drive-typology',    label: 'Drive typology',      defaultOn: false, group: 'access'  },
+  { id: 'walk-typology',     label: 'Walk Typology',            defaultOn: true,  group: 'access'  },
+  { id: 'walk-dist-k1',      label: 'Walk Distance (Nearest)',  defaultOn: false, group: 'access'  },
+  { id: 'walk-dist-k3',      label: 'Walk Distance (3rd Nearest)', defaultOn: false, group: 'access'  },
+  { id: 'drive-typology',    label: 'Drive Typology',           defaultOn: false, group: 'access'  },
   // Overlays — free stack
-  { id: 'pharmacy-dots',     label: 'Pharmacies',          defaultOn: true,  group: 'overlay' },
-  { id: 'exceeds-walk-3km',  label: 'Beyond 3km walk',     defaultOn: false, group: 'overlay' },
-  { id: 'transport-gap',     label: 'Transport gap',       defaultOn: false, group: 'overlay' },
-  { id: 'walk-snap-flag',    label: 'Data uncertainty',    defaultOn: false, group: 'overlay' },
+  { id: 'pharmacy-dots',     label: 'Pharmacies',               defaultOn: true,  group: 'overlay' },
+  { id: 'exceeds-walk-3km',  label: 'Beyond 3 km Walk',         defaultOn: false, group: 'overlay' },
+  { id: 'transport-gap',     label: 'Transport Gap',            defaultOn: false, group: 'overlay' },
+  { id: 'walk-snap-flag',    label: 'Data Uncertainty (Snap > 500 m)', defaultOn: false, group: 'overlay' },
   // Context
-  { id: 'ea-type',           label: 'Settlement type',     defaultOn: false, group: 'context' },
-  { id: 'pct-black-african', label: '% Black African',     defaultOn: false, group: 'context' },
-  { id: 'econ-status',       label: 'Economic status',     defaultOn: false, group: 'context' },
-  { id: 'pop-density',       label: 'Population density',  defaultOn: false, group: 'context' },
+  { id: 'ea-type',           label: 'Settlement Type',          defaultOn: false, group: 'context' },
+  { id: 'pct-black-african', label: 'Black African Share (2011 Census)', defaultOn: false, group: 'context' },
+  { id: 'econ-status',       label: 'Wealth Class',             defaultOn: false, group: 'context' },
+  { id: 'pop-density',       label: 'Population Density',       defaultOn: false, group: 'context' },
 ]
 
 // Legend data keyed by active access layer
@@ -58,10 +59,10 @@ const ACCESS_RAMP = [
 ]
 
 const STATS_PLACEHOLDER = [
-  { label: 'Pharmacies in view', value: '–', subtext: 'points in viewport' },
-  { label: 'Township population', value: '–', subtext: 'share of visible population' },
-  { label: 'SALs >3 km walk', value: '–', subtext: 'count; population share when available' },
-  { label: 'SALs >10 km drive', value: '–', subtext: 'count; population share when available' },
+  { label: 'Pharmacies in View', value: '–', subtext: 'Points in Viewport' },
+  { label: 'Township Population', value: '–', subtext: 'Share of Visible Population' },
+  { label: 'SALs Beyond 3 km Walk', value: '–', subtext: 'Count; Population Share When Available' },
+  { label: 'SALs Beyond 10 km Drive', value: '–', subtext: 'Count; Population Share When Available' },
 ]
 
 // ─────────────────────────────────────────────
@@ -162,16 +163,17 @@ function ActiveLegend({ layers }) {
       {(activeAccess?.id === 'walk-typology' || activeAccess?.id === 'drive-typology') && (
         <>
           <p className="legend__sublabel">
-            {activeAccess.id === 'walk-typology' ? 'Walk typology' : 'Drive typology'}
+            {activeAccess.id === 'walk-typology' ? 'Walk Typology' : 'Drive Typology'}
           </p>
           <LegendSwatches items={TYPOLOGY_LEGEND} />
+          <p className="legend__note">{EMPTY_TYPOLOGY_NOTE}</p>
         </>
       )}
 
       {(activeAccess?.id === 'walk-dist-k1' || activeAccess?.id === 'walk-dist-k3') && (
         <>
           <p className="legend__sublabel">
-            {activeAccess.id === 'walk-dist-k1' ? 'Walk distance to k=1 pharmacy' : 'Walk distance to k=3 pharmacy'}
+            {activeAccess.id === 'walk-dist-k1' ? 'Walk Distance (Nearest)' : 'Walk Distance (3rd Nearest)'}
           </p>
           {/* TODO(pass 2): derive ramp stops from shared walk-distance colors */}
           <LegendRamp colors={[...ACCESS_RAMP].reverse()} lowLabel="Near" highLabel="Far" />
@@ -188,7 +190,7 @@ function ActiveLegend({ layers }) {
               borderColor: PHARMACY_DOT_PAINT['circle-stroke-color'],
             }}
           />
-          <span className="legend__entry-label">Pharmacy location</span>
+          <span className="legend__entry-label">Pharmacy Location</span>
         </div>
       )}
 
@@ -216,21 +218,23 @@ function ActiveLegend({ layers }) {
             className="legend__swatch"
             style={{ background: SNAP_FLAG_COLOR, opacity: SNAP_FLAG_OPACITY_VALUE }}
           />
-          <span className="legend__entry-label">Data uncertainty (snap &gt;500m)</span>
+          <span className="legend__entry-label">Data Uncertainty (Snap &gt; 500 m)</span>
         </div>
       )}
 
       {/* Context layer legends */}
       {layers['ea-type'] && (
         <>
-          <p className="legend__sublabel" style={{ marginTop: 8 }}>Settlement type</p>
-          <LegendSwatches items={EA_TYPE_LEGEND} />
+          <p className="legend__sublabel" style={{ marginTop: 8 }}>Settlement Type</p>
+          <LegendSwatches items={SETTLEMENT_TYPE_LEGEND} />
         </>
       )}
 
       {layers['pct-black-african'] && (
         <>
-          <p className="legend__sublabel legend__sublabel--ramp" style={{ marginTop: 8 }}>% Black African</p>
+          <p className="legend__sublabel legend__sublabel--ramp" style={{ marginTop: 8 }}>
+            Black African Share (2011 Census)
+          </p>
           <LegendStopRamp
             stops={PCT_BLACK_STOPS}
             formatLabel={({ value }) => `${Math.round(value * 100)}%`}
@@ -240,15 +244,15 @@ function ActiveLegend({ layers }) {
 
       {layers['econ-status'] && (
         <>
-          <p className="legend__sublabel" style={{ marginTop: 8 }}>Economic status</p>
-          <LegendSwatches items={ECON_STATUS_LEGEND} />
+          <p className="legend__sublabel" style={{ marginTop: 8 }}>Wealth Class</p>
+          <LegendSwatches items={WEALTH_CLASS_LEGEND} />
         </>
       )}
 
       {layers['pop-density'] && (
         <>
           <p className="legend__sublabel legend__sublabel--ramp" style={{ marginTop: 8 }}>
-            Population density (people/km²)
+            Population Density (People/km²)
           </p>
           <LegendStopRamp stops={POP_DENSITY_STOPS} />
         </>

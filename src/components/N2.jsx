@@ -5,14 +5,16 @@ import * as d3 from 'd3'
 import StepCard from './StepCard'
 import './n2.css'
 import {
-  EA_TYPE_COLORS,
-  EA_TYPE_FILL_EXPRESSION,
   DENSITY_COLOR_STOPS,
   DENSITY_COLOR_EXPRESSION,
-  RACE_KEYS,
+  SETTLEMENT_TYPE_FILL_EXPRESSION,
   RACE_COLORS,
-  RACE_LABELS,
 } from '../constants/mapStyles'
+import {
+  POPULATION_GROUPS,
+  SETTLEMENT_TYPES,
+  SETTLEMENT_TYPE_COLORS,
+} from '../constants/dataContract'
 import gautengChartData from '../../public/data/chart_n2_gauteng.json'
 import kznChartData     from '../../public/data/chart_n2_kzn.json'
 
@@ -22,28 +24,23 @@ const BASE = import.meta.env.BASE_URL || '/'
 // Chart data is precomputed — no runtime fetch or aggregation needed.
 // buildChartDataFromGeoJSON has been removed; JSONs are imported directly.
 
-const EA_TYPE_LEGEND = [
-  { color: EA_TYPE_COLORS.Township, label: 'Township' },
-  { color: EA_TYPE_COLORS['Informal residential'], label: 'Informal residential' },
-  { color: EA_TYPE_COLORS.Suburb, label: 'Formal residential / suburb' },
-  { color: EA_TYPE_COLORS['Traditional residential'], label: 'Traditional residential' },
-  { color: EA_TYPE_COLORS['Small holdings'], label: 'Small holdings' },
-  { color: EA_TYPE_COLORS.Farms, label: 'Farms' },
-  { color: EA_TYPE_COLORS.Commercial, label: 'Commercial' },
-  { color: EA_TYPE_COLORS.Industrial, label: 'Industrial' },
-]
+const EA_TYPE_LEGEND = SETTLEMENT_TYPES
+  .filter(type => type !== 'No Dwellings (2011)')
+  .map(type => ({ color: SETTLEMENT_TYPE_COLORS[type], label: type }))
+
+const POPULATION_GROUP_KEYS = POPULATION_GROUPS.map(group => group.key)
 
 const STEPS = [
   {
     heading: 'Spatial Context: South Africa',
-    body: 'South Africa encompasses 1.2 million square kilometers at the southern tip of Africa. With a population of ~ 62 million, it is the sixth most populated country on the continent and is consistently ranked as having the highest income inequality in the world [1]. It is marked by a complex post-apartheid landscape of racial disparity.',
+    body: 'South Africa encompasses 1.2 million square kilometers at the southern tip of Africa. With a population of ~ 62 million, it is the sixth most populated country on the continent and is consistently ranked as having the highest income inequality in the world [1]. It is marked by a complex post-apartheid landscape of Population Group disparity. In this analysis, about 10.2 million people (37%) live in a walking Pharmacy Desert and 4.6 million (17%) live in a driving Pharmacy Desert, across Gauteng and KwaZulu-Natal (2023 modeled population).',
     fly: { center: [25.0, -29.0], zoom: 5 },
   },
   {
     eyebrow: 'Spatial Context: Provinces',
     heading: 'Gauteng and KwaZulu-Natal',
     body: 'The focus provinces for this project are Gauteng and KwaZulu-Natal. Gauteng is the smallest but most populous province, containing major cities like Johannesburg and Pretoria, and serves as the economic and political hub of the country. [2]',
-    body2: 'KwaZulu-Natal is the second largest province by population, predominantly rural, with urban centers like Durban concentrated along the coast. Gauteng is home to ~1,453 registered pharmacists, while KZN has ~699. This is a ratio that suggests uneven geographic distribution of pharmaceutical capacity. [3]',
+    body2: 'KwaZulu-Natal is the second largest province by population, predominantly rural, with urban centers like Durban concentrated along the coast. Gauteng is home to ~1,453 pharmacies, while KZN has ~699. This is a ratio that suggests uneven geographic distribution of pharmaceutical capacity. [3]',
     fly: { center: [28.5, -27.5], zoom: 5.8 },
   },
   {
@@ -55,18 +52,18 @@ const STEPS = [
     showChart: false,
     showDensity: false,
     legend: EA_TYPE_LEGEND,
-    legendTitle: 'Neighborhood type',
+    legendTitle: 'Settlement Type',
   },
   {
     eyebrow: 'Spatial Context: Neighborhoods and Population',
     heading: 'Population Density',
-    body: 'Population in Gauteng is notably diverse in racial composition, with Black Africans comprising the large majority, followed by smaller but significant shares of White, Coloured, and Indian/Asian residents. This racial geography maps unevenly onto neighborhood type: the province spans affluent gated suburbs and middle-class neighborhoods through to established townships, informal settlements, and backyard dwellings. The latter of these categories house a disproportionate share of Black African residents as a direct legacy of apartheid-era spatial planning.',
+    body: 'Population in Gauteng is notably diverse in Population Group composition, with Black Africans comprising the large majority, followed by smaller but significant shares of White, Coloured, and Indian/Asian residents. This Population Group geography maps unevenly onto neighborhood type: the province spans affluent gated suburbs and middle-class neighborhoods through to established townships, informal settlements, and backyard dwellings. The latter of these categories house a disproportionate share of Black African residents as a direct legacy of apartheid-era spatial planning.',
     fly: { center: [27.9943239, -26.0410534], zoom: 7.9 },
     province: 'gauteng',
     showChart: true,
     showDensity: true,
     legend: DENSITY_COLOR_STOPS,
-    legendTitle: 'Population density (people/km²)',
+    legendTitle: 'Population Density',
   },
   {
     eyebrow: 'Spatial Context: Neighborhoods',
@@ -77,7 +74,7 @@ const STEPS = [
     showChart: false,
     showDensity: false,
     legend: EA_TYPE_LEGEND,
-    legendTitle: 'Neighborhood type',
+    legendTitle: 'Settlement Type',
   },
   {
     eyebrow: 'Spatial Context: Neighborhoods and Population',
@@ -88,7 +85,7 @@ const STEPS = [
     showChart: true,
     showDensity: true,
     legend: DENSITY_COLOR_STOPS,
-    legendTitle: 'Population density (people/km²)',
+    legendTitle: 'Population Density',
   },
 ]
 
@@ -97,7 +94,7 @@ const BAR_MAX_H = 180
 
 // D3 draw function — receives precomputed chart data, no aggregation here.
 // showDensity scales bar height by population density (ppl/km²).
-// Racial composition is always shown as stacked fill regardless of showDensity.
+// Population Group composition is always shown as stacked fill regardless of showDensity.
 function drawChart(svgEl, width, showDensity, chartData) {
   if (!svgEl || !width || !chartData || chartData.length === 0) return
 
@@ -129,7 +126,7 @@ function drawChart(svgEl, width, showDensity, chartData) {
   const yScale     = d3.scaleLinear().domain([0, maxDensity]).range([0, innerH])
   const barH       = d => showDensity ? yScale(d.density) : innerH
 
-  const stack  = d3.stack().keys(RACE_KEYS).value((d, key) => d[key] ?? 0)
+  const stack  = d3.stack().keys(POPULATION_GROUP_KEYS).value((d, key) => d[key] ?? 0)
   const layers = stack(chartData)
 
   // Gridlines — draw once only on first render
@@ -327,7 +324,7 @@ export default function N2() {
       })
 
       // Point sources — gauteng.geojson and kzn.geojson are centroid point files
-      // used for the EA_TYPE circle layer only. Chart data comes from precomputed JSONs.
+      // used for the Settlement Type circle layer only. Chart data comes from precomputed JSONs.
       map.current.addSource('gauteng-data', {
         type: 'geojson',
         data: `${BASE}data/gauteng.geojson`,
@@ -337,26 +334,26 @@ export default function N2() {
         data: `${BASE}data/kzn.geojson`,
       })
 
-      // EA_TYPE circle layers — sized by population density at zoom level
+      // Settlement Type circle layers — sized by population density at zoom level
       map.current.addLayer({
         id: 'gauteng-ea-type',
         type: 'circle',
         source: 'gauteng-data',
         layout: { visibility: 'none' },
         paint: {
-          'circle-color': EA_TYPE_FILL_EXPRESSION,
+          'circle-color': SETTLEMENT_TYPE_FILL_EXPRESSION,
           'circle-radius': [
             'interpolate', ['linear'], ['zoom'],
             6,  ['interpolate', ['linear'],
-                  ['/', ['coalesce', ['get', 'sal2023_est'], 0],
+                  ['/', ['coalesce', ['get', 'pop2023est'], 0],
                         ['max', ['coalesce', ['get', 'area_km2'], 1], 1]],
                   0, 2, 500, 4, 2000, 7, 8000, 11, 15000, 15],
             8, ['interpolate', ['linear'],
-                  ['/', ['coalesce', ['get', 'sal2023_est'], 0],
+                  ['/', ['coalesce', ['get', 'pop2023est'], 0],
                         ['max', ['coalesce', ['get', 'area_km2'], 1], 1]],
                   0, 3, 500, 6, 2000, 10, 8000, 16, 15000, 22],
             10, ['interpolate', ['linear'],
-                  ['/', ['coalesce', ['get', 'sal2023_est'], 0],
+                  ['/', ['coalesce', ['get', 'pop2023est'], 0],
                         ['max', ['coalesce', ['get', 'area_km2'], 1], 1]],
                   0, 4, 500, 8, 2000, 14, 8000, 22, 15000, 30],
           ],
@@ -369,19 +366,19 @@ export default function N2() {
         source: 'kzn-data',
         layout: { visibility: 'none' },
         paint: {
-          'circle-color': EA_TYPE_FILL_EXPRESSION,
+          'circle-color': SETTLEMENT_TYPE_FILL_EXPRESSION,
           'circle-radius': [
             'interpolate', ['linear'], ['zoom'],
             6,  ['interpolate', ['linear'],
-                  ['/', ['coalesce', ['get', 'sal2023_est'], 0],
+                  ['/', ['coalesce', ['get', 'pop2023est'], 0],
                         ['max', ['coalesce', ['get', 'area_km2'], 1], 1]],
                   0, 2, 500, 4, 2000, 7, 8000, 11, 15000, 15],
             8, ['interpolate', ['linear'],
-                  ['/', ['coalesce', ['get', 'sal2023_est'], 0],
+                  ['/', ['coalesce', ['get', 'pop2023est'], 0],
                         ['max', ['coalesce', ['get', 'area_km2'], 1], 1]],
                   0, 3, 500, 6, 2000, 10, 8000, 16, 15000, 22],
             10, ['interpolate', ['linear'],
-                  ['/', ['coalesce', ['get', 'sal2023_est'], 0],
+                  ['/', ['coalesce', ['get', 'pop2023est'], 0],
                         ['max', ['coalesce', ['get', 'area_km2'], 1], 1]],
                   0, 4, 500, 8, 2000, 14, 8000, 22, 15000, 30],
           ],
@@ -398,15 +395,15 @@ export default function N2() {
           'circle-radius': [
             'interpolate', ['linear'], ['zoom'],
             6,  ['interpolate', ['linear'],
-                  ['/', ['coalesce', ['get', 'sal2023_est'], 0],
+                  ['/', ['coalesce', ['get', 'pop2023est'], 0],
                         ['max', ['coalesce', ['get', 'area_km2'], 1], 1]],
                   0, 2, 500, 4, 2000, 7, 8000, 11, 15000, 15],
             8, ['interpolate', ['linear'],
-                  ['/', ['coalesce', ['get', 'sal2023_est'], 0],
+                  ['/', ['coalesce', ['get', 'pop2023est'], 0],
                         ['max', ['coalesce', ['get', 'area_km2'], 1], 1]],
                   0, 3, 500, 6, 2000, 10, 8000, 16, 15000, 22],
             10, ['interpolate', ['linear'],
-                  ['/', ['coalesce', ['get', 'sal2023_est'], 0],
+                  ['/', ['coalesce', ['get', 'pop2023est'], 0],
                         ['max', ['coalesce', ['get', 'area_km2'], 1], 1]],
                   0, 4, 500, 8, 2000, 14, 8000, 22, 15000, 30],
           ],
@@ -427,15 +424,15 @@ export default function N2() {
           'circle-radius': [
             'interpolate', ['linear'], ['zoom'],
             6,  ['interpolate', ['linear'],
-                  ['/', ['coalesce', ['get', 'sal2023_est'], 0],
+                  ['/', ['coalesce', ['get', 'pop2023est'], 0],
                         ['max', ['coalesce', ['get', 'area_km2'], 1], 1]],
                   0, 2, 500, 4, 2000, 7, 8000, 11, 15000, 15],
             8, ['interpolate', ['linear'],
-                  ['/', ['coalesce', ['get', 'sal2023_est'], 0],
+                  ['/', ['coalesce', ['get', 'pop2023est'], 0],
                         ['max', ['coalesce', ['get', 'area_km2'], 1], 1]],
                   0, 3, 500, 6, 2000, 10, 8000, 16, 15000, 22],
             10, ['interpolate', ['linear'],
-                  ['/', ['coalesce', ['get', 'sal2023_est'], 0],
+                  ['/', ['coalesce', ['get', 'pop2023est'], 0],
                         ['max', ['coalesce', ['get', 'area_km2'], 1], 1]],
                   0, 4, 500, 8, 2000, 14, 8000, 22, 15000, 30],
           ],
@@ -566,14 +563,14 @@ export default function N2() {
           <div className="n2__chart-header">
             <p className="n2__chart-eyebrow">
               {showDensity
-                ? 'Neighborhood type · composition + density'
-                : 'Neighborhood type · racial composition'}
+                ? 'Settlement Type · composition + density'
+                : 'Settlement Type · Population Group (2011 Census)'}
             </p>
             <div className="n2__chart-legend">
-              {RACE_KEYS.map(k => (
-                <span key={k} className="n2__legend-item">
-                  <span className="n2__legend-swatch" style={{ background: RACE_COLORS[k] }} />
-                  {RACE_LABELS[k]}
+              {POPULATION_GROUPS.map(group => (
+                <span key={group.key} className="n2__legend-item">
+                  <span className="n2__legend-swatch" style={{ background: RACE_COLORS[group.key] }} />
+                  {group.label}
                 </span>
               ))}
             </div>

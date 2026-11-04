@@ -179,11 +179,11 @@
 }
 
 .n4__map-legend--typology {
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   justify-content: flex-start;
   gap: 5px 9px;
-  overflow-x: auto;
-  white-space: nowrap;
+  overflow-x: visible;
+  white-space: normal;
 }
 
 .n4__map-legend--typology .n4__map-legend-title {
@@ -197,6 +197,14 @@
 .n4__map-legend--typology .n4__map-legend-item {
   gap: 3px;
   font-size: 9px;
+}
+
+.n4__map-legend-note {
+  flex-basis: 100%;
+  font-size: 9px;
+  line-height: 1.4;
+  color: rgba(40, 40, 60, 0.52);
+  white-space: normal;
 }
 
 .n4__chart-overlay {

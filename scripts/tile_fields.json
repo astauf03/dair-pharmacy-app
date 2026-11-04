@@ -1,0 +1,19 @@
+{
+  "source_layer": "dair_sal",
+  "fields": [
+    "EA_CODE",
+    "EA_TYPE",
+    "PR_NAME",
+    "area_km2",
+    "pop2023est",
+    "pop2011sum",
+    "wlk_type",
+    "drv_type",
+    "wlk_k1_km",
+    "wlk_k3_km",
+    "drv_k1_km",
+    "wlk_snapfl",
+    "econ_stat",
+    "Black_Afr"
+  ]
+}

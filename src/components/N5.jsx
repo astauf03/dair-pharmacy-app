@@ -7,13 +7,15 @@ import {
   DENSITY_COLOR_EXPRESSION,
   DENSITY_COLOR_STOPS,
   DENSITY_CIRCLE_RADIUS,
-  EA_TYPE_COLORS,
-  EA_TYPE_FILL_EXPRESSION,
-  EA_TYPE_LABELS,
-  EA_TYPE_ORDER,
+  SETTLEMENT_TYPE_FILL_EXPRESSION,
   PHARMACY_DOT_PAINT,
-  WALK_TYPOLOGY_COLORS,
 } from '../constants/mapStyles'
+import {
+  ACCESS_TYPOLOGY_COLORS,
+  SETTLEMENT_TYPES,
+  SETTLEMENT_TYPE_COLORS,
+  settlementTypeOf,
+} from '../constants/dataContract'
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN
 const BASE = import.meta.env.BASE_URL || '/'
@@ -43,84 +45,84 @@ const BOUNDARY_LAYER_IDS = ['n5-gauteng-boundary', 'n5-kzn-boundary']
 
 const WALK_TYPOLOGY_COLOR_EXPRESSION = [
   'match',
-  ['get', 'walk_typology'],
-  ...Object.entries(WALK_TYPOLOGY_COLORS).flat(),
+  ['get', 'wlk_type'],
+  ...Object.entries(ACCESS_TYPOLOGY_COLORS).flat(),
   'rgba(0, 0, 0, 0)',
 ]
 
 const WALK_TYPOLOGY_DEFINITIONS = {
-  'Well-served': 'Walking access to pharmacies is good.',
-  'Demand overcrowding': 'Pharmacy access is strained by high local demand.',
-  'Connectivity gap': 'Road or network connectivity limits access.',
-  'Access gap': 'Walking access to a pharmacy is limited.',
-  'Pharmacy desert': 'The area is far from pharmacies by walking.',
-  'Artifact zone': 'A high access score is driven by low local demand.',
+  'Well-Served': 'Walking access to pharmacies is good.',
+  'Demand Overcrowding': 'Pharmacy access is strained by high local demand.',
+  'Connectivity Gap': 'Road or network connectivity limits access.',
+  'Access Gap': 'Walking access to a pharmacy is limited.',
+  'Pharmacy Desert': 'The area is far from pharmacies by walking.',
+  'Artifact Zone': 'A high access score is driven by low local demand.',
 }
 
 const STEPS = [
   {
     province: 'gauteng',
     topic: 'ea-type',
-    heading: 'Gauteng: EA_TYPE',
-    body: 'Circles are colored by the EA_TYPE recorded for each point. ', 
+    heading: 'Gauteng: Settlement Type',
+    body: 'Circles are colored by the Settlement Type recorded for each point. ', 
   },
   {
     province: 'kzn',
     topic: 'ea-type',
-    heading: 'KwaZulu-Natal: EA_TYPE',
-    body: 'Circles are colored by the EA_TYPE recorded for each point. ', // TODO: Rewrite placeholder story copy.
+    heading: 'KwaZulu-Natal: Settlement Type',
+    body: 'Circles are colored by the Settlement Type recorded for each point. ',
   },
   {
     province: 'gauteng',
     topic: 'ea-type',
     showPharmacies: true,
-    heading: 'Gauteng: EA_TYPE and pharmacies',
-    body: 'Gauteng has 1,453 pharmacies , roughly one for every 10,400 people in Gauteng. ', 
+    heading: 'Gauteng: Settlement Type and pharmacies',
+    body: 'Gauteng has 1,453 pharmacies, roughly one for every 10,400 people in Gauteng. ', 
   },
   {
     province: 'kzn',
     topic: 'ea-type',
     showPharmacies: true,
-    heading: 'KwaZulu-Natal: EA_TYPE and pharmacies',
+    heading: 'KwaZulu-Natal: Settlement Type and pharmacies',
     body: 'KwaZulu-Natal has 699 pharmacies, roughly one for every 17,800 people in KwaZulu-Natal',
   },
   {
     province: 'gauteng',
     topic: 'walk-typology',
-    heading: 'Gauteng: walk access typology',
+    heading: 'Gauteng: Walk Access Typology',
     body: 'About 16% of the population in Gauteng is more than 3 km from a pharmacy on foot', 
   },
   {
     province: 'gauteng',
     topic: 'walk-typology',
     showPharmacies: true,
-    heading: 'Gauteng: walk access and pharmacies',
+    heading: 'Gauteng: Walk Access and Pharmacies',
     body: 'About 16% of the population in Gauteng is more than 3 km from a pharmacy on foot ', 
   },
   {
     province: 'kzn',
     topic: 'walk-typology',
-    heading: 'KwaZulu-Natal: walk access typology',
+    heading: 'KwaZulu-Natal: Walk Access Typology',
     body: 'About 63% of the population in KwaZulu-Natal is more than 3 km from a pharmacy on foot. Most of that gap sits in traditional residential areas, the former homeland areas', 
   },
   {
     province: 'kzn',
     topic: 'walk-typology',
     showPharmacies: true,
-    heading: 'KwaZulu-Natal: walk access and pharmacies',
-    body: 'Walk-access typology circles and pharmacy points are visible together. ', // TODO: Rewrite placeholder story copy.
+    heading: 'KwaZulu-Natal: Walk Access and Pharmacies',
+    body: 'About 7.8 million people in KwaZulu-Natal live in a walking Pharmacy Desert.',
   },
   {
     province: 'gauteng',
     topic: 'density',
-    heading: 'Gauteng: population density',
-    body: 'Circle size represents estimated population per square kilometre. ', // TODO: Rewrite placeholder story copy.
+    heading: 'Gauteng: Population Density',
+    body: 'Circle size represents estimated population per square kilometer. ',
   },
   {
     province: 'kzn',
     topic: 'density',
-    heading: 'KwaZulu-Natal: population density',
-    body: 'Dense places are not necessarily better served. The informal settlements in KwaMashu pack in about 26,700 people per km², more than three times its township areas. ', // TODO: Rewrite placeholder story copy.
+    heading: 'KwaZulu-Natal: Population Density',
+    body: 'Dense places are not necessarily better served. The informal settlements in KwaMashu pack in about 26,700 people per km², more than three times its township areas. ',
   },
 ]
 
@@ -129,15 +131,9 @@ const STEPS = [
 function numericValue(value, field, featureCode) {
   const number = typeof value === 'number' ? value : Number(value)
   if (!Number.isFinite(number)) {
-    throw new Error(`Invalid ${field} value for enumeration area ${featureCode ?? '(unknown)'}.`)
+    throw new Error(`Invalid ${field} value for SAL ${featureCode ?? '(unknown)'}.`)
   }
   return number
-}
-
-function normalizeEAType(value) {
-  if (typeof value !== 'string') return null
-  const normalized = value.replace(/_\*$/, '')
-  return normalized === 'Small holdings' ? 'Smallholdings' : normalized
 }
 
 function removeExactDuplicateFeatures(features) {
@@ -154,11 +150,7 @@ function removeExactDuplicateFeatures(features) {
 }
 
 function orderedEntries(stats) {
-  const keys = [
-    ...EA_TYPE_ORDER,
-    ...Object.keys(EA_TYPE_LABELS),
-    ...[...stats.keys()].sort(),
-  ]
+  const keys = [...SETTLEMENT_TYPES, ...[...stats.keys()].sort()]
   return [...new Set(keys)]
     .filter(key => stats.has(key))
     .map(key => [key, stats.get(key)])
@@ -173,7 +165,7 @@ function buildProvinceAnalysis(geojson, provinceKey) {
   const pointFeatures = uniqueFeatures.filter(feature => feature.geometry?.type === 'Point')
   const excludedNonPointFeatureCount = uniqueFeatures.length - pointFeatures.length
   const nullWalkTypologyFeatureCount = uniqueFeatures.filter(
-    feature => feature.properties?.walk_typology == null,
+    feature => feature.properties?.wlk_type == null,
   ).length
   const eaTypeStats = new Map()
   const walkTypologyStats = new Map()
@@ -182,28 +174,28 @@ function buildProvinceAnalysis(geojson, provinceKey) {
 
   const normalizedFeatures = pointFeatures.map(feature => {
     const properties = feature.properties ?? {}
-    const eaType = normalizeEAType(properties.EA_TYPE)
+    const settlement = settlementTypeOf(properties.EA_TYPE)
     const code = properties.EA_CODE
 
-    if (!eaType || !Object.hasOwn(EA_TYPE_COLORS, eaType)) {
+    if (!settlement || !Object.hasOwn(SETTLEMENT_TYPE_COLORS, settlement)) {
       throw new Error(`Unknown EA_TYPE "${properties.EA_TYPE}" in ${PROVINCES[provinceKey].label}.`)
     }
 
-    const featurePopulation = numericValue(properties.sal2023_est, 'sal2023_est', code)
+    const featurePopulation = numericValue(properties.pop2023est, 'pop2023est', code)
     const featureArea = numericValue(properties.area_km2, 'area_km2', code)
-    const walkTypology = properties.walk_typology
+    const walkTypology = properties.wlk_type
 
     population += featurePopulation
     area += featureArea
 
-    const eaStats = eaTypeStats.get(eaType) ?? { count: 0, population: 0 }
+    const eaStats = eaTypeStats.get(settlement) ?? { count: 0, population: 0 }
     eaStats.count += 1
     eaStats.population += featurePopulation
-    eaTypeStats.set(eaType, eaStats)
+    eaTypeStats.set(settlement, eaStats)
 
     if (typeof walkTypology === 'string' && walkTypology.trim()) {
-      if (!Object.hasOwn(WALK_TYPOLOGY_COLORS, walkTypology)) {
-        throw new Error(`Unknown walk_typology "${walkTypology}" in ${PROVINCES[provinceKey].label}.`)
+      if (!Object.hasOwn(ACCESS_TYPOLOGY_COLORS, walkTypology)) {
+        throw new Error(`Unknown wlk_type "${walkTypology}" in ${PROVINCES[provinceKey].label}.`)
       }
       const typologyStats = walkTypologyStats.get(walkTypology) ?? { count: 0, population: 0 }
       typologyStats.count += 1
@@ -213,7 +205,7 @@ function buildProvinceAnalysis(geojson, provinceKey) {
 
     return {
       ...feature,
-      properties: { ...properties, EA_TYPE: eaType },
+      properties: { ...properties, settlement },
     }
   })
 
@@ -342,20 +334,20 @@ function formatArea(value) {
 }
 
 function displayEAType(type) {
-  return (EA_TYPE_LABELS[type] ?? type).replace(/\n/g, ' ')
+  return type
 }
 
 function buildLegend(step, provinceAnalysis) {
   let items
   if (step.topic === 'ea-type') {
     items = orderedEntries(provinceAnalysis.eaTypeStats).map(([type]) => ({
-      color: EA_TYPE_COLORS[type],
+      color: SETTLEMENT_TYPE_COLORS[type],
       label: displayEAType(type),
     }))
   } else if (step.topic === 'walk-typology') {
-    items = Object.keys(WALK_TYPOLOGY_COLORS)
+    items = Object.keys(ACCESS_TYPOLOGY_COLORS)
       .filter(type => provinceAnalysis.walkTypologyStats.has(type))
-      .map(type => ({ color: WALK_TYPOLOGY_COLORS[type], label: type }))
+      .map(type => ({ color: ACCESS_TYPOLOGY_COLORS[type], label: type }))
   } else {
     return []
   }
@@ -390,7 +382,7 @@ function MapLegend({ items, title }) {
 function DensityLegend() {
   return (
     <div className="n5__map-legend">
-      <span className="n5__map-legend-title">Population density (people/km2)</span>
+      <span className="n5__map-legend-title">Population Density</span>
       {DENSITY_COLOR_STOPS.map(({ color, label }) => (
         <span key={label} className="n5__map-legend-item">
           <span
@@ -411,7 +403,7 @@ function MapSummary({ step, provinceAnalysis, pharmacyAnalysis }) {
     ? orderedEntries(provinceAnalysis.eaTypeStats)
     : []
   const typologyRows = step.topic === 'walk-typology'
-    ? Object.entries(WALK_TYPOLOGY_COLORS)
+    ? Object.entries(ACCESS_TYPOLOGY_COLORS)
       .filter(([type]) => provinceAnalysis.walkTypologyStats.has(type))
       .map(([type]) => [type, provinceAnalysis.walkTypologyStats.get(type)])
     : []
@@ -423,7 +415,7 @@ function MapSummary({ step, provinceAnalysis, pharmacyAnalysis }) {
         <>
           <ul className="n5__summary-metrics">
             <li>
-              <span>Unique mapped enumeration areas (EAs)</span>
+              <span>Unique mapped SALs</span>
               <strong>{formatNumber(provinceAnalysis.pointFeatureCount)}</strong>
             </li>
             <li>
@@ -432,7 +424,7 @@ function MapSummary({ step, provinceAnalysis, pharmacyAnalysis }) {
             </li>
           </ul>
           <div className="n5__map-summary-columns">
-            <span>Neighborhood Type</span><span>EAs</span><span>Population</span>
+            <span>Settlement Type</span><span>SALs</span><span>Population</span>
           </div>
           <ul>
             {eaRows.map(([type, stats]) => (
@@ -449,7 +441,7 @@ function MapSummary({ step, provinceAnalysis, pharmacyAnalysis }) {
       {step.topic === 'walk-typology' && (
         <>
           <div className="n5__map-summary-columns">
-            <span>Walk typology</span><span>Areas</span><span>Population / share</span>
+            <span>Access Typology</span><span>SALs</span><span>Population / share</span>
           </div>
           <ul>
             {typologyRows.map(([type, stats]) => (
@@ -467,7 +459,7 @@ function MapSummary({ step, provinceAnalysis, pharmacyAnalysis }) {
             ))}
           </ul>
           <p className="n5__map-summary-note">
-            Artifact zone reflects high access scores in low-demand areas. Routing uncertainty can be explored in the map page's walk-snap-flag layer.
+            Routing uncertainty can be explored in the map page's walk-snap-flag layer.
           </p>
           <details className="n5__map-summary-definitions">
             <summary>What these mean</summary>
@@ -542,14 +534,14 @@ function addMapLayers(map) {
     type: 'line',
     source: 'n5-gauteng-boundary-source',
     layout: { visibility: 'none' },
-    paint: { 'line-color': EA_TYPE_COLORS.Industrial, 'line-width': 1.5, 'line-opacity': 0.8 },
+    paint: { 'line-color': '#555566', 'line-width': 1.5, 'line-opacity': 0.8 },
   })
   map.addLayer({
     id: 'n5-kzn-boundary',
     type: 'line',
     source: 'n5-kzn-boundary-source',
     layout: { visibility: 'none' },
-    paint: { 'line-color': EA_TYPE_COLORS.Industrial, 'line-width': 1.5, 'line-opacity': 0.8 },
+    paint: { 'line-color': '#555566', 'line-width': 1.5, 'line-opacity': 0.8 },
   })
   map.addLayer({
     id: 'n5-ea-type',
@@ -557,7 +549,7 @@ function addMapLayers(map) {
     source: 'n5-areas',
     layout: { visibility: 'none' },
     paint: {
-      'circle-color': EA_TYPE_FILL_EXPRESSION,
+      'circle-color': SETTLEMENT_TYPE_FILL_EXPRESSION,
       'circle-radius': DENSITY_CIRCLE_RADIUS,
       'circle-opacity': 0.82,
       'circle-stroke-color': '#ffffff',
@@ -579,7 +571,7 @@ function addMapLayers(map) {
     id: 'n5-walk-typology',
     type: 'circle',
     source: 'n5-areas',
-    filter: ['all', ['has', 'walk_typology'], ['!=', ['get', 'walk_typology'], null]],
+    filter: ['all', ['has', 'wlk_type'], ['!=', ['get', 'wlk_type'], null]],
     layout: { visibility: 'none' },
     paint: {
       'circle-color': WALK_TYPOLOGY_COLOR_EXPRESSION,
@@ -733,7 +725,7 @@ export default function N5() {
                 ? <DensityLegend />
                 : <MapLegend
                     items={legend}
-                    title={step.topic === 'ea-type' ? 'EA_TYPE' : 'Walk access typology'}
+                    title={step.topic === 'ea-type' ? 'Settlement Type' : 'Access Typology'}
                   />}
             </>
           )}
