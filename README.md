@@ -334,9 +334,15 @@ AI-assisted development tools, including Anthropic's Claude, were used extensive
 
 The following resources were particularly useful during development and may help future contributors:
 
-- Mapbox GL JS Documentation — map rendering, layers, and interactions
-- Mapbox Style Specification — paint/layout properties and expressions
-- D3.js Documentation — chart rendering and scales
-- Scrollama Documentation — scroll-driven storytelling interactions
-- Mapbox Tilesets CLI Documentation — tileset uploads and recipes
-- [Data dictionary](docs/data-dictionary.md) — every field in the canonical v2 dataset
+- Mapbox GL JS Documentation for map rendering, layers, and interactions
+- Mapbox Style Specification for paint/layout properties and expressions
+- D3.js Documentation for chart rendering and scales
+- Scrollama Documentation for scroll-driven storytelling interactions
+- Mapbox Tilesets CLI Documentation for tileset uploads and recipes
+- [Data dictionary](docs/data-dictionary.md) for every field in the true canonical v2 dataset
+
+---
+
+## AI Usage
+
+`tess-vu` used self-contained Qwen 3.8 Coder 27B LLM and also DeepSeek V4 to aid with debugging, doc clarification, and test creation.
