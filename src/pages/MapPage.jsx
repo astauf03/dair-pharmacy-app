@@ -15,14 +15,19 @@ import {
   EXCEEDS_WALK_OPACITY,
   SNAP_FLAG_COLOR,
   SNAP_FLAG_OPACITY,
-  EA_TYPE_COLOR,
+  SETTLEMENT_TYPE_COLOR,
   PCT_BLACK_COLOR,
   POP_DENSITY_COLOR,
-  ECON_STATUS_COLOR,
+  WEALTH_CLASS_COLOR,
   TRANSPORT_GAP_COLOR,
   TRANSPORT_GAP_OPACITY,
   CHOROPLETH_OPACITY,
 } from '../constants/layerExpressions'
+import {
+  TILE_SOURCE_LAYER,
+  isBeyondThreshold,
+  settlementTypeOf,
+} from '../constants/dataContract'
 
 const BASE = import.meta.env.BASE_URL || '/'
 
@@ -71,12 +76,9 @@ function MapPage() {
     map.current.on('load', () => {
       map.current.setFog(null)
 
-      // ── Sources ────────────────────────────────────────────────
-      map.current.addSource('SA-access', {
-        type: 'vector',
-        url:  'mapbox://astauf03.pharm_access_tileset',
-      })
+      const tilesetId = import.meta.env.VITE_MAPBOX_TILESET
 
+      // ── Sources ────────────────────────────────────────────────
       map.current.addSource('south-africa', {
         type: 'geojson',
         data: `${BASE}data/south_africa.geojson`,
@@ -98,165 +100,174 @@ function MapPage() {
         },
       })
 
-      // ── Access layers (radio group — only one visible at a time) ──
+      if (tilesetId) {
+        map.current.addSource('SA-access', {
+          type: 'vector',
+          url:  `mapbox://${tilesetId}`,
+        })
 
-      map.current.addLayer({
-        id:           'walk-typology',
-        type:         'fill',
-        source:       'SA-access',
-        'source-layer': 'dair_sal',
-        layout:       { visibility: 'visible' },
-        paint:        {
-          'fill-color':   WALK_TYPOLOGY_COLOR,
-          'fill-opacity': CHOROPLETH_OPACITY,
-        },
-      })
+        // ── Access layers (radio group — only one visible at a time) ──
 
-      map.current.addLayer({
-        id:           'walk-dist-k1',
-        type:         'fill',
-        source:       'SA-access',
-        'source-layer': 'dair_sal',
-        layout:       { visibility: 'none' },
-        paint:        {
-          'fill-color':   WALK_DIST_K1_COLOR,
-          'fill-opacity': CHOROPLETH_OPACITY,
-        },
-      })
+        map.current.addLayer({
+          id:           'walk-typology',
+          type:         'fill',
+          source:       'SA-access',
+          'source-layer': TILE_SOURCE_LAYER,
+          layout:       { visibility: 'visible' },
+          paint:        {
+            'fill-color':   WALK_TYPOLOGY_COLOR,
+            'fill-opacity': CHOROPLETH_OPACITY,
+          },
+        })
 
-      map.current.addLayer({
-        id:           'walk-dist-k3',
-        type:         'fill',
-        source:       'SA-access',
-        'source-layer': 'dair_sal',
-        layout:       { visibility: 'none' },
-        paint:        {
-          'fill-color':   WALK_DIST_K3_COLOR,
-          'fill-opacity': CHOROPLETH_OPACITY,
-        },
-      })
+        map.current.addLayer({
+          id:           'walk-dist-k1',
+          type:         'fill',
+          source:       'SA-access',
+          'source-layer': TILE_SOURCE_LAYER,
+          layout:       { visibility: 'none' },
+          paint:        {
+            'fill-color':   WALK_DIST_K1_COLOR,
+            'fill-opacity': CHOROPLETH_OPACITY,
+          },
+        })
 
-      map.current.addLayer({
-        id:           'drive-typology',
-        type:         'fill',
-        source:       'SA-access',
-        'source-layer': 'dair_sal',
-        layout:       { visibility: 'none' },
-        paint:        {
-          'fill-color':   DRIVE_TYPOLOGY_COLOR,
-          'fill-opacity': CHOROPLETH_OPACITY,
-        },
-      })
+        map.current.addLayer({
+          id:           'walk-dist-k3',
+          type:         'fill',
+          source:       'SA-access',
+          'source-layer': TILE_SOURCE_LAYER,
+          layout:       { visibility: 'none' },
+          paint:        {
+            'fill-color':   WALK_DIST_K3_COLOR,
+            'fill-opacity': CHOROPLETH_OPACITY,
+          },
+        })
 
-      // ── Context layers ─────────────────────────────────────────
+        map.current.addLayer({
+          id:           'drive-typology',
+          type:         'fill',
+          source:       'SA-access',
+          'source-layer': TILE_SOURCE_LAYER,
+          layout:       { visibility: 'none' },
+          paint:        {
+            'fill-color':   DRIVE_TYPOLOGY_COLOR,
+            'fill-opacity': CHOROPLETH_OPACITY,
+          },
+        })
 
-      map.current.addLayer({
-        id:           'ea-type',
-        type:         'fill',
-        source:       'SA-access',
-        'source-layer': 'dair_sal',
-        layout:       { visibility: 'none' },
-        paint:        {
-          'fill-color':   EA_TYPE_COLOR,
-          'fill-opacity': 0.8,
-        },
-      })
+        // ── Context layers ─────────────────────────────────────────
 
-      map.current.addLayer({
-        id:           'pct-black-african',
-        type:         'fill',
-        source:       'SA-access',
-        'source-layer': 'dair_sal',
-        layout:       { visibility: 'none' },
-        paint:        {
-          'fill-color':   PCT_BLACK_COLOR,
-          'fill-opacity': 0.75,
-        },
-      })
+        map.current.addLayer({
+          id:           'ea-type',
+          type:         'fill',
+          source:       'SA-access',
+          'source-layer': TILE_SOURCE_LAYER,
+          layout:       { visibility: 'none' },
+          paint:        {
+            'fill-color':   SETTLEMENT_TYPE_COLOR,
+            'fill-opacity': 0.8,
+          },
+        })
 
-      map.current.addLayer({
-        id:           'econ-status',
-        type:         'fill',
-        source:       'SA-access',
-        'source-layer': 'dair_sal',
-        layout:       { visibility: 'none' },
-        paint:        {
-          'fill-color':   ECON_STATUS_COLOR,
-          'fill-opacity': 0.7,
-        },
-      })
+        map.current.addLayer({
+          id:           'pct-black-african',
+          type:         'fill',
+          source:       'SA-access',
+          'source-layer': TILE_SOURCE_LAYER,
+          layout:       { visibility: 'none' },
+          paint:        {
+            'fill-color':   PCT_BLACK_COLOR,
+            'fill-opacity': 0.75,
+          },
+        })
 
-      map.current.addLayer({
-        id:           'pop-density',
-        type:         'fill',
-        source:       'SA-access',
-        'source-layer': 'dair_sal',
-        layout:       { visibility: 'none' },
-        paint:        {
-          'fill-color':   POP_DENSITY_COLOR,
-          'fill-opacity': 0.65,
-        },
-      })
+        map.current.addLayer({
+          id:           'econ-status',
+          type:         'fill',
+          source:       'SA-access',
+          'source-layer': TILE_SOURCE_LAYER,
+          layout:       { visibility: 'none' },
+          paint:        {
+            'fill-color':   WEALTH_CLASS_COLOR,
+            'fill-opacity': 0.7,
+          },
+        })
 
-      // ── Overlay fills (stack on top of access/context) ─────────
+        map.current.addLayer({
+          id:           'pop-density',
+          type:         'fill',
+          source:       'SA-access',
+          'source-layer': TILE_SOURCE_LAYER,
+          layout:       { visibility: 'none' },
+          paint:        {
+            'fill-color':   POP_DENSITY_COLOR,
+            'fill-opacity': 0.65,
+          },
+        })
 
-      // Binary pharmacy desert — 'True'/'False' strings from CSV
-      map.current.addLayer({
-        id:           'exceeds-walk-3km',
-        type:         'fill',
-        source:       'SA-access',
-        'source-layer': 'dair_sal',
-        layout:       { visibility: 'none' },
-        paint:        {
-          'fill-color':   EXCEEDS_WALK_COLOR,
-          'fill-opacity': EXCEEDS_WALK_OPACITY,
-        },
-      })
+        // ── Overlay fills (stack on top of access/context) ─────────
 
-      // Transport gap bivariate (walk desert vs drive served)
-      map.current.addLayer({
-        id:           'transport-gap',
-        type:         'fill',
-        source:       'SA-access',
-        'source-layer': 'dair_sal',
-        layout:       { visibility: 'none' },
-        paint:        {
-          'fill-color':   TRANSPORT_GAP_COLOR,
-          'fill-opacity': TRANSPORT_GAP_OPACITY,
-        },
-      })
+        // Binary pharmacy desert — beyond the 3 km walk threshold
+        map.current.addLayer({
+          id:           'exceeds-walk-3km',
+          type:         'fill',
+          source:       'SA-access',
+          'source-layer': TILE_SOURCE_LAYER,
+          layout:       { visibility: 'none' },
+          paint:        {
+            'fill-color':   EXCEEDS_WALK_COLOR,
+            'fill-opacity': EXCEEDS_WALK_OPACITY,
+          },
+        })
 
-      // Data uncertainty wash — sits above all fills, below outlines
-      // Transparent where data is clean, orange where snap > 500m
-      map.current.addLayer({
-        id:           'walk-snap-flag',
-        type:         'fill',
-        source:       'SA-access',
-        'source-layer': 'dair_sal',
-        layout:       { visibility: 'none' },
-        paint:        {
-          'fill-color':   SNAP_FLAG_COLOR,
-          'fill-opacity': SNAP_FLAG_OPACITY,
-        },
-      })
+        // Transport gap bivariate (walk desert vs drive served)
+        map.current.addLayer({
+          id:           'transport-gap',
+          type:         'fill',
+          source:       'SA-access',
+          'source-layer': TILE_SOURCE_LAYER,
+          layout:       { visibility: 'none' },
+          paint:        {
+            'fill-color':   TRANSPORT_GAP_COLOR,
+            'fill-opacity': TRANSPORT_GAP_OPACITY,
+          },
+        })
 
-      // ── SAL outlines — above all fills ────────────────────────
-      map.current.addLayer({
-        id:           'sal-outline',
-        type:         'line',
-        source:       'SA-access',
-        'source-layer': 'dair_sal',
-        paint:        {
-          'line-color':   '#ffffff',
-          'line-opacity': 0.55,
-          'line-width':   [
-            'interpolate', ['linear'], ['zoom'],
-            6,  0.15,
-            10, 0.45,
-            13, 0.8,
-          ],
-        },
-      })
+        // Data uncertainty wash — sits above all fills, below outlines
+        // Transparent where data is clean, orange where snap > 500m
+        map.current.addLayer({
+          id:           'walk-snap-flag',
+          type:         'fill',
+          source:       'SA-access',
+          'source-layer': TILE_SOURCE_LAYER,
+          layout:       { visibility: 'none' },
+          paint:        {
+            'fill-color':   SNAP_FLAG_COLOR,
+            'fill-opacity': SNAP_FLAG_OPACITY,
+          },
+        })
+
+        // ── SAL outlines — above all fills ────────────────────────
+        map.current.addLayer({
+          id:           'sal-outline',
+          type:         'line',
+          source:       'SA-access',
+          'source-layer': TILE_SOURCE_LAYER,
+          paint:        {
+            'line-color':   '#ffffff',
+            'line-opacity': 0.55,
+            'line-width':   [
+              'interpolate', ['linear'], ['zoom'],
+              6,  0.15,
+              10, 0.45,
+              13, 0.8,
+            ],
+          },
+        })
+      } else {
+        console.error('VITE_MAPBOX_TILESET is not set; skipping the SAL vector tileset layers.')
+      }
 
       // ── Pharmacy dots — always on top ─────────────────────────
       map.current.addLayer({
@@ -285,91 +296,76 @@ function MapPage() {
         map.current.getCanvas().style.cursor = ''
       })
 
-      // ── SAL click — log properties for debugging ──────────────
-      map.current.on('click', 'walk-typology', (e) => {
-        if (e.features.length > 0) console.log(e.features[0].properties)
-      })
-
       // ── Dynamic stats on moveend ───────────────────────────────
-      map.current.on('moveend', () => {
-        const pharmacyFeatures = map.current.queryRenderedFeatures({ layers: ['pharmacy-dots'] })
-        const salFeatures = map.current.queryRenderedFeatures({ layers: ['sal-outline'] })
-        const salById = new Map()
+      if (tilesetId) {
+        map.current.on('moveend', () => {
+          const pharmacyFeatures = map.current.queryRenderedFeatures({ layers: ['pharmacy-dots'] })
+          const salFeatures = map.current.queryRenderedFeatures({ layers: ['sal-outline'] })
+          const salById = new Map()
 
-        salFeatures.forEach(feature => {
-          const salId = feature.properties?.EA_CODE ?? feature.id
-          if (salId != null) salById.set(String(salId), feature.properties)
-        })
+          salFeatures.forEach(feature => {
+            const salId = feature.properties?.EA_CODE ?? feature.id
+            if (salId != null) salById.set(String(salId), feature.properties)
+          })
 
-        const visibleSals = [...salById.values()]
-        const isTrue = value => value === 'True' || value === true
-        let totalPopulation = 0
-        let townshipPopulation = 0
-        let beyondWalkPopulation = 0
-        let beyondDrivePopulation = 0
-        let beyondWalkCount = 0
-        let beyondDriveCount = 0
-        let driveThresholdAvailable = false
-        let driveDesertCount = 0
+          const visibleSals = [...salById.values()]
+          let totalPopulation = 0
+          let townshipPopulation = 0
+          let beyondWalkPopulation = 0
+          let beyondDrivePopulation = 0
+          let beyondWalkCount = 0
+          let beyondDriveCount = 0
 
-        visibleSals.forEach(properties => {
-          const population = Number(properties.sal2023_es)
-          const hasPopulation = properties.sal2023_es != null
-            && Number.isFinite(population)
-            && population > 0
-          const beyondWalk = isTrue(properties.exceeds_wa)
-          const exceedsDriveThreshold = isTrue(properties.exceeds_dr)
+          visibleSals.forEach(properties => {
+            const population = Number(properties.pop2023est)
+            const hasPopulation = properties.pop2023est != null
+              && Number.isFinite(population)
+              && population > 0
+            const beyondWalk = isBeyondThreshold(properties.wlk_k1_km, 'walk')
+            const beyondDrive = isBeyondThreshold(properties.drv_k1_km, 'drive')
 
-          if (properties.exceeds_dr != null) driveThresholdAvailable = true
-          if (hasPopulation) {
-            totalPopulation += population
-            if (properties.EA_TYPE === 'Township' || properties.EA_TYPE === 'Township_*') {
-              townshipPopulation += population
+            if (hasPopulation) {
+              totalPopulation += population
+              if (settlementTypeOf(properties.EA_TYPE) === 'Township') {
+                townshipPopulation += population
+              }
+              if (beyondWalk) beyondWalkPopulation += population
+              if (beyondDrive) beyondDrivePopulation += population
             }
-            if (beyondWalk) beyondWalkPopulation += population
-            if (exceedsDriveThreshold) beyondDrivePopulation += population
-          }
-          if (beyondWalk) beyondWalkCount += 1
-          if (exceedsDriveThreshold) beyondDriveCount += 1
-          if (properties.drive_typo === 'Pharmacy desert') driveDesertCount += 1
-        })
+            if (beyondWalk) beyondWalkCount += 1
+            if (beyondDrive) beyondDriveCount += 1
+          })
 
-        const populationShare = population => totalPopulation > 0
-          ? `${Math.round((population / totalPopulation) * 100)}% of viewport population`
-          : 'population unavailable'
-        const driveMetric = driveThresholdAvailable
-          ? {
-              label: 'SALs >10 km drive',
+          const populationShare = population => totalPopulation > 0
+            ? `${Math.round((population / totalPopulation) * 100)}% of Viewport Population`
+            : 'Population Unavailable'
+
+          setDynamicStats([
+            {
+              label: 'Pharmacies in View',
+              value: pharmacyFeatures.length.toLocaleString(),
+              subtext: 'Points in Viewport',
+            },
+            {
+              label: 'Township Population',
+              value: totalPopulation > 0
+                ? `${Math.round((townshipPopulation / totalPopulation) * 100)}%`
+                : '–',
+              subtext: 'Of Visible SAL Population',
+            },
+            {
+              label: 'SALs Beyond 3 km Walk',
+              value: beyondWalkCount.toLocaleString(),
+              subtext: populationShare(beyondWalkPopulation),
+            },
+            {
+              label: 'SALs Beyond 10 km Drive',
               value: beyondDriveCount.toLocaleString(),
               subtext: populationShare(beyondDrivePopulation),
-            }
-          : {
-              label: 'Drive pharmacy deserts',
-              value: driveDesertCount.toLocaleString(),
-              subtext: 'SALs classified as Pharmacy desert',
-            }
-
-        setDynamicStats([
-          {
-            label: 'Pharmacies in view',
-            value: pharmacyFeatures.length.toLocaleString(),
-            subtext: 'points in viewport',
-          },
-          {
-            label: 'Township population',
-            value: totalPopulation > 0
-              ? `${Math.round((townshipPopulation / totalPopulation) * 100)}%`
-              : '–',
-            subtext: 'of visible SAL population',
-          },
-          {
-            label: 'SALs >3 km walk',
-            value: beyondWalkCount.toLocaleString(),
-            subtext: populationShare(beyondWalkPopulation),
-          },
-          driveMetric,
-        ])
-      })
+            },
+          ])
+        })
+      }
     })
 
     map.current.on('error', (e) => console.error('Mapbox error:', e))

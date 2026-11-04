@@ -5,17 +5,17 @@ import * as d3 from 'd3'
 import StepCard from './StepCard'
 import './n4.css'
 import {
-  EA_TYPE_FILL_EXPRESSION,
-  EA_TYPE_COLORS,
-  EA_TYPE_LABELS,
-  EA_TYPE_ORDER,
-  RACE_KEYS,
-  RACE_COLORS,
-  RACE_LABELS,
-  RACE_PROPERTY_MAP,
-  PHARMACY_DOT_PAINT,
-  WALK_TYPOLOGY_COLORS,
-} from '../constants/mapStyles'
+  ACCESS_TYPOLOGY_CLASSES,
+  ACCESS_TYPOLOGY_COLORS,
+  EMPTY_TYPOLOGY_NOTE,
+  POPULATION_GROUPS,
+  SETTLEMENT_TYPES,
+  SETTLEMENT_TYPE_COLORS,
+  beyondThresholdExpression,
+  isBeyondThreshold,
+  settlementTypeOf,
+} from '../constants/dataContract'
+import { PHARMACY_DOT_PAINT, RACE_COLORS } from '../constants/mapStyles'
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN
 const BASE = import.meta.env.BASE_URL || '/'
@@ -39,13 +39,20 @@ const SHOW_TYPOLOGY_SHARES = false
 
 const EMPTY_FEATURE_COLLECTION = { type: 'FeatureCollection', features: [] }
 
-const EA_TYPE_LEGEND = [
-  { color: EA_TYPE_COLORS.Township, label: 'Township' },
-  { color: EA_TYPE_COLORS['Informal residential'], label: 'Informal residential' },
-  { color: EA_TYPE_COLORS['Formal residential'], label: 'Formal residential / suburb' },
-  { color: EA_TYPE_COLORS.Vacant, label: 'Vacant' },
-  { color: EA_TYPE_COLORS['Collective living quarters'], label: 'Collective living quarters' },
-]
+const POPULATION_GROUP_KEYS = POPULATION_GROUPS.map(group => group.key)
+
+const POPULATION_GROUP_FIELD_BY_KEY = Object.fromEntries(
+  POPULATION_GROUPS.map(group => [group.key, group.field]),
+)
+
+const ACCESS_TYPOLOGY_DEFINITIONS = {
+  'Pharmacy Desert': 'The area is far from pharmacies by walking.',
+  'Access Gap': 'Walking access to a pharmacy is limited.',
+  'Connectivity Gap': 'Road or network connectivity limits access.',
+  'Demand Overcrowding': 'Pharmacy access is strained by high local demand.',
+  'Artifact Zone': 'A high access score is driven by low local demand.',
+  'Well-Served': 'Walking access to pharmacies is good.',
+}
 
 const DISTANCE_LEGEND = [
   { color: '#C0392B', label: '>3 km to nearest pharmacy' },
@@ -53,33 +60,53 @@ const DISTANCE_LEGEND = [
   { color: PHARMACY_DOT_PAINT['circle-color'], label: 'Pharmacy' },
 ]
 
-const WALK_TYPOLOGY_LEGEND = [
-  ...Object.entries(WALK_TYPOLOGY_COLORS).map(([label, color]) => ({ label, color })),
-  { color: '#007A4D', label: 'Pharmacy' },
+const SETTLEMENT_TYPE_FILL_EXPRESSION = [
+  'match',
+  ['get', 'settlement'],
+  ...SETTLEMENT_TYPES.flatMap(type => [type, SETTLEMENT_TYPE_COLORS[type]]),
+  SETTLEMENT_TYPE_COLORS['No Dwellings (2011)'],
 ]
 
-const WALK_TYPOLOGY_COLOR = [
+const ACCESS_TYPOLOGY_FILL_EXPRESSION = [
   'match',
-  ['get', 'walk_typology'],
-  ...Object.entries(WALK_TYPOLOGY_COLORS).flat(),
+  ['get', 'wlk_type'],
+  ...ACCESS_TYPOLOGY_CLASSES.flatMap(type => [type, ACCESS_TYPOLOGY_COLORS[type]]),
   '#CCCCCC',
 ]
 
-const WALK_TYPOLOGY_DEFINITIONS = {
-  'Well-served': 'Walking access to pharmacies is good.',
-  'Demand overcrowding': 'Pharmacy access is strained by high local demand.',
-  'Connectivity gap': 'Road or network connectivity limits access.',
-  'Access gap': 'Walking access to a pharmacy is limited.',
-  'Pharmacy desert': 'The area is far from pharmacies by walking.',
-  'Artifact zone': 'A high access score is driven by low local demand.',
-}
-
 const DISTANCE_3KM_COLOR = [
   'case',
-  ['==', ['get', 'walk_dist_k1_km'], null], '#B0A090',
-  ['>', ['get', 'walk_dist_k1_km'], 3], '#C0392B',
+  beyondThresholdExpression('wlk_k1_km', 'walk'),
+  '#C0392B',
   '#2980B9',
 ]
+
+function settlementTypeLegendItems(analysis) {
+  if (!analysis) return []
+  return SETTLEMENT_TYPES
+    .filter(type => analysis.settlementCounts[type])
+    .map(type => ({ color: SETTLEMENT_TYPE_COLORS[type], label: type }))
+}
+
+function typologyLegendItems(analysis) {
+  if (!analysis) return []
+  return ACCESS_TYPOLOGY_CLASSES
+    .filter(type => analysis.typologyCounts[type])
+    .map(type => ({ color: ACCESS_TYPOLOGY_COLORS[type], label: type }))
+}
+
+function legendForStep(step, analysis) {
+  if (step.topic === 'distance') return DISTANCE_LEGEND
+  if (step.topic === 'typology') {
+    return analysis
+      ? [...typologyLegendItems(analysis), { color: PHARMACY_DOT_PAINT['circle-color'], label: 'Pharmacy' }]
+      : []
+  }
+  if (step.topic === 'ea-type' || step.topic === 'race') {
+    return settlementTypeLegendItems(analysis)
+  }
+  return []
+}
 
 const STEPS = [
   {
@@ -87,7 +114,7 @@ const STEPS = [
     topic: 'extent',
     eyebrow: 'Olievenhoutbosch, City of Tshwane, Gauteng',
     heading: 'Olievenhoutbosch Study Area',
-    body: 'There are 82 enumeration areas in the Olievenhoutbosch township. Olievenhoutbosch is located between major cities like Midrand, Centurion, and Pretoria. Let us examine the pharmacy access conditions.  ',
+    body: 'There are 82 SALs in the Olievenhoutbosch township. Olievenhoutbosch is located between major cities like Midrand, Centurion, and Pretoria. Let us examine the pharmacy access conditions.  ',
     layers: ['extent-fill', 'extent-line'],
     zoom: 12.2,
   },
@@ -96,20 +123,19 @@ const STEPS = [
     topic: 'ea-type',
     eyebrow: 'Olievenhoutbosch, City of Tshwane, Gauteng / Neighborhood type',
     heading: 'Census neighborhood types across Olievenhoutbosch',
-    body: 'The neighborhood type classification filtered to Olievenhoutbosch shows township, informal residential, and vacant areas. These metrics are derived from the South African census data.',
+    body: 'The neighborhood type classification filtered to Olievenhoutbosch shows Township, Informal Settlement, and No Dwellings (2011) areas. These metrics are derived from the South African census data.',
     layers: ['extent-fill', 'extent-line', 'ea-type', 'ea-type-line'],
-    legend: EA_TYPE_LEGEND,
-    legendTitle: 'Neighborhood type',
+    legendTitle: 'Settlement Type',
     zoom: 13,
   },
   {
     township: 'ohb',
     topic: 'race',
     eyebrow: 'Olievenhoutbosch, Gauteng / Population',
-    heading: 'Racial composition by neighborhood type',
-    body: 'Beyond this portion shows a barchart of the racial distribution by nieghborhood type in Olievenhoutbosch. The racial makeup of Olievenhoutbosch is as follows: Black African 98.0%, Other 1.2%, Coloured 0.6%, Indian/Asian 0.2%',
-    legend: EA_TYPE_LEGEND,
-    legendTitle: 'Neighborhood type',
+    heading: 'Population Group composition by neighborhood type',
+    body: 'Beyond this portion shows a bar chart of the Population Group mix (2011 Census) by neighborhood type in Olievenhoutbosch. The Population Group mix of Olievenhoutbosch is as follows: Black African 98.0%, Coloured 0.6%, Indian/Asian 0.2%, White 0.1%, and Other 1.2%.',
+    layers: ['extent-fill', 'extent-line', 'ea-type', 'ea-type-line'],
+    legendTitle: 'Settlement Type',
     showChart: true,
     zoom: 13.5,
   },
@@ -118,10 +144,9 @@ const STEPS = [
     topic: 'distance',
     eyebrow: 'Olievenhoutbosch, Gauteng / Walking distance',
     heading: 'Which areas are more than 3 km from a pharmacy?',
-    body: 'There are about 4 private pharmacies in Olievenhoutbosch, 81 of 82 areas are within a 3 km walk of a pharmacy. ',
+    body: 'There are about 4 private pharmacies in Olievenhoutbosch, 81 of 82 SALs are within a 3 km walk of a pharmacy. ',
     layers: ['extent-line', 'distance', 'pharmacies'],
-    legend: DISTANCE_LEGEND,
-    legendTitle: 'Nearest-pharmacy walking distance',
+    legendTitle: 'Walking Distance to Nearest Pharmacy',
     zoom: 12.5,
   },
   {
@@ -129,10 +154,9 @@ const STEPS = [
     topic: 'typology',
     eyebrow: 'Olievenhoutbosch, Gauteng / Walk access',
     heading: 'Walk-access typology',
-    body: 'The final layer distinguishes pharmacy deserts from other access conditions. These are the walking metrics. 30 of the 82 enumeartion areas are classified as "well-served". Distance is not the problem, crowding is. Half of residents live where a pharmacy is close but shared by many people, and only 44% live in well-served areas.',
+    body: 'The final layer distinguishes Pharmacy Deserts from other access conditions. These are the walking metrics. 30 of the 82 SALs are classified as "Well-Served". Distance is not the problem, crowding is. Half of residents live where a pharmacy is close but shared by many people, and only 43.5% live in Well-Served areas.',
     layers: ['extent-line', 'walk-typology', 'pharmacies'],
-    legend: WALK_TYPOLOGY_LEGEND,
-    legendTitle: 'Walk-access typology',
+    legendTitle: 'Walking Access Typology',
     zoom: 12.5,
   },
   {
@@ -140,7 +164,7 @@ const STEPS = [
     topic: 'extent',
     eyebrow: 'KwaMashu, KwaZulu-Natal',
     heading: 'KwaMashu study area',
-    body: 'Moving on to KwaMashu, this is a township in KwaZulu-Natal. KwaMashu is located west of Durban and has less enumeration areas than Olievenhoutbosch. Let us examine the pharmacy access conditions.',
+    body: 'Moving on to KwaMashu, this is a township in KwaZulu-Natal. KwaMashu is located west of Durban and has more SALs than Olievenhoutbosch. Let us examine the pharmacy access conditions.',
     layers: ['extent-fill', 'extent-line'],
     zoom: 12,
   },
@@ -149,21 +173,19 @@ const STEPS = [
     topic: 'ea-type',
     eyebrow: 'KwaMashu, KwaZulu-Natal / Neighborhood type',
     heading: 'Census neighborhood types across KwaMashu',
-    body: 'The neighborhood type classification filtered to KwaMashu shows township, informal residential, formal residential and vacant census areas.',
+    body: 'The neighborhood type classification filtered to KwaMashu shows Township, Informal Settlement, and No Dwellings (2011) areas.',
     layers: ['extent-fill', 'extent-line', 'ea-type', 'ea-type-line'],
-    legend: EA_TYPE_LEGEND,
-    legendTitle: 'Neighborhood type',
+    legendTitle: 'Settlement Type',
     zoom: 12.2,
   },
   {
     township: 'kwamashu',
     topic: 'race',
     eyebrow: 'KwaMashu, KwaZulu-Natal / Population',
-    heading: 'Racial composition by neighborhood type',
-    body: 'Below this portion shows a barchart of the racial distribution by nieghborhood type in KwaMashu. The racial distribution of KwaMashu is as follows: Black African 98.6%, Indian/Asian 1.0%, Coloured 0.2%.',
+    heading: 'Population Group composition by neighborhood type',
+    body: 'Below this portion shows a bar chart of the Population Group mix (2011 Census) by neighborhood type in KwaMashu. The Population Group mix of KwaMashu is as follows: Black African 98.6%, Coloured 0.2%, Indian/Asian 1.0%, White 0.1%, and Other 0.1%.',
     layers: ['extent-fill', 'extent-line', 'ea-type', 'ea-type-line'],
-    legend: EA_TYPE_LEGEND,
-    legendTitle: 'Neighborhood type',
+    legendTitle: 'Settlement Type',
     showChart: true,
     zoom: 12.25,
   },
@@ -172,10 +194,9 @@ const STEPS = [
     topic: 'distance',
     eyebrow: 'KwaMashu, KwaZulu-Natal / Walking distance',
     heading: 'Which areas are more than 3 km from a pharmacy?',
-    body: 'The enumeration areas are classified from their measured walking distance to the nearest pharmacy. About 60% of the EAs in KwaMashu (152 of 253) are more than 3 km from a pharmacy on foot, mostly in the east. The farthest is 6.6 km',
+    body: 'The SALs are classified from their measured walking distance to the nearest pharmacy. About 8.3% of the SALs in KwaMashu (21 of 253) are more than 3 km from a pharmacy on foot, mostly in the east. The farthest is 4.4 km',
     layers: ['extent-line', 'distance', 'pharmacies'],
-    legend: DISTANCE_LEGEND,
-    legendTitle: 'Nearest-pharmacy walking distance',
+    legendTitle: 'Walking Distance to Nearest Pharmacy',
     zoom: 12.4,
   },
   {
@@ -183,10 +204,9 @@ const STEPS = [
     topic: 'typology',
     eyebrow: 'KwaMashu, KwaZulu-Natal / Walk access',
     heading: 'Walk-access typology',
-    body: 'Only about one in five residents lives in a well-served area. The 152 areas beyond 3 km break into three groups: access gaps (97 areas), artifact zones where few people live (34), and pharmacy deserts (21',
+    body: 'Only 36.4% of residents live in a Well-Served area. The 21 SALs beyond 3 km are all Pharmacy Deserts.',
     layers: ['extent-line', 'walk-typology', 'pharmacies'],
-    legend: WALK_TYPOLOGY_LEGEND,
-    legendTitle: 'Walk-access typology',
+    legendTitle: 'Walking Access Typology',
     zoom: 12.5,
   },
 ]
@@ -199,16 +219,6 @@ const AREA_LAYERS = [
   'distance',
   'walk-typology',
 ]
-
-const RACE_PROPERTY_BY_LABEL = Object.fromEntries(
-  Object.entries(RACE_PROPERTY_MAP).map(([property, label]) => [label, property]),
-)
-
-function normalizeEAType(value) {
-  if (typeof value !== 'string') return null
-  const normalized = value.replace(/_\*$/, '')
-  return normalized === 'Small holdings' ? 'Smallholdings' : normalized
-}
 
 function numericValue(value) {
   if (typeof value === 'number') return Number.isFinite(value) ? value : 0
@@ -239,78 +249,75 @@ function buildTownshipAnalysis(geojson) {
 
   const features = removeExactDuplicateFeatures(geojson.features)
   const groups = new Map()
-  const eaTypeCounts = {}
+  const settlementCounts = {}
   const typologyCounts = {}
   const typologyPopulation = {}
   const walkDistances = []
-  const distance = { over3km: 0, within3km: 0, unknown: 0 }
+  const distance = { over3km: 0, within3km: 0 }
   let population = 0
 
   for (const feature of features) {
     const properties = feature.properties ?? {}
-    const type = normalizeEAType(properties.EA_TYPE)
-    const featurePopulation = numericValue(properties.sal2023_est)
+    const settlement = settlementTypeOf(properties.EA_TYPE)
+    const featurePopulation = numericValue(properties.pop2023est)
     population += featurePopulation
 
-    if (type) eaTypeCounts[type] = (eaTypeCounts[type] ?? 0) + 1
+    if (settlement) settlementCounts[settlement] = (settlementCounts[settlement] ?? 0) + 1
 
-    const rawDistance = properties.walk_dist_k1_km
+    const rawDistance = properties.wlk_k1_km
     const walkDistance = typeof rawDistance === 'number'
       ? rawDistance
       : typeof rawDistance === 'string' && rawDistance.trim()
         ? Number(rawDistance)
         : Number.NaN
 
-    if (!Number.isFinite(walkDistance)) distance.unknown += 1
-    else {
-      walkDistances.push(walkDistance)
-      if (walkDistance > 3) distance.over3km += 1
-      else distance.within3km += 1
-    }
+    if (Number.isFinite(walkDistance)) walkDistances.push(walkDistance)
+    if (isBeyondThreshold(walkDistance, 'walk')) distance.over3km += 1
+    else distance.within3km += 1
 
-    const typology = properties.walk_typology
+    const typology = properties.wlk_type
     if (typeof typology === 'string') {
       typologyCounts[typology] = (typologyCounts[typology] ?? 0) + 1
       typologyPopulation[typology] =
         (typologyPopulation[typology] ?? 0) + featurePopulation
     }
 
-    if (!type) continue
+    if (!settlement) continue
 
-    if (!groups.has(type)) {
-      groups.set(type, {
+    if (!groups.has(settlement)) {
+      groups.set(settlement, {
         population: 0,
         area: 0,
-        races: Object.fromEntries(RACE_KEYS.map(key => [key, 0])),
+        groups: Object.fromEntries(POPULATION_GROUP_KEYS.map(key => [key, 0])),
       })
     }
 
-    const group = groups.get(type)
+    const group = groups.get(settlement)
     group.population += featurePopulation
     group.area += numericValue(properties.area_km2)
-    for (const race of RACE_KEYS) {
-      group.races[race] += numericValue(properties[RACE_PROPERTY_BY_LABEL[race]])
+    for (const [key, field] of Object.entries(POPULATION_GROUP_FIELD_BY_KEY)) {
+      group.groups[key] += numericValue(properties[field])
     }
   }
 
-  const chartTypes = [
-    ...EA_TYPE_ORDER.filter(type => groups.get(type)?.population > 0),
-    ...[...groups.keys()]
-      .filter(type => !EA_TYPE_ORDER.includes(type) && groups.get(type).population > 0)
-      .sort(),
-  ]
+  const chartTypes = SETTLEMENT_TYPES.filter(
+    type => type !== 'No Dwellings (2011)' && groups.get(type)?.population > 0,
+  )
+
   const chartData = chartTypes.map(type => {
     const group = groups.get(type)
-
-    const raceTotal = RACE_KEYS.reduce((sum, key) => sum + group.races[key], 0)
+    const groupTotal = POPULATION_GROUP_KEYS.reduce(
+      (sum, key) => sum + group.groups[key],
+      0,
+    )
 
     return {
-      type: EA_TYPE_LABELS[type] ?? type,
+      type,
       density: group.area > 0 ? Math.round(group.population / group.area) : 0,
       ...Object.fromEntries(
-        RACE_KEYS.map(key => [
+        POPULATION_GROUP_KEYS.map(key => [
           key,
-          raceTotal > 0 ? Math.round((group.races[key] / raceTotal) * 100) : 0,
+          groupTotal > 0 ? Math.round((group.groups[key] / groupTotal) * 100) : 0,
         ]),
       ),
     }
@@ -321,7 +328,7 @@ function buildTownshipAnalysis(geojson) {
     sourceFeatureCount: geojson.features.length,
     duplicateFeatureCount: geojson.features.length - features.length,
     geojson: { ...geojson, features },
-    eaTypeCounts,
+    settlementCounts,
     typologyCounts,
     typologyPopulation,
     population,
@@ -352,7 +359,7 @@ function drawTownshipChart(svgElement, width, chartData) {
     .paddingOuter(0.1)
   const maxDensity = d3.max(chartData, row => row.density) || 1
   const densityScale = d3.scaleLinear().domain([0, maxDensity]).range([0, CHART_MAX_HEIGHT])
-  const stack = d3.stack().keys(RACE_KEYS).value((row, key) => row[key] ?? 0)
+  const stack = d3.stack().keys(POPULATION_GROUP_KEYS).value((row, key) => row[key] ?? 0)
   const layers = stack(chartData)
 
   root.selectAll('.n4-chart-gridline')
@@ -442,7 +449,7 @@ function addAreaLayers(map, township) {
     type: 'fill',
     source,
     layout: { visibility: 'none' },
-    paint: { 'fill-color': EA_TYPE_FILL_EXPRESSION, 'fill-opacity': 0.76 },
+    paint: { 'fill-color': SETTLEMENT_TYPE_FILL_EXPRESSION, 'fill-opacity': 0.76 },
   })
   map.addLayer({
     id: `${township}-ea-type-line`,
@@ -463,7 +470,7 @@ function addAreaLayers(map, township) {
     type: 'fill',
     source,
     layout: { visibility: 'none' },
-    paint: { 'fill-color': WALK_TYPOLOGY_COLOR, 'fill-opacity': 0.84 },
+    paint: { 'fill-color': ACCESS_TYPOLOGY_FILL_EXPRESSION, 'fill-opacity': 0.84 },
   })
 }
 
@@ -487,25 +494,17 @@ function setStepLayers(map, step) {
   }
 }
 
-function MapLegend({ items, title, compact = false }) {
-  const compactLabels = {
-    'Well-served': 'Well-Served',
-    'Demand overcrowding': 'Demand Overcrowding',
-    'Connectivity gap': 'Connectivity Gap',
-    'Access gap': 'Access Gap',
-    'Pharmacy desert': 'Pharmacy Desert',
-    'Artifact zone': 'Artifact Zone',
-  }
-
+function MapLegend({ items, title, compact = false, note = null }) {
   return (
     <div className={`n4__map-legend ${compact ? 'n4__map-legend--typology' : ''}`}>
       {title && <span className="n4__map-legend-title">{title}</span>}
       {items.map(({ color, label }) => (
         <span key={label} className="n4__map-legend-item">
           <span className="n4__map-legend-swatch" style={{ background: color }} />
-          {compact ? compactLabels[label] ?? label : label}
+          {label}
         </span>
       ))}
+      {note && <span className="n4__map-legend-note">{note}</span>}
     </div>
   )
 }
@@ -513,25 +512,20 @@ function MapLegend({ items, title, compact = false }) {
 function MapSummary({ step, analysis }) {
   if (!analysis) return null
   const typologyRows = step.topic === 'typology'
-    ? Object.entries(WALK_TYPOLOGY_DEFINITIONS)
-      .filter(([type]) => analysis.typologyCounts[type])
+    ? ACCESS_TYPOLOGY_CLASSES
+      .filter(type => analysis.typologyCounts[type])
+      .map(type => [type, ACCESS_TYPOLOGY_DEFINITIONS[type]])
     : []
 
   let rows = []
   if (step.topic === 'ea-type' || step.topic === 'race') {
-    rows = EA_TYPE_ORDER
-      .filter(type => analysis.eaTypeCounts[type])
-      .map(type => [`${EA_TYPE_LABELS[type] ?? type}`.replace('\n', ' '), analysis.eaTypeCounts[type]])
-    for (const [type, count] of Object.entries(analysis.eaTypeCounts)) {
-      if (!EA_TYPE_ORDER.includes(type)) rows.push([type.replace(/_\*$/, ''), count])
-    }
+    rows = SETTLEMENT_TYPES
+      .filter(type => analysis.settlementCounts[type])
+      .map(type => [type, analysis.settlementCounts[type]])
   } else if (step.topic === 'typology') {
-    rows = Object.entries(WALK_TYPOLOGY_COLORS)
-      .filter(([type]) => analysis.typologyCounts[type])
-      .map(([type]) => [type, analysis.typologyCounts[type]])
-    for (const [type, count] of Object.entries(analysis.typologyCounts)) {
-      if (!(type in WALK_TYPOLOGY_COLORS)) rows.push([type, count])
-    }
+    rows = ACCESS_TYPOLOGY_CLASSES
+      .filter(type => analysis.typologyCounts[type])
+      .map(type => [type, analysis.typologyCounts[type]])
   }
 
   return (
@@ -709,6 +703,7 @@ export default function N4() {
   const step = STEPS[activeStep]
   const analysis = analysisByTownship[step.township]
   const chartData = analysis?.chartData
+  const legendItems = legendForStep(step, analysis)
 
   useEffect(() => {
     if (!showChart || !chartContainer.current || !svgRef.current || !chartData) return
@@ -757,11 +752,12 @@ export default function N4() {
           }}
         />
 
-        {step.legend && !showChart && (
+        {legendItems.length > 0 && !showChart && (
           <MapLegend
-            items={step.legend}
+            items={legendItems}
             title={step.legendTitle}
             compact={step.topic === 'typology'}
+            note={step.topic === 'typology' ? EMPTY_TYPOLOGY_NOTE : null}
           />
         )}
         <MapSummary step={step} analysis={analysis} />
@@ -772,14 +768,14 @@ export default function N4() {
         >
           <div className="n4__chart-header">
             <p className="n4__chart-eyebrow">
-              {TOWNSHIPS[step.township].label} / Population density and racial composition by neighborhood type
+              {TOWNSHIPS[step.township].label} / Population Density and Population Group Composition by Settlement Type
             </p>
             {showChart && (
               <div className="n4__chart-legend">
-                {RACE_KEYS.map(key => (
-                  <span key={key} className="n4__legend-item">
-                    <span className="n4__legend-swatch" style={{ background: RACE_COLORS[key] }} />
-                    {RACE_LABELS[key]}
+                {POPULATION_GROUPS.map(group => (
+                  <span key={group.key} className="n4__legend-item">
+                    <span className="n4__legend-swatch" style={{ background: RACE_COLORS[group.key] }} />
+                    {group.label}
                   </span>
                 ))}
               </div>
@@ -797,7 +793,7 @@ export default function N4() {
           )}
           <svg ref={svgRef} style={{ display: 'block', overflow: 'visible' }} />
           <p className="n4__chart-source">
-            Racial counts and EA_TYPE from township SAL polygons; density uses 2023 population estimate / km².
+            Population Group (2011 Census) counts and Settlement Type from township SAL polygons; density uses 2023 modeled population / km².
           </p>
         </div>
       </div>

@@ -12,21 +12,24 @@ Live site: https://astauf03.github.io/dair-pharmacy-app/
 2. [Architecture Overview](#architecture-overview)
 3. [Setup](#setup)
 4. [Environment Variables](#environment-variables)
-5. [Folder Structure](#folder-structure)
-6. [Data & Map Pipeline](#data--map-pipeline)
-7. [Tilesets Workflow](#tilesets-workflow)
-8. [How Story Sections Interact with Map Layers](#how-story-sections-interact-with-map-layers)
-9. [Map Layer Reference](#map-layer-reference)
+5. [Data & Map Pipeline](#data--map-pipeline)
+6. [Tilesets Workflow](#tilesets-workflow)
+7. [How Story Sections Interact with Map Layers](#how-story-sections-interact-with-map-layers)
+8. [Map Layer Reference](#map-layer-reference)
+9. [Folder Structure](#folder-structure)
 10. [Adding New Map Layers or Story Chapters](#adding-new-map-layers-or-story-chapters)
 11. [Known Technical Debt & Limitations](#known-technical-debt--limitations)
 12. [Troubleshooting](#troubleshooting)
 13. [Acknowledgements](#acknowledgements)
+14. [References & Documentation](#references--documentation)
 
 ---
 
 ## Project Purpose
 
-This application examines disparities in pharmacy access shaped by South Africa's apartheid-era spatial geography. It combines a scroll-driven narrative (Story page) with an interactive map dashboard (Map page) to communicate access gaps across different settlement types — townships, informal settlements, and formal suburbs — primarily in Gauteng and KwaZulu-Natal provinces.
+This application examines disparities in pharmacy access shaped by South Africa's apartheid-era spatial geography. It combines a scroll-driven narrative (Story page) with an interactive map dashboard (Map page) to communicate access gaps across different Settlement Types — townships, informal settlements, and suburbs — in Gauteng and KwaZulu-Natal.
+
+The unit of analysis is the **SAL** (Small Area Layer), a Stats SA polygon. Shared vocabulary (SAL, Settlement Type, Population Group, Access Typology) is defined in `GLOSSARY.md`.
 
 The two main views:
 
@@ -44,17 +47,17 @@ React + Vite (frontend)
   ├── D3                  — custom stacked bar charts
   └── Turf.js             — client-side spatial analysis (buffer, point-in-polygon)
 
-Data pipeline (external — not in this repo)
-  └── Snowflake        — spatial preprocessing and access score computation
-   └── Mapbox Tilesets CLI / API  — uploads processed data as vector tiles
-  └── ArcGIS Pro         
-     
+Data pipeline
+  └── ArcGIS Pro + Stats SA Census → eight Python notebooks
+      (tess-vu/south-africa-pharmacies) → sal_combined_access
+  └── Pharmacy data (insurance PDFs, Google Places API)
+      → Snowflake (ingestion and cleaning; verify with team)
 
-Static GeoJSON (public/data/)
-  — boundary and polygon files loaded directly by the frontend
+This repo
+  └── scripts/derive_data.py → every public/data/ file the site loads
 ```
 
-**There is no backend.** All data is either static GeoJSON files served from `public/data/` or a Mapbox vector tileset (`astauf03.pharm_access_tileset`). The application makes no API calls at runtime beyond Mapbox tile requests.
+**There is no backend.** All data is either static GeoJSON files served from `public/data/` or a Mapbox vector tileset named by the `VITE_MAPBOX_TILESET` environment variable. The application makes no API calls at runtime beyond Mapbox tile requests.
 
 ---
 
@@ -63,7 +66,8 @@ Static GeoJSON (public/data/)
 **Prerequisites:**
 
 - [Node.js](https://nodejs.org) LTS
-- A Mapbox account with an access token ([mapbox.com])(https://mapbox.com) - free tier is viable for deployment
+- A Mapbox account with an access token ([mapbox.com](https://mapbox.com)) — the free tier is fine for local development
+- Python with the packages in `scripts/requirements.txt` — only needed to derive data, not to run the site. The maintainer runs it in the conda environment `za`.
 
 **Steps:**
 
@@ -73,10 +77,11 @@ cd dair-pharmacy-app
 npm install
 ```
 
-Create a `.env` file in the project root: 
+Create a `.env` file in the project root:
 
 ```bash
 VITE_MAPBOX_TOKEN=pk.your_token_here
+VITE_MAPBOX_TILESET=yourusername.pharm_access_v2
 ```
 
 Then start the dev server:
@@ -85,9 +90,19 @@ Then start the dev server:
 npm run dev
 ```
 
+**Deriving the data files:**
+
+The canonical source, `public/data/sal_combined_access.geojson`, is gitignored. Obtain it from the group repo (`tess-vu/south-africa-pharmacies`) or the data team, then run:
+
+```bash
+conda run -n za python scripts/derive_data.py
+```
+
+Any Python environment with the packages from `scripts/requirements.txt` works. See [Data & Map Pipeline](#data--map-pipeline) for what the script writes and checks.
+
 **Deploy to GitHub Pages:**
 
-`.github/workflows/deploy.yml` runs when commits are pushed to the `storymap-v2` and publishes to GitHub Pages. The Mapbox token is read by the build from VITE_MAPBOX_TOKEN, the repo secret (select "Settings", "Secrets and variables", then "Actions"). Make sure to go onto GitHub pages and make sure that it's deployed from "GitHub Actions" ("Settings", then "Pages").
+`.github/workflows/deploy.yml` runs on every push to `main`: install, test, build, and publish to GitHub Pages. The build reads `VITE_MAPBOX_TOKEN` from a repository secret and `VITE_MAPBOX_TILESET` from a repository variable (Settings → Secrets and variables → Actions). Make sure GitHub Pages is set to deploy from GitHub Actions (Settings → Pages).
 
 ---
 
@@ -95,140 +110,68 @@ npm run dev
 
 | Variable | Required | Description |
 |---|---|---|
-| `VITE_MAPBOX_TOKEN` | Yes | Public Mapbox access token. Must have permission to access the `astauf03.pharm_access_tileset` tileset. |
+| `VITE_MAPBOX_TOKEN` | Yes | Public Mapbox access token (starts with `pk.`). Must belong to the account that owns the tileset. |
+| `VITE_MAPBOX_TILESET` | Yes | Mapbox tileset ID, e.g. `<username>.pharm_access_v2`. Set in `.env` locally and as a repository **variable** for deploys. |
 
-The token is set globally in `src/main.jsx` and referenced again in individual map components (`MapPage.jsx`, `N2.jsx`, `N4.jsx`, `N5Parallel.jsx`). All use `import.meta.env.VITE_MAPBOX_TOKEN`.
+The token is set globally in `src/main.jsx`; the tileset ID is read by `src/pages/MapPage.jsx`.
 
-> **Note on token scope:** The Mapbox tileset (`astauf03.pharm_access_tileset`) is owned by the `astauf03` account. A public token from that account is needed to access it. If you fork this project, you will need to either upload the tileset to your own account or obtain a token scoped to the original account. The setup will be changing in the next couple of days.
+> **Token note:** a public `pk.` token from the tileset owner's account is required to read the tileset. A secret `sk.` token (with `tilesets:write`) is used only in the shell for the tileset CLI during the [Tilesets Workflow](#tilesets-workflow) — never in a file.
 
 ---
 
-## Folder Structure
-
-```
-dair-pharmacy-app/
-├── public/
-│   └── data/
-│       ├── gauteng.geojson               # Gauteng EA-level polygons (with demographic fields)
-│       ├── kzn.geojson                   # KZN EA-level polygons
-│       ├── gauteng_boundary.geojson      # Province outline
-│       ├── kzn_boundary.geojson
-│       ├── south_africa.geojson          # National boundary
-│       ├── gauteng-wards.geojson         # Ward boundaries (Gauteng)
-│       ├── gauteng_polygons.geojson      # Sub-area polygons used in N4 township view
-│       ├── kzn_polygons.geojson
-│       ├── olievenhoutbosch.geojson      # Neighborhood boundary (Gauteng township)
-│       ├── kwamashu.geojson              # Neighborhood boundary (KZN township)
-│       ├── pharmacies.geojson            # Pharmacy point locations
-│       ├── PHARMACIES_MASTER_FINAL.geojson  # Full national pharmacy dataset
-│       └── recipe.json                   # Mapbox tileset recipe (see Tilesets Workflow)
-├── src/
-│   ├── App.jsx                           # React Router config (two routes: / and /map)
-│   ├── main.jsx                          # Entry point; sets Mapbox token globally
-│   ├── index.css                         # Design tokens (colors, type scale, spacing)
-│   ├── constants/
-│   │   ├── Layerexpressions.js           # All Mapbox GL paint/filter expressions
-│   │   └── mapStyles.js                  # Color palettes, legend configs, chart constants
-│   ├── pages/
-│   │   ├── StoryPage.jsx                 # Scrollytelling page (composes all N* sections)
-│   │   ├── MapPage.jsx                   # Interactive map dashboard
-│   │   └── About.jsx
-│   └── components/
-│       ├── Hero.jsx / hero.css
-│       ├── NavBar.jsx / navbar.css
-│       ├── ContextBand.jsx / contextband.css   # Animated stat counters (hardcoded values)
-│       ├── N2.jsx / n2.css               # Section: spatial orientation + province maps
-│       ├── N3.jsx / n3.css               # Section: apartheid geography (no map)
-│       ├── N4.jsx / n4.css               # Section: township deep dive (dual maps)
-│       ├── N5Parallel.jsx / n5.css       # Section: province-level comparison
-│       ├── StepCard.jsx / stepcard.css   # Reusable scroll step card
-│       ├── MapSidebar.jsx / mapsidebar.css  # Interactive controls for MapPage
-│       ├── Conclusion.jsx / conclusion.css
-│       ├── CTABand.jsx / ctaband.css
-│       ├── ZoomOut.jsx / zoomout.css
-│       └── Footer.jsx / footer.css
-├── .env                                  # Not committed — create locally (see Setup)
-├── index.html
-├── package.json
-└── vite.config.js
-```
 ## Data & Map Pipeline
 
-Most spatial computation happens **outside this repository**, in Snowflake. The frontend consumes pre-processed outputs.
+The canonical dataset has one row per SAL in Gauteng and KwaZulu-Natal (38,380 SALs). Field definitions live in the [data dictionary](docs/data-dictionary.md); this README does not repeat the field table. The 10-character field names come from the shapefile export, not from Mapbox — the dictionary's `full_name` column gives each long name.
 
-### What Snowflake produces
+**Derive script.** `scripts/derive_data.py` is the single command that turns the canonical source into every data file the site loads:
 
-The Snowflake pipeline (maintained by MUSA team, transfer to DAIR team in the works) computes per-small-area-layer (SAL) access metrics including:
+```bash
+conda run -n za python scripts/derive_data.py
+```
 
-| Field (truncated) | Full name | Description |
-|---|---|---|
-| `walk_typol` | `walk_typology` | 6-category access typology (Pharmacy desert → Well-served) |
-| `walk_dist_` | `walk_dist_k1_km` | Distance to nearest pharmacy on foot (km) |
-| `drive_typo` | `drive_typology` | Drive-mode access typology |
-| `exceeds_wa` | `exceeds_walk_k1_3km` | Binary: walk distance to nearest exceeds 3km |
-| `walk_sna_1` | `walk_snap_flag` | Snap flag: nearest pharmacy matched >500m from road network |
-| `ea_type` | `ea_type` | Settlement typology (Township, Informal, Formal Suburb, etc.) |
-| `Black_Afri` | `Black_African` | Percent Black African population |
-| `econ_statu` | `econ_status` | Economic classification |
-| `pop_densit` | `pop_density` | Population density |
+- **Inputs:** `public/data/sal_combined_access.geojson` (canonical, gitignored), `public/data/pharmacies.geojson`, the committed township extracts (read for their `EA_CODE` sets), and the tile field allowlist `scripts/tile_fields.json`.
+- **Outputs (overwritten every run):**
+  - `public/data/gauteng.geojson` and `public/data/kzn.geojson` — one centroid point per SAL
+  - `public/data/olievenhoutbosch.geojson` and `public/data/kwamashu.geojson` — township polygons with v2 attributes
+  - `public/data/chart_n2_gauteng.json` and `public/data/chart_n2_kzn.json` — Settlement Type chart data
+  - `public/data/sal_tiles.geojson.ld` — the tileset upload file (gitignored; only the fields the map page reads)
+  - `public/data/recipe.v2.json` — tileset recipe with a `USERNAME` placeholder
+  - a printed statistics report (`STAT <key> = <value>` lines) that backs the story copy and the written report
+- **Headline self-checks:** the script refuses to continue unless the data reproduces the research notebook's headline numbers — 38,380 SALs (Gauteng 20,850, KwaZulu-Natal 17,530), 27.5M modeled residents, 10.20M (37%) in a walking Pharmacy Desert, and 4.63M (17%) in a driving Pharmacy Desert.
 
-> **Field name truncation:** Mapbox vector tile properties are limited to 10 characters. The truncated names above are what actually appear in the tileset and are used throughout `Layerexpressions.js`. If the Snowflake pipeline renames any source fields, the truncated names in the tileset may differ and expressions will silently fall through to fallback values.
-
-### From Snowflake to the frontend
-
-1. Snowflake outputs processed SAL-level data (format managed by the DAIR data team — likely GeoJSON or CSV with geometry)
-2. The Mapbox Tilesets CLI converts this to a vector tileset and uploads it to the `astauf03` Mapbox account
-3. The tileset is referenced in the frontend as `mapbox://astauf03.pharm_access_tileset`
-
-Static GeoJSON files (boundaries, ward polygons, pharmacy points) are loaded directly by the frontend from `public/data/` and added as Mapbox sources at map initialization.
+**Static files.** Boundary, polygon, and pharmacy GeoJSON files are loaded directly by the frontend from `public/data/`.
 
 ---
 
 ## Tilesets Workflow
 
-The main choropleth data lives in a Mapbox vector tileset, not a static file. To update it after a new Snowflake export:
+The main choropleth data lives in a Mapbox vector tileset. **Each data version gets a new tileset** (e.g. `pharm_access_v2`) — the live tileset is never overwritten, so the deployed site keeps working until the new tileset and code are ready.
 
-### Prerequisites
-
-```bash
-pip install mapbox-tilesets
-```
-
-You will need a Mapbox **secret token** (starts with `sk.`) with `tilesets:write` scope for the `astauf03` account.
-
-### Upload workflow
-
-The username will change if you have your own mapbox account. You will need to create one, download the final dataset from the [group repo](https://github.com/tess-vu/south-africa-pharmacies), and upload the tiles to your own account. A similiar process like below will occur: 
+The derive script prints the exact commands at the end of every run (replace `<username>` and `<tileset>`):
 
 ```bash
-# 1. Upload source data (newline-delimited GeoJSON recommended)
-tilesets upload-source astauf03 dair-sal ./processed_sal_data.geojson
-
-# 2. Update the tileset recipe (if changed)
-tilesets update-recipe astauf03.pharm_access_tileset public/data/recipe.json
-
-# 3. Publish (triggers tile processing)
-tilesets publish astauf03.pharm_access_tileset
-
-# 4. Check processing status (takes a few minutes)
-tilesets status astauf03.pharm_access_tileset
+$env:MAPBOX_ACCESS_TOKEN = "<your sk. token with tilesets:write>"   # shell only, never in a file
+tilesets upload-source <username> dair-sal-v2 public/data/sal_tiles.geojson.ld
+tilesets create <username>.<tileset> --recipe public/data/recipe.v2.json --name "Pharmacy Access v2"
+tilesets publish <username>.<tileset>
+tilesets status <username>.<tileset>
 ```
 
-If creating the tileset for the first time on a new account:
+Install the CLI once with `pip install mapbox-tilesets`, and keep the secret token in the shell session only.
+
+Recipes need a concrete username, so `public/data/recipe.v2.json` carries a literal `USERNAME` placeholder. Substitute it and write the gitignored `recipe.local.json`:
 
 ```bash
-tilesets create astauf03.pharm_access_tileset \
-  --recipe public/data/recipe.json \
-  --name "Pharmacy Access"
+(Get-Content public/data/recipe.v2.json) -replace 'USERNAME','<username>' | Set-Content recipe.local.json
 ```
 
-Once published, the frontend picks up new data automatically on next load — no code changes needed unless field names changed.
+**Merge order:** publish the tileset, set the `VITE_MAPBOX_TILESET` repository variable, then merge the code. Once published, the map page picks up the new data on next load — no code changes needed unless field names changed.
 
 ---
- 
+
 ## How Story Sections Interact with Map Layers
 
-Each scrollable story section (`N2`, `N4`, `N5Parallel`) initializes its own Mapbox map instance and uses **Scrollama** to react to scroll position.
+Each scrollable story section initializes its own Mapbox map instance and uses **Scrollama** to react to scroll position. `src/pages/StoryPage.jsx` is the authoritative list of sections; the components live in `src/components/`.
 
 ### General pattern
 
@@ -248,58 +191,21 @@ scroller
   })
 ```
 
-The map container is sticky (`position: sticky`) while step cards scroll past it. Scrollama fires `onStepEnter` when a `.step-card` element crosses the configured offset (80% down the viewport).
-
-### Section summary
-
-| Component | What it shows | Map behavior | Visualization |
-|---|---|---|---|
-| `N2` | Spatial context: EA types and population density by province | Flies between Gauteng and KZN; toggles EA-type and population layers | D3 stacked bar: racial composition by settlement type |
-| `N3` | Apartheid geography context | No map — CSS fade-in triggered by IntersectionObserver | None |
-| `N4` | Township deep dive | Side-by-side Olievenhoutbosch (Gauteng) and KwaMashu (KZN) maps; layers toggle per step | D3 stacked bar: comparison between townships |
-| `N5Parallel` | Province-level access comparison | Parallel maps with ward boundaries and pharmacy dots | Visual comparison only |
-
-### StepCard
-
-`StepCard.jsx` is the reusable scroll target element. Scrollama watches `.step-card` elements and fires events as they cross the scroll offset threshold. Each section creates an array of step configs (with `fly` coordinates and which layers to toggle) and maps them to `<StepCard>` instances.
+The map container is sticky (`position: sticky`) while step cards scroll past it. Scrollama fires `onStepEnter` when a `.step-card` element crosses the configured offset (80% down the viewport). `StepCard.jsx` is the reusable scroll target element; each section maps an array of step configs (fly coordinates, layers to toggle) to `<StepCard>` instances.
 
 ---
 
 ## Map Layer Reference
 
-All layers are defined and added in `src/pages/MapPage.jsx`. Paint and filter expressions live in `src/constants/Layerexpressions.js`. Colors and legend metadata are in `src/constants/mapStyles.js`.
+Layer IDs, their stacking order, and their paint expressions live in the code, not here: `src/pages/MapPage.jsx` (layer IDs and source setup) and `src/constants/` (`layerExpressions.js` for paint and filter expressions, `legendData.js` and `mapStyles.js` for colors and legends, `dataContract.js` for field names and labels). Read the code — it is the single source of truth and cannot drift.
 
-### Layer stack (bottom to top)
+The vector tileset's source layer is `dair_sal`; `src/components/MapSidebar.jsx` manages the toggles and calls `map.setLayoutProperty(layerId, 'visibility', value)`.
 
-| Layer ID | Type | Data source | Purpose |
-|---|---|---|---|
-| `sa` | fill | vector tileset | Neutral base fill for all SAL polygons |
-| `walk-typology` | fill | vector tileset | 6-category access typology choropleth |
-| `walk-dist-k1` | fill | vector tileset | Continuous ramp: distance to nearest pharmacy |
-| `walk-dist-k3` | fill | vector tileset | Continuous ramp: distance to 3rd nearest (fragility indicator) |
-| `drive-typology` | fill | vector tileset | Drive-mode access typology |
-| `ea-type` | fill | vector tileset | Settlement type overlay |
-| `pct-black-african` | fill | vector tileset | Racial composition ramp |
-| `econ-status` | fill | vector tileset | Economic classification overlay |
-| `pop-density` | fill | vector tileset | Population density ramp |
-| `exceeds-walk-3km` | fill | vector tileset | Binary: >3km walk to nearest pharmacy |
-| `transport-gap` | fill | vector tileset | Bivariate: walk desert + drive served |
-| `walk-snap-flag` | fill | vector tileset | Orange wash for uncertain pharmacy snaps (>500m) |
-| `sal-outline` | line | vector tileset | SAL polygon outlines |
-| `pharmacy-dots` | circle | GeoJSON | Pharmacy point locations (clickable) |
+---
 
-### Layer groups and toggle behavior
+## Folder Structure
 
-**Access layers** — radio group, one visible at a time:
-`walk-typology`, `walk-dist-k1`, `walk-dist-k3`, `drive-typology`
-
-**Overlays** — stack freely on top of whichever access layer is active:
-`pharmacy-dots`, `exceeds-walk-3km`, `transport-gap`, `walk-snap-flag`
-
-**Context layers** — toggle individually:
-`ea-type`, `pct-black-african`, `econ-status`, `pop-density`
-
-`MapSidebar.jsx` manages toggle state and calls `map.setLayoutProperty(layerId, 'visibility', value)`.
+See the repository tree. Site code is in `src/`, derived data in `public/data/`, scripts in `scripts/`, docs in `docs/`.
 
 ---
 
@@ -307,17 +213,19 @@ All layers are defined and added in `src/pages/MapPage.jsx`. Paint and filter ex
 
 ### Adding a new map layer
 
-1. **Define a paint expression** in `src/constants/Layerexpressions.js`:
+1. **Add field names and labels to `src/constants/dataContract.js` first.** If the map page reads the field from tiles, add it to `scripts/tile_fields.json` too and re-run the derive script.
+
+2. **Define a paint expression** in `src/constants/layerExpressions.js`:
    ```js
    export const MY_NEW_LAYER_COLOR = [
-     'match', ['get', 'truncated_field'],
+     'match', ['get', 'field_name'],
      'Value A', '#hexcolor',
      'Value B', '#hexcolor',
      '#fallback'
    ]
    ```
 
-2. **Add the layer** in `MapPage.jsx` inside the `map.current.on('load', ...)` callback, before the `pharmacy-dots` layer so it renders below points:
+3. **Add the layer** in `src/pages/MapPage.jsx` inside the `map.current.on('load', ...)` callback, before the `pharmacy-dots` layer so it renders below points:
    ```js
    map.current.addLayer({
      id: 'my-new-layer',
@@ -329,15 +237,15 @@ All layers are defined and added in `src/pages/MapPage.jsx`. Paint and filter ex
    })
    ```
 
-3. **Add a toggle** in `MapSidebar.jsx`. If it's an access layer, add its ID to the radio group array. If it's an overlay or context layer, add it to the appropriate list.
+4. **Add a toggle** in `src/components/MapSidebar.jsx`. If it's an access layer, add its ID to the radio group array. If it's an overlay or context layer, add it to the appropriate list.
 
-4. **Add a legend entry** in `src/constants/mapStyles.js` and wire it to the active-layer state in `MapSidebar.jsx`.
+5. **Add a legend entry** in `src/constants/legendData.js` and wire it to the active-layer state in `src/components/MapSidebar.jsx`.
 
-> If the field comes from a new Snowflake column, confirm the truncated property name by inspecting a feature in Mapbox Studio or logging `e.features[0].properties` in a `click` handler. Then republish the tileset (see [Tilesets Workflow](#tilesets-workflow)).
+> If the field comes from a new pipeline column, confirm the 10-character name in the [data dictionary](docs/data-dictionary.md), add it to the tile allowlist, and publish a new tileset (see [Tilesets Workflow](#tilesets-workflow)).
 
 ### Adding a new story chapter
 
-1. **Create the component** `src/components/N6.jsx` (and `n6.css`). Model on `N2.jsx` for scroll-triggered behavior or `N3.jsx` for a static section.
+1. **Create the component** `src/components/N6.jsx` (and `n6.css`). Model it on `src/components/N2.jsx` (or `src/components/N4.jsx` for a section with maps).
 
 2. **Initialize a Mapbox map** inside a `useEffect` with `mapboxgl.Map({ container, style, center, zoom })`. Use `useRef` to hold the map instance so it persists across renders.
 
@@ -345,32 +253,32 @@ All layers are defined and added in `src/pages/MapPage.jsx`. Paint and filter ex
 
 4. **Register steps** as an array of config objects (center, zoom, which layers to show/hide) and map each to a `<StepCard>`.
 
-5. **Add to `StoryPage.jsx`**:
+5. **Add it to `src/pages/StoryPage.jsx`**:
    ```jsx
    import N6 from '../components/N6'
    // Insert at the appropriate position in the render tree
    <N6 />
    ```
 
-6. **Add a nav anchor** in `NavBar.jsx` if the section needs direct linking.
+6. **Add a nav anchor** in `src/components/NavBar.jsx` if the section needs direct linking.
 
 ---
 
 ## Known Technical Debt & Limitations
 
-- **Hardcoded statistics:** The `ContextBand.jsx` headline numbers (80%, 72.1%, 2,241 pharmacies) are hardcoded. They will go stale if the underlying dataset changes and must be updated manually.
+- **Hand-written story statistics:** story copy numbers are hand-written. The derive script prints every statistic as `STAT` lines, but updating the prose is manual — re-run the script and copy the numbers after any data refresh.
 
-- **Multiple map instances:** Each story section and the Map page each instantiate a separate `mapboxgl.Map`. This is intentional for scroll isolation but is memory-intensive. The story page may become sluggish on low-end devices.
+- **Multiple map instances:** each story section and the Map page instantiate a separate `mapboxgl.Map`. This is intentional for scroll isolation but is memory-intensive. The story page may become sluggish on low-end devices.
 
 - **Recharts installed but unused:** `recharts` is listed in `package.json` but is not imported anywhere. All charts are custom D3. It can be removed.
 
-- **No data pipeline in this repo:** The Snowflake SQL and tileset upload scripts live outside this repository. Any schema changes require coordinating with the DAIR data team and updating `Layerexpressions.js` to match new truncated field names.
+- **Upstream notebooks live outside this repo:** the eight processing notebooks are in the group repo `tess-vu/south-africa-pharmacies`. Any schema change requires coordinating with the DAIR data team and re-running the derive script to update the constants and extracts.
 
-- **Field name truncation is fragile:** Mapbox's 10-character property name limit means expressions in `Layerexpressions.js` use truncated names (e.g., `walk_typol` instead of `walk_typology`). If the pipeline rebuilds the tileset with different truncation, expressions will silently return fallback values with no console error.
+- **Shapefile field names are terse:** the 10-character property names come from the shapefile export. The derive script asserts that every field the site reads exists in the source, but if the pipeline renames a field, expressions can still silently fall through to fallback values with no console error.
 
-- **Province scope:** The application covers only Gauteng and KwaZulu-Natal. The national boundary GeoJSON exists but the access tileset does not include other provinces. Expanding requires new Snowflake processing and a tileset republish.
+- **Province scope:** the application covers only Gauteng and KwaZulu-Natal. Expanding requires new processing in the upstream notebooks and a new tileset.
 
-- **No error boundaries on map components:** If `VITE_MAPBOX_TOKEN` is missing or invalid, map containers fail silently. There is no user-facing error message.
+- **No error boundaries on map components:** if `VITE_MAPBOX_TOKEN` is missing or invalid, map containers fail silently. If `VITE_MAPBOX_TILESET` is missing, the map page logs a console error and skips the SAL layers. There is no user-facing error message.
 
 ---
 
@@ -378,9 +286,14 @@ All layers are defined and added in `src/pages/MapPage.jsx`. Paint and filter ex
 
 **Map is blank or shows no choropleth data**
 
-- Confirm `VITE_MAPBOX_TOKEN` is set in `.env` and the dev server was restarted after adding it.
+- Confirm `VITE_MAPBOX_TOKEN` and `VITE_MAPBOX_TILESET` are set in `.env` and the dev server was restarted after adding them.
 - Open the browser console. A 401 from Mapbox means the token is missing or invalid.
-- The tileset `astauf03.pharm_access_tileset` requires a token from the `astauf03` account. A personal token will not load it unless the tileset is public or your account has been granted access.
+- A `pk.` token from an account that does not own the tileset will not load it. Use a token from the tileset owner's account.
+
+**Map page shows pharmacy dots but no SAL choropleth**
+
+- `VITE_MAPBOX_TILESET` is not set. The console logs `VITE_MAPBOX_TILESET is not set; skipping the SAL vector tileset layers.`
+- Set it in `.env` locally (restart the dev server), or as a repository variable for deploys (Settings → Secrets and variables → Actions → Variables).
 
 **Story map doesn't respond to scroll**
 
@@ -391,22 +304,23 @@ All layers are defined and added in `src/pages/MapPage.jsx`. Paint and filter ex
 **All polygons show the same fallback color**
 
 - The layer expression is referencing a property that doesn't exist in the tileset. Inspect actual property names by adding a temporary `map.on('click', layerId, e => console.log(e.features[0].properties))` handler and clicking a polygon.
-- Cross-reference against the field name table in [Data & Map Pipeline](#data--map-pipeline) — the tileset uses truncated names.
+- Cross-reference against the [data dictionary](docs/data-dictionary.md) — the tileset uses the 10-character field names.
 
-**`npm run deploy` fails**
+**Deploy fails**
 
-- Run `npm run build` first and confirm it succeeds.
-- Ensure the repository has GitHub Pages enabled and the `gh-pages` branch exists (it is created automatically on first deploy).
+- Check the workflow run in the Actions tab. The build step needs the `VITE_MAPBOX_TOKEN` secret and the `VITE_MAPBOX_TILESET` variable to be set in repository Settings.
+- Run `npm test` and `npm run build` locally and confirm both succeed.
+- Ensure GitHub Pages is set to deploy from GitHub Actions (Settings → Pages).
 
 **D3 chart doesn't render**
 
 - The chart `useEffect` depends on a `ref` being attached to a DOM element. Add a guard: `if (!svgRef.current) return`.
 - Chart data is derived from GeoJSON loaded via `fetch`. A 404 on the GeoJSON file produces empty data with no visible error — check the Network tab for failed requests.
 
-**Tileset not updating after republish**
+**Tileset not updating after publishing**
 
-- Mapbox tiles are aggressively cached. Hard-reload with `Ctrl+Shift+R` or clear browser cache.
-- Confirm the tileset status is `complete` before testing: `tilesets status astauf03.pharm_access_tileset`.
+- Mapbox tiles are aggressively cached. Hard-reload with `Ctrl+Shift+R` or clear the browser cache.
+- Confirm the tileset status is `complete` before testing: `tilesets status <username>.<tileset>`.
 
 ---
 
@@ -420,9 +334,15 @@ AI-assisted development tools, including Anthropic's Claude, were used extensive
 
 The following resources were particularly useful during development and may help future contributors:
 
-- Mapbox GL JS Documentation — map rendering, layers, and interactions
-- Mapbox Style Specification — paint/layout properties and expressions
-- D3.js Documentation — chart rendering and scales
-- Scrollama Documentation — scroll-driven storytelling interactions
-- Mapbox Tilesets CLI Documentation — tileset uploads and recipes
+- Mapbox GL JS Documentation for map rendering, layers, and interactions
+- Mapbox Style Specification for paint/layout properties and expressions
+- D3.js Documentation for chart rendering and scales
+- Scrollama Documentation for scroll-driven storytelling interactions
+- Mapbox Tilesets CLI Documentation for tileset uploads and recipes
+- [Data dictionary](docs/data-dictionary.md) for every field in the true canonical v2 dataset
 
+---
+
+## AI Usage
+
+`tess-vu` used self-contained Qwen 3.8 Coder 27B LLM and also DeepSeek V4 to aid with debugging, doc clarification, and test creation.

@@ -1,25 +1,7 @@
 [
   {
-    "type": "Township",
-    "density": 4308,
-    "Black African": 77,
-    "Coloured": 1,
-    "Indian/Asian": 22,
-    "White": 0,
-    "Other": 0
-  },
-  {
-    "type": "Informal\nresidential",
-    "density": 3478,
-    "Black African": 98,
-    "Coloured": 0,
-    "Indian/Asian": 1,
-    "White": 0,
-    "Other": 0
-  },
-  {
     "type": "Suburb",
-    "density": 2260,
+    "density": 2267,
     "Black African": 62,
     "Coloured": 4,
     "Indian/Asian": 15,
@@ -27,47 +9,56 @@
     "Other": 1
   },
   {
-    "type": "Traditional\nresidential",
-    "density": 185,
-    "Black African": 99,
+    "type": "Farms &\nSmallholdings",
+    "density": 9,
+    "Black African": 88,
+    "Coloured": 1,
+    "Indian/Asian": 2,
+    "White": 9,
+    "Other": 0
+  },
+  {
+    "type": "Township",
+    "density": 4244,
+    "Black African": 77,
+    "Coloured": 1,
+    "Indian/Asian": 22,
+    "White": 0,
+    "Other": 0
+  },
+  {
+    "type": "Informal\nSettlement",
+    "density": 3463,
+    "Black African": 98,
+    "Coloured": 0,
+    "Indian/Asian": 1,
+    "White": 0,
+    "Other": 0
+  },
+  {
+    "type": "Traditional\n(Former Homeland)",
+    "density": 191,
+    "Black African": 100,
     "Coloured": 0,
     "Indian/Asian": 0,
     "White": 0,
     "Other": 0
   },
   {
-    "type": "Small-\nholdings",
-    "density": 88,
-    "Black African": 65,
-    "Coloured": 2,
-    "Indian/Asian": 13,
-    "White": 20,
+    "type": "Collective Living\nQuarters",
+    "density": 944,
+    "Black African": 69,
+    "Coloured": 3,
+    "Indian/Asian": 10,
+    "White": 18,
     "Other": 1
   },
   {
-    "type": "Farms",
-    "density": 8,
-    "Black African": 89,
-    "Coloured": 1,
-    "Indian/Asian": 2,
-    "White": 8,
-    "Other": 0
-  },
-  {
-    "type": "Commercial",
-    "density": 768,
-    "Black African": 58,
-    "Coloured": 5,
-    "Indian/Asian": 19,
-    "White": 17,
-    "Other": 2
-  },
-  {
-    "type": "Industrial",
-    "density": 162,
-    "Black African": 74,
-    "Coloured": 4,
-    "Indian/Asian": 13,
+    "type": "Non-Residential",
+    "density": 23,
+    "Black African": 78,
+    "Coloured": 3,
+    "Indian/Asian": 10,
     "White": 9,
     "Other": 1
   }

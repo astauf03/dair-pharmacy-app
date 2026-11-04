@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "layers": {
+    "dair_sal": {
+      "source": "mapbox://tileset-source/USERNAME/dair-sal-v2",
+      "minzoom": 2,
+      "maxzoom": 14,
+      "tiles": {
+        "layer_size": 2000
+      }
+    }
+  }
+}

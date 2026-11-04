@@ -1,0 +1,8 @@
+# Dependencies for scripts/derive_data.py.
+# The maintainer runs this in the conda environment `za`:
+#   conda run -n za python scripts/derive_data.py
+# Unpinned: the `za` environment is the source of truth for versions.
+geopandas
+pandas
+numpy
+pyogrio

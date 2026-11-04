@@ -215,6 +215,13 @@
   white-space: nowrap;
 }
 
+.legend__note {
+  margin: 0;
+  font-size: var(--text-micro);
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
 .legend__swatches { display: flex; flex-direction: column; gap: 4px; }
 
 .legend__swatch {
