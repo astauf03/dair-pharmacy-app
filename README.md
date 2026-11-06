@@ -326,7 +326,9 @@ See the repository tree. Site code is in `src/`, derived data in `public/data/`,
 
 ## Acknowledgements
 
-AI-assisted development tools, including Anthropic's Claude, were used extensively during this project's implementation process, particularly for frontend engineering, debugging, refactoring, and workflow acceleration. The project's conceptual framing, mapping logic, data interpretation, and design goals were developed and guided by the author.
+AI-assisted development tools, including Anthropic's Claude, were used extensively during this project's implementation process, particularly for frontend engineering, debugging, refactoring, and workflow acceleration. The project's conceptual framing, mapping logic, data interpretation, and design goals were developed and guided by the author `astauf03`.
+
+`tess-vu` used self-contained Qwen 3.8 Coder 27B LLM and also DeepSeek V4 to aid with debugging, existing doc clarification, and test creation. Primary usage was to consolidate multiple existing branches into a single branch.
 
 ---
 
@@ -340,9 +342,3 @@ The following resources were particularly useful during development and may help
 - Scrollama Documentation for scroll-driven storytelling interactions
 - Mapbox Tilesets CLI Documentation for tileset uploads and recipes
 - [Data dictionary](docs/data-dictionary.md) for every field in the true canonical v2 dataset
-
----
-
-## AI Usage
-
-`tess-vu` used self-contained Qwen 3.8 Coder 27B LLM and also DeepSeek V4 to aid with debugging, doc clarification, and test creation.
