@@ -39,4 +39,4 @@ Every figure from `report/README.md`.
 | `johannesburg-zoom.png`                               | Population density in Gauteng and the City of Johannesburg                                  |
 | `growth-rate-map.png`                                 | Annual population growth rate per SAL, 2011–2023                                            |
 | `pharmacy-locations.png`                              | Registered pharmacy locations by province                                                   |
-| `pipeline-diagram.png`                                | Data pipeline from source data to the site                                                  |
+| `pipeline mermaid diagram`                                | Data pipeline from source data to the site                                                  |
