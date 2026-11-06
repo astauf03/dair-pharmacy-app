@@ -22,6 +22,8 @@ dist-ssr
 *.sln
 *.sw?
 __pycache__/
+report/fonts/
+!report/README.md
 
 # Environment variables
 .env
