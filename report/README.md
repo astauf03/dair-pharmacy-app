@@ -83,7 +83,7 @@ Below the ward level, Small Area Layers (SALs) provide finer geographic resoluti
 
 ### Spatial Accessibility in Healthcare Research
 
-Clinicians and researchers have been measuring healthcare access for decades. Typically, researchers find that rural, low-income areas are the most vulnerable to being under-served in access to healthcare. This is because remoteness is working against them. Most research indicates a 20-30 minute commute for healthcare is considered reasonable, which is hard to achieve in rural areas. In countries where the cost of healthcare is increasing, this gap of access continues to increase, and is exacerbated by spatial context (Murphy and Rodis 2025). Healthcare accessibility is often simplified to 'living near health services', but this is been proven over time to be insufficient, especially when using Euclidean distance. Variables like supply and infrastructure are overlooked in this method (McClaren et al. 2014). Overtime, researchers have developed a method called Enhanced Two-Step Floating Catchment Area method. This is a gravity-based model that measures access through time-traveled, supply capacity, and the role of demand. This will be explored in the methodology. Accessibility to pharmacies is crucial for public health: it promotes medication adherence, increases health education/awareness, and normalizes vaccination and testing behaviors (L Berenbrok 2022).
+Clinicians and researchers have been measuring healthcare access for decades. Typically, researchers find that rural, low-income areas are the most vulnerable to being under-served in access to healthcare. This is because remoteness is working against them. Most research indicates a 20-30 minute commute for healthcare is considered reasonable, which is hard to achieve in rural areas. In countries where the cost of healthcare is increasing, this gap of access continues to increase, and is exacerbated by spatial context (Murphy and Rodis 2025). Healthcare accessibility is often simplified to 'living near health services', but this is been proven over time to be insufficient, especially when using Euclidean distance. Variables like supply and infrastructure are overlooked in this method (McClaren et al. 2014). Overtime, researchers have developed a method called the Two-Step Floating Catchment Area method. This is a gravity-based model that measures access through time-traveled, supply capacity, and the role of demand. This will be explored in the methodology. Accessibility to pharmacies is crucial for public health: it promotes medication adherence, increases health education/awareness, and normalizes vaccination and testing behaviors (L Berenbrok 2022).
 
 ### South African Spatial Research Context
 
@@ -172,7 +172,7 @@ The South African Pharmacy Council maintains a registry of all registered pharma
 
 #### Final Transformed Data
 
-The final pharmacy data is summarized here; field-level detail for the SAL-level dataset is in [`../docs/data-dictionary.md`](../docs/data-dictionary.md). In brief, the pipeline consolidates 9,114 raw private pharmacy records and 272 hospital records into `PHARMACIES_COMBINED` (5,436 records after cleaning, standardization, and province filtering), then layers the SAPC registry on top of the geocoded records, deduplicates, and validates spatially to produce `PHARMACIES_MASTER_FINAL.csv` (2,152 records), the input to all accessibility analysis.
+The final pharmacy data is summarized here; field-level detail for the SAL-level dataset is in [`data_dictionary.csv`](data_dictionary.csv). In brief, the pipeline consolidates 9,114 raw private pharmacy records and 272 hospital records into `PHARMACIES_COMBINED` (5,436 records after cleaning, standardization, and province filtering), then layers the SAPC registry on top of the geocoded records, deduplicates, and validates spatially to produce `PHARMACIES_MASTER_FINAL.csv` (2,152 records), the input to all accessibility analysis.
 
 **Data Source Limitations:**
 
@@ -189,7 +189,7 @@ The final pharmacy data is summarized here; field-level detail for the SAL-level
 
 ### Data Processing Pipeline
 
-Pharmacy source data was ingested and cleaned in Snowflake, producing `PHARMACIES_MASTER_FINAL.csv`, the authoritative pharmacy list that feeds every accessibility calculation. All SAL-level processing, such as population downscaling, network routing, accessibility scoring, and the combined access table, ran in eight Python notebooks, executed in strict sequential order.
+Pharmacy source data was ingested and cleaned in Snowflake, producing `PHARMACIES_MASTER_FINAL.csv`, the authoritative pharmacy list that feeds every accessibility calculation. All SAL-level processing, such as population downscaling, network routing, accessibility scoring, and the combined access table, ran in nine Python notebooks, executed in strict sequential order.
 
 ```mermaid
 flowchart TD
@@ -200,19 +200,20 @@ flowchart TD
     RX --> N4
     RX --> N6
 
-    subgraph NB["Eight Sequential Python Notebooks"]
+    subgraph NB["Nine Sequential Python Notebooks"]
         direction TB
         N1["1: SAL Deduplication<br/>sal_w_ward_dedup.shp"] --> N2["2: Population Step-Down<br/>pop_pred_final.csv"]
         N2 --> N3["3: OSMnx Network Download<br/>4 .graphml graphs"]
         N3 --> N4["4: 2SFCA Scores<br/>all_access.csv"]
         N4 --> N5["5: Snap Distance Append<br/>all_access_w_snap.csv"]
-        N5 --> N8["8: Combined Access Table<br/>sal_combined_access"]
+        N5 --> N8["8: Combined Access Table<br/>sal_combined_access + pharmacies.geojson"]
         N3 --> N6["6: K-Nearest Pharmacy Distance<br/>sal_pharmacy_distances_k3.csv"]
         N6 --> N7["7: Distance Threshold Exceedance<br/>sal_threshold_flags_k3.csv"]
         N7 --> N8
         N2 --> N6
         N2 --> N7
         N6 --> N8
+        N8 --> N9["9: Report Figures<br/>figures/*.png"]
     end
 
     N8 --> SITE["Site<br/>(storymap and map dashboard)"]
@@ -235,7 +236,7 @@ flowchart TD
 
 #### Notebook 2: Population Step-Down Model
 
-**Purpose:** Estimate each SAL's 2023 population by apportioning its ward's 2022 Census total by the SAL's 2011 population share.
+**Purpose:** Estimate each SAL's 2023 population by apportioning its ward's 2022 Census total by the SAL's 2011 population share. The notebook ends with the ward-match and EA_CODE-membership cross-checks against the deduplicated SAL layer, moved from notebook 1.
 
 **Inputs:** 2011 SAL census boundaries, 2020 ward boundaries, 2022 ward population totals, and the deduplicated SAL-ward join.
 
@@ -262,7 +263,7 @@ flowchart TD
 
 #### Notebook 4: Two-Step Floating Catchment Area (2SFCA)
 
-**Purpose:** Compute the Enhanced 2SFCA accessibility score for every SAL.
+**Purpose:** Compute the 2SFCA accessibility score for every SAL.
 
 **Inputs:** Population estimates, pharmacy locations, SAL polygons, and the network graphs.
 
@@ -320,13 +321,25 @@ flowchart TD
 
 **Inputs:** 2SFCA scores with snap distances, k-nearest distances, threshold flags, and SAL geometry.
 
-**Outputs:** `sal_combined_access.csv` and a shapefile (38,380 rows).
+**Outputs:** `sal_combined_access.geojson` (38,380 rows), `sal_combined_access.csv` (short field names), and `pharmacies.geojson` (2,152 points).
 
 **Key findings:**
 
 - All four source tables share the identical 38,380 SAL-code set (no orphans).
 - The access typology crosses the score tier with the distance threshold to produce six classes.
 - Snap distance flags mark SALs above 500 m.
+
+#### Notebook 9: Report Figures
+
+**Purpose:** Draw every figure in this report from the final dataset, refusing to run unless the headline checks pass.
+
+**Inputs:** `sal_combined_access.geojson`, `pharmacies.geojson`, and `south_africa.geojson` (province outlines).
+
+**Outputs:** `figures/*.png` (each figure as an opaque PNG plus a `-transparent.png` twin).
+
+**Key findings:**
+
+- Headline checks pass: 38,380 SALs (Gauteng 20,850, KwaZulu-Natal 17,530), modeled population rounds to 27.5M, walking Pharmacy Desert population rounds to 10.20M, driving Pharmacy Desert population rounds to 4.63M, and 2,152 pharmacy points.
 
 ### Population Data and Downscaling: Step-Down Methodology and Dasymetric Mapping
 
@@ -484,9 +497,9 @@ Access metrics quantify the relationship between pharmacy locations and populati
 
 **Network Distance (Driving):** Network distance analysis calculates travel distance along the road network, which better represents actual travel requirements but assumes private vehicle access. Driving network data is extracted via OSMnx using the "drive" network type. Drive graphs are converted to undirected for Dijkstra routing, which slightly underestimates true drive distances in areas with one-way constraints, primarily affecting dense urban cores.
 
-#### Enhanced Two-Step Floating Catchment Area (E2SFCA)
+#### Two-Step Floating Catchment Area (2SFCA)
 
-The project implements the Enhanced Two-Step Floating Catchment Area method with network-based routing and negative exponential distance decay, providing a supply-demand perspective that captures competition between pharmacies and populations rather than purely distance-based measures.
+The project implements the Two-Step Floating Catchment Area method with network-based routing and negative exponential distance decay, providing a supply-demand perspective that captures competition between pharmacies and populations rather than purely distance-based measures.
 
 **Distance decay function:** Negative exponential decay with β = 0.0003:
 
@@ -534,7 +547,7 @@ When a SAL centroid snaps to a distant network node, the Dijkstra routing starts
 | KZN | Walk | 83 | 226 | 985 | 9,951 | 2,149 (12.3%) |
 | KZN | Drive | 102 | 302 | 1,318 | 8,435 | 2,884 (16.5%) |
 
-Farm SALs in KZN have 59.9% flagged at the 500m threshold; Traditional SALs in KZN have 20.4%; Urban SALs in either province have less than 1%. This directly quantifies the differential quality of OpenStreetMap road network coverage across settlement types. SALs with snap distance exceeding 500m receive a binary flag in the final dataset, allowing downstream analysts to filter or weight results by data quality confidence.
+Farm SALs in KZN have 59.9% flagged at the 500m threshold; Traditional SALs in KZN have 20.4%; Urban SALs in either province have less than 1%. This directly quantifies the differential quality of OpenStreetMap road network coverage across geography types. SALs with snap distance exceeding 500m receive a binary flag in the final dataset, allowing downstream analysts to filter or weight results by data quality confidence.
 
 #### K-Nearest Pharmacy Distance
 
@@ -590,7 +603,7 @@ Access Gap and Artifact Zone have no SALs in the current data; the other four cl
 -   **Walking Distance:** Standard walking speed assumptions (5 km/h) may not hold for elderly, disabled, or mobility-impaired populations, and also does not account for safety concerns, terrain difficulty, or weather conditions.
 -   **2SFCA Zero-Inflation:** Walking $A_{i}$ is exactly zero for 53.2% of Gauteng SALs and 74.3% of KZN SALs. Not all zeros represent genuine pharmacy deserts: many arise from centroid-to-node snap displacement and catchment boundary edge effects. For Gauteng walk, 53.2% of SALs have zero $A_{i}$ but only 24.6% exceed 3 km to the nearest pharmacy; the 28-point gap quantifies the artifact fraction. The k-nearest distance metric serves as the diagnostic check on this failure mode.
 -   **Uniform Supply Assumption:** All pharmacies are treated as having equal capacity (Sj = 1). A high-volume chain pharmacy with multiple pharmacists is weighted identically to a single-pharmacist dispensary. Pharmacy capacity data (staffing, dispensing volume, hours of operation) are not available.
--   **Province-Level Catchment Thresholds:** Catchment distances are set by province rather than by Settlement Type, creating a discontinuity at the province boundary: SALs on the KZN side receive larger catchments than adjacent SALs in Gauteng's East Rand despite comparable urbanization. A variable-catchment approach assigning thresholds by EA_GTYPE (Urban, Traditional, Farms) is the documented upgrade path.
+-   **Province-Level Catchment Thresholds:** Catchment distances are set by province rather than by Geography Type, creating a discontinuity at the province boundary: SALs on the KZN side receive larger catchments than adjacent SALs in Gauteng's East Rand despite comparable urbanization. A variable-catchment approach assigning thresholds by EA_GTYPE (Urban, Traditional, Farms) is the documented upgrade path.
 -   **Decay Parameter:** β = 0.0003 was selected for analytical discrimination but is not empirically calibrated to South African travel behavior. Calibration would require observed pharmacy utilization data (patient origin-destination patterns).
 -   **Threshold Arbitrariness:** Policy thresholds (3 km walk, 10 km drive) are reference points, not natural discontinuities. A SAL at 3.1 km is classified differently from one at 2.9 km despite near-identical access. The multi-threshold approach (four thresholds per mode at three k levels) mitigates this by showing the full exceedance curve.
 -   **Population Centroid Assumption:** All methods calculate distance from geometric (unweighted) SAL centroids. For compact urban SALs, this closely approximates the population center. For large, irregular rural SALs (some exceeding 600 km² in KZN), the geometric centroid may fall in uninhabited terrain, introducing systematic measurement error that propagates through the entire pipeline.
@@ -650,7 +663,7 @@ The methodology employed in this project involves multiple stages, each introduc
 | Geocoding | Variable coverage, address format inconsistency | Dual-source geocoding, confidence score filtering, re-geocoding passes |
 | Population Step-Down | Frozen 2011 distribution assumption; 1,270 SALs with zero population regardless of post-2011 development | Multi-method comparison, flagging high-divergence areas |
 | Centroid Placement | Geometric centroids in large rural SALs may fall in uninhabited terrain | Documented upgrade path: building-footprint-weighted centroids for SALs above 75th percentile in area |
-| Network Coverage | OSM completeness varies by Settlement Type; province boundary truncation forces within-province detours | Snap distance diagnostic flags; national-scale deployment eliminates boundary effects |
+| Network Coverage | OSM completeness varies by Geography Type; province boundary truncation forces within-province detours | Snap distance diagnostic flags; national-scale deployment eliminates boundary effects |
 | Transport Mode | No minibus taxi mode; walk overestimates difficulty, drive overestimates ease for target population | True access picture lies between walk and drive metrics; transit integration via GTFS is the upgrade path |
 | 2SFCA Methodology | Province-level catchment thresholds create boundary discontinuity; uniform pharmacy capacity; uncalibrated decay parameter | Variable-catchment by EA_GTYPE (code exists, commented out); MIN_WEIGHTED_POP = 50 floor applied |
 | Pharmacy Data Coverage | Private-sector and government-employee sources only; clinic dispensaries and mobile units excluded | Conservative (pessimistic) view of access; actual medication access points likely higher |
@@ -898,7 +911,7 @@ White-majority SALs show the same overrepresentation. The Population Group break
 
 ## Web Application
 
-The project ships as a web application with two views. The storymap tells a scroll-driven narrative about pharmacy access and apartheid geography, and the map dashboard lets users toggle access layers, context overlays, and province views independently. Technical details like setup, environment variables, data pipeline, and how to add layers or chapters are in the root [`../README.md`](../README.md).
+The project ships as a web application with two views. The storymap tells a scroll-driven narrative about pharmacy access and apartheid geography, and the map dashboard lets users toggle access layers, context overlays, and province views independently. Technical details like setup, environment variables, data pipeline, and how to add layers or chapters are in the root [`../README.md`](https://github.com/tess-vu/dair-pharmacy-app).
 
 ---
 
@@ -944,30 +957,39 @@ This work builds on the established research of the DAIR team on spatial aparthe
 
 ## Code Appendix
 
-The analysis pipeline is in the research team's group-repo notebooks that produce the dataset.
+The analysis pipeline is in this repository's `notebooks/` folder.
 
-**Analysis notebooks** (run in strict sequence):
+**Analysis Notebooks**:
 
-1. `sal_w_ward_deduplication.ipynb`: removes duplicate SALs from the ward spatial join.
-2. `newpred_clean.ipynb`: apportions ward 2022 Census population to SALs.
-3. `osmnx_network_download.ipynb`: downloads walking and driving road networks from OpenStreetMap.
-4. `2sfca_clean.ipynb`: computes the E2SFCA accessibility score.
-5. `snap_distance_append.ipynb`: appends centroid-to-network snap distances.
-6. `sal_pharmacy_distance_k3.ipynb`: computes distance to the nearest and third-nearest pharmacy.
-7. `network_threshold.ipynb`: applies the policy distance thresholds.
-8. `combine_access_score_network_threshold.ipynb`: merges the scores, distances, and thresholds into `sal_combined_access`.
+1. `sal_w_ward_deduplication.ipynb`: Removes duplicate SALs from the ward spatial join.
+2. `newpred_clean.ipynb`: Apportions ward 2022 Census population to SALs.
+3. `osmnx_network_download.ipynb`: Downloads walking and driving road networks from OpenStreetMap.
+4. `2sfca_clean.ipynb`: Computes the 2SFCA accessibility score.
+5. `snap_distance_append.ipynb`: Appends centroid-to-network snap distances.
+6. `sal_pharmacy_distance_k3.ipynb`: Computes distance to the nearest and third-nearest pharmacy.
+7. `network_threshold.ipynb`: Applies the policy distance thresholds.
+8. `combine_access_score_network_threshold.ipynb`: Merges the scores, distances, and thresholds into `sal_combined_access`.
+9. `report_figures.ipynb`: Draws the report figures from the final dataset, after checking the headline numbers.
+
+**Pharmacy Assembly** (`pharmacy_assembly/`):
+
+- SQL Scripts: `01_combine_pharmacies.sql`, `02_province_lookup_update.sql`, `03_fill_gaps_pharmacies.sql`, `04_deduplicate_pharmacies.sql`, `05_add_hospitals.sql`.
+- Notebooks: `01_sapc_scraper.ipynb`, `02_google_places_extract.ipynb`, `03_sapc_pharma_join.ipynb`, `04_sapc_geocode_unmatched.ipynb`, `05_final_master_pharma.ipynb`.
+- PDF Extraction: `pdf_extract.py`.
+
+The sources live in the team Box, so these notebooks aren't runnable from this repository alone, and they need the extra packages `requests`, `beautifulsoup4`, `rapidfuzz`, and `camelot-py`.
 
 ---
 
 ## Output Dataset Documentation
 
-The final analytical output is `sal_combined_access.geojson` (38,380 rows, one per SAL), which merges the 2SFCA scores, k-nearest distances, and threshold flags into a single SAL-level record. Field definitions, units, and sources are in [`../docs/data-dictionary.md`](../docs/data-dictionary.md).
+The final analytical output is `sal_combined_access.geojson` (38,380 rows, one per SAL), which merges the 2SFCA scores, k-nearest distances, and threshold flags into a single SAL-level record. Field definitions, units, and sources are in [`data_dictionary.csv`](data_dictionary.csv).
 
 ---
 
 ## Future Improvements
 
-1. **Variable-catchment 2SFCA** by Settlement Type rather than province, eliminating the province-boundary discontinuity. Code exists in commented-out form in `2sfca_clean.ipynb`.
+1. **Variable-catchment 2SFCA** by Geography Type rather than province, eliminating the province-boundary discontinuity. Code exists in commented-out form in `2sfca_clean.ipynb`.
 2. **Gaussian decay calibration** with sensitivity analysis across β values to quantify score sensitivity to the decay parameter.
 3. **Building-footprint-weighted centroids** for large SALs (above the 75th percentile in area), with sensitivity analysis comparing geometric and weighted centroid results.
 4. **Transit mode integration** via GTFS data for formal BRT/rail and crowdsourced GPS traces for minibus taxis.
@@ -984,19 +1006,51 @@ The final analytical output is `sal_combined_access.geojson` (38,380 rows, one p
 
 The reproduction path has three steps:
 
-1. **Group-repo notebooks:** The research team's notebooks ingest the source data, compute the accessibility scores, and export `sal_combined_access`.
+1. **Notebooks:** This repository's `notebooks/` folder holds nine notebooks that ingest the source data, compute the accessibility scores, and export `sal_combined_access`.
 2. **`sal_combined_access`:** The SAL-level dataset (38,380 SALs) that every downstream file derives from.
 3. **Site:** The site builds from those derived files and the tileset upload file.
 
-The analysis notebook and the figure scripts that draw this report's figures are available on request.
+### Repository Layout
 
-**Software versions:** Python (environment managed via miniforge/conda), OSMnx 2.1.0, NetworkX 3.6.1, GeoPandas, scipy, tqdm, matplotlib, mapclassify.
+```
+README.md  GLOSSARY.md  limitations.md  AGENTS.md  data_dictionary.csv  environment.yml  pytest.ini
+dair_style.py  test_dair_style.py  test_pipeline_outputs.py
+figures/            README figures (opaque + -transparent), drawn by notebook 9
+fonts/              bundled DAIR fonts
+notebooks/          pipeline notebooks 1–9, run in order from this folder
+  images/<stem>/    diagnostic plots per notebook
+pharmacy_assembly/  sql/, notebooks/ 01–05, pdf_extract.py (sources in team Box)
+data/               gitignored: raw/, intermediate/, final/, baseline/
+docs/               agent docs and ADRs
+```
+
+### Running the Pipeline
+
+1. Create the environment from the repository root: `conda env create -f environment.yml`, then `conda activate za-pharmacies`.
+2. Place the raw data under `data/raw/`:
+   - `census_2011/ea_sal_kzn_gp.*` (2011 SAL census shapefile and sidecars)
+   - `wards_2020/SA_Wards2020.*` (2020 ward boundaries and sidecars)
+   - `wards_pop.csv` (ward population totals)
+   - `sal_w_ward_new/sal_w_ward_new.*` (the SAL-ward spatial join and sidecars)
+   - `PHARMACIES_MASTER_FINAL.csv` (the assembled pharmacy list)
+   - `south_africa.geojson` (province outlines)
+   - `pharmacy_sources/` (pharmacy-assembly sources from the team Box; empty until they arrive)
+3. Run notebooks in order from `notebooks/` (the working directory), from `sal_w_ward_deduplication.ipynb` through `report_figures.ipynb`.
+4. Runtimes: graph downloads take 26–88 minutes per graph; the 2SFCA computation takes about 2 minutes per province-mode run; and the k=3 single-source Dijkstra takes several hours per graph.
+5. Strip notebook outputs by hand before committing.
+
+**Diagnostic Images Awaiting a Full Run:**
+
+- Notebook 4's `score-histogram` image: needs the 2SFCA scores computed from the graphs (the histogram cell plots `Ai_walk`/`Ai_drive` per province, which only the four graph-loading runs produce).
+- Notebook 6's `heatmap-gauteng-all-methods-k2` and `heatmap-kwazulu-natal-all-methods-k2`: need network distances (the k=2 all-methods maps plot `walk_dist_k2_km` and `drive_dist_k2_km`, which only the graph-based k=3 network computation produces).
+
+**Software Versions:** Python (environment managed via miniforge/conda), OSMnx 2.1.0, NetworkX 3.6.1, GeoPandas, scipy, tqdm, matplotlib, mapclassify.
 
 **CRS:** EPSG:32735 (UTM zone 35S, meters) for all spatial computations. WGS84 (EPSG:4326) for pharmacy source coordinates and OSMnx queries.
 
 **Hardware:** The notebooks ran on a local Windows machine. Graph downloads required 26–88 minutes per graph; the 2SFCA computation required about 2 minutes per province-mode run; and the k=3 single-source Dijkstra required several hours per graph.
 
-**Network graph statistics:**
+**Network Graph Statistics:**
 
 | Graph | Nodes | Edges |
 |---|---|---|
