@@ -529,7 +529,7 @@ function MapSummary({ step, analysis }) {
   }
 
   return (
-    <div className="n4__map-summary" aria-live="polite">
+    <div className="n4__map-summary" aria-label= "An outline of KwaMashu, a township outside of Durban in KwaZulu-Natal. This township contains 253 areas. There are 169 Township areas,  34 Informal Residential areas, 44 Formal Residential areas, 5 Vacant aeras, and 1 Collective Living Quarter.">
       <span className="n4__map-summary-title">
         {TOWNSHIPS[step.township].label}
       </span>
